@@ -54,4 +54,13 @@ class AssetSerializerTest < ActiveSupport::TestCase
     assert_equal "member/ping", task[:claimed_by]
     assert_match(/\A\d{4}-/, task[:lease_until])
   end
+
+  test "a task's status is its lifecycle state, and a note's is its note status" do
+    task_asset = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/inbox", name: "t.md")
+    Task.create!(asset: task_asset, status: "pending")
+    note = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/inbox", name: "n.md", status: "open")
+
+    assert_equal "pending", AssetSerializer.call(task_asset)[:status]
+    assert_equal "open", AssetSerializer.call(note)[:status]
+  end
 end

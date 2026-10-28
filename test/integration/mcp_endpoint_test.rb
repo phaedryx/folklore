@@ -94,4 +94,19 @@ class McpEndpointTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_in_delta 30.seconds.ago, token.reload.last_used_at, 2.seconds
   end
+
+  test "tools/call with an argument the tool does not take answers Invalid arguments" do
+    post "/mcp", params: rpc("tools/call", { name: "echo", arguments: { message: "hi", agent: "ping" } }, id: 4), headers: auth_headers
+
+    assert_response :success
+    body = JSON.parse(response.body)
+    assert body.dig("result", "isError"), body.inspect
+    assert_match(/\AInvalid arguments: /, body.dig("result", "content", 0, "text"))
+  end
+
+  test "every tool's input schema is closed" do
+    FolkloreMcp.tool_classes.each do |tool|
+      assert_equal false, tool.input_schema_value.to_h[:additionalProperties], "#{tool.name_value} accepts unknown arguments"
+    end
+  end
 end

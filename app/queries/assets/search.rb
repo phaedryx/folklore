@@ -93,7 +93,11 @@ module Assets
 
       scope = scope.tagged_with(@tags)
 
-      scope = scope.where(status: @status) if @status.present?
+      # `status` matches a note's status or a task's lifecycle state, as one
+      # field did before tasks became a facet; `task_status` matches tasks only.
+      if @status.present?
+        scope = scope.where(status: @status).or(scope.where(id: Task.where(status: @status).select(:asset_id)))
+      end
 
       scope = scope.joins(:task).where(tasks: { status: @task_status }) if @task_status.present?
 
