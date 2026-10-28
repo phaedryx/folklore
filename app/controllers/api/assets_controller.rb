@@ -2,6 +2,7 @@ module Api
   class AssetsController < BaseController
     def index
       assets = ::Assets::List.query(path: params.require(:path), tags: Array(params[:tags]), actor: current_actor)
+                             .preload(AssetSerializer::PRELOADS)
       render_success({ assets: assets.map { |asset| AssetSerializer.call(asset) } })
     end
 

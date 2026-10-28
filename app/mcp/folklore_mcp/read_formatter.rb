@@ -7,34 +7,23 @@ module FolkloreMcp
       backlinks created_by updated_by verified_by version
     ].freeze
 
+    Rendered = Data.define(:text, :data)
+
     def self.call(asset, requested:, format: "text")
-      new(asset, requested:, format:).call
+      formatter = new(asset, requested:)
+      format.to_s == "json" ? formatter.json_payload : formatter.text_payload
     end
 
-    def initialize(asset, requested:, format:)
+    # Both shapes from one serialization and one backlinks query, for tools
+    # that answer with text and structured content together.
+    def self.render(asset, requested:)
+      formatter = new(asset, requested:)
+      Rendered.new(text: formatter.text_payload, data: formatter.json_payload)
+    end
+
+    def initialize(asset, requested:)
       @asset = asset
       @requested = Array(requested).map(&:to_sym)
-      @format = format.to_s
-    end
-
-    def call
-      json? ? json_payload : text_payload
-    end
-
-    private
-
-    def json?
-      @format == "json"
-    end
-
-    def data
-      @data ||= AssetSerializer.call(@asset)
-    end
-
-    def backlinks
-      @backlinks ||= Links::Backlinks.query(asset: @asset).map do |source|
-        { slug: source.slug, location: source.location, name: source.name }
-      end
     end
 
     def json_payload
@@ -58,6 +47,18 @@ module FolkloreMcp
       segments << header.join("\n") if header.any?
       segments << @asset.content.to_s if @requested.include?(:content)
       segments.join("\n---\n")
+    end
+
+    private
+
+    def data
+      @data ||= AssetSerializer.call(@asset)
+    end
+
+    def backlinks
+      @backlinks ||= Links::Backlinks.query(asset: @asset).map do |source|
+        { slug: source.slug, location: source.location, name: source.name }
+      end
     end
 
     def json_field_value(field)

@@ -1,4 +1,15 @@
 class AssetSerializer
+  # Every association `call` reads. Preload these before serializing a list.
+  PRELOADS = [
+    :owner, :tags,
+    { created_by_token: :user, updated_by_token: :user, verified_by_token: :user, task: :claimed_by_user }
+  ].freeze
+
+  def self.preload(assets)
+    ActiveRecord::Associations::Preloader.new(records: Array(assets), associations: PRELOADS).call
+    assets
+  end
+
   def self.call(asset)
     {
       slug: asset.slug,

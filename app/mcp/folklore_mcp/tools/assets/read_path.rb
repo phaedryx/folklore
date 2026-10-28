@@ -29,9 +29,8 @@ module FolkloreMcp
           asset = ::Assets::ReadByPath.query(location:, path:, name:, actor:)
           requested = Array(with).map(&:to_sym) & READ_FIELDS
 
-          respond(format:,
-                  text: ReadFormatter.call(asset, requested:, format: "text"),
-                  data: ReadFormatter.call(asset, requested:, format: "json"))
+          rendered = ReadFormatter.render(asset, requested:)
+          respond(format:, text: rendered.text, data: rendered.data)
         end
       end
     end

@@ -41,6 +41,21 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal asset.slug, structured(response)[:slug]
   end
 
+  test "read serializes the asset and queries its backlinks once for both text and structured content" do
+    target = create("target.md", content: "t")
+    create("source.md", content: "see [[#{target.slug}]]")
+
+    backlink_queries = count_queries(matching: /"links"/) do
+      response = Tools::Read.call(slug: target.slug, backlinks: true, tags: true, server_context: ctx)
+      assert_match(/source\.md/, text_of(response))
+      assert_equal 1, structured(response)[:backlinks].size
+    end
+    tag_queries = count_queries(matching: /"tags"/) { Tools::Read.call(slug: target.slug, tags: true, server_context: ctx) }
+
+    assert_equal 1, backlink_queries
+    assert_equal 1, tag_queries
+  end
+
   test "read with format json returns the structured asset" do
     asset = create("json.md", content: "body")
 

@@ -27,9 +27,8 @@ module FolkloreMcp
           asset = ::Assets::Read.query(slug:, actor:)
           requested = READ_FIELDS.select { |field| flags[field] }
 
-          respond(format:,
-                  text: ReadFormatter.call(asset, requested:, format: "text"),
-                  data: ReadFormatter.call(asset, requested:, format: "json"))
+          rendered = ReadFormatter.render(asset, requested:)
+          respond(format:, text: rendered.text, data: rendered.data)
         end
       end
     end
