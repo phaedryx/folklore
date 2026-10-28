@@ -23,9 +23,11 @@ module FolkloreMcp
 
         def invoke(content:, server_context:, agent: nil)
           actor = actor_from(server_context, agent:)
-          asset = ::Checkpoints::Write.mutate(actor:, content:)
+          result = ::Checkpoints::Write.mutate(actor:, content:)
+          asset = result.asset
+          verb = result.changed ? "saved to" : "unchanged at"
 
-          text_response("Checkpoint saved to #{asset.location} (#{asset.slug})",
+          text_response("Checkpoint #{verb} #{asset.location} (#{asset.slug})",
                         data: { slug: asset.slug, location: asset.location, version: asset.lock_version })
         end
       end

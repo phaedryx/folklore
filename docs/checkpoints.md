@@ -25,8 +25,9 @@ update_last_session(content: "...", agent: "ping")
 get_last_session(agent: "pong")      # No checkpoint yet for you/pong. Call update_last_session before finishing.
 ```
 
-"No checkpoint yet" is a separate answer from an empty one, so a fresh agent can tell it has never saved. Checkpoint
-content cannot be empty: an empty write is refused, so a bad save cannot wipe where the agent left off. Web sessions
+"No checkpoint yet" is a separate answer from an empty one, so a fresh agent can tell it has never saved. `update_last_session`
+refuses empty content, so a bad save cannot wipe where the agent left off. Saving the same text again writes nothing
+and answers `Checkpoint unchanged at ...`, so the checkpoint keeps its old `updated` time. Web sessions
 have no checkpoint.
 
 ## It is an asset
@@ -39,8 +40,10 @@ Because a checkpoint is a plain asset, it gets everything an asset has:
   checkpoint, as with any asset.
 - `list(path: "you/state")` shows every agent's checkpoint.
 
-The `state` segment is reserved. `create`, `upsert`, `add_task` and the web UI's new-file form refuse to put an asset
-there, so the checkpoint tools are the only way to create one.
+The `state` segment is reserved. `create`, `upsert`, `add_task` and the web UI's new-file form refuse it, so the
+checkpoint tools are the only way to create or overwrite a checkpoint by location. A checkpoint is still an asset, so
+`update`, `append`, `delete` and the web UI's edit form work on it by slug; that is how a person fixes one by hand, and
+those paths do not apply the empty-content check.
 
 Checkpoints match search queries, and one that quotes the queries can crowd out the real answers. Tag it
 `eval-excluded` to leave it out of a search evaluation (see [search.md](search.md)).

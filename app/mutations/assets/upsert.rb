@@ -19,6 +19,9 @@ module Assets
     end
 
     def mutate
+      # Checked before the lookup, so a reserved location is refused whether
+      # or not something already lives there.
+      Asset.validate_dir!(@path, allow_reserved: @reserved)
       existing = Asset.live.find_by(dir: @path, name: @name)
       return update(existing) if existing
 

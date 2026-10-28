@@ -53,8 +53,9 @@ Every user can read every workspace. Writing to an asset is limited to its owner
 segment of its path. Task lifecycle calls (`claim_task`, `complete_task`, `fail_task`) change only the task's state and
 work on any task. `add_task` creates an asset, so it follows the owner rule.
 
-The second path segment `state` (checkpoints) and `archive` are reserved: `create` and the other generic writers refuse
-them.
+The second path segment `state` (checkpoints) and `archive` are reserved: `create`, `upsert` and `add_task` refuse
+them. Tools that address an existing asset by slug (`update`, `append`, `delete`, ...) still work on a checkpoint; see
+[checkpoints.md](checkpoints.md).
 
 ## Responses
 

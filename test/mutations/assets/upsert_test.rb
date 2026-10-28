@@ -66,6 +66,14 @@ class Assets::UpsertTest < ActiveSupport::TestCase
     assert_raises(Assets::ForbiddenError) { upsert(path: "other/notes", content: "x") }
   end
 
+  test "refuses a reserved directory whether or not the asset exists, unless reserved: true" do
+    upsert(path: "member/state/ping", name: "last_session.md", content: "x", reserved: true)
+
+    assert_raises(Asset::ReservedDirError) { upsert(path: "member/state/ping", name: "last_session.md", content: "y") }
+    assert_raises(Asset::ReservedDirError) { upsert(path: "member/state/pong", name: "last_session.md", content: "y") }
+    assert_equal "x", Asset.live.find_by!(dir: "member/state/ping").content
+  end
+
   test "reserved: true passes through to create" do
     result = upsert(path: "member/state/ping", name: "last_session.md", content: "x", reserved: true)
 

@@ -34,6 +34,8 @@ class FolkloreMcp::Tools::CheckpointsTest < ActiveSupport::TestCase
     refute saved.to_h[:isError], text_of(saved)
     asset = Asset.find_by!(dir: "member/state/default", name: "last_session.md")
     assert_equal "Checkpoint saved to member/state/default/last_session.md (#{asset.slug})", text_of(saved)
+    again = Update.call(content: "mid-refactor on paths", server_context: ctx)
+    assert_equal "Checkpoint unchanged at member/state/default/last_session.md (#{asset.slug})", text_of(again)
 
     response = Get.call(server_context: ctx)
 

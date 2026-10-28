@@ -33,7 +33,7 @@ class Checkpoints::ReadTest < ActiveSupport::TestCase
   end
 
   test "ignores a deleted checkpoint" do
-    asset = Checkpoints::Write.mutate(actor: @actor, content: "gone")
+    asset = Checkpoints::Write.mutate(actor: @actor, content: "gone").asset
     Assets::Delete.mutate(actor: @actor, slug: asset.slug)
 
     assert_nil read
