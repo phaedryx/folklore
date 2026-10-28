@@ -22,7 +22,6 @@ module Assets
 
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
-        asset.lock!
         raise NotANoteError, "#{@slug} is a task; use claim_task, complete_task or fail_task" if asset.task?
 
         # A lifecycle marker, not content: updated_at and lock_version stay put.

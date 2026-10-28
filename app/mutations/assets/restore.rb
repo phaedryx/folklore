@@ -23,7 +23,7 @@ module Assets
       raise ForbiddenError, "cannot write to #{asset.location}" unless @actor.user.can_write_to_workspace?(asset.workspace_handle)
 
       ActiveRecord::Base.transaction do
-        asset.lock!
+        asset.lock!(Asset::WRITE_LOCK)
         raise NotDeletedError, "#{@slug} is not deleted" unless asset.deleted_at?
 
         asset.update!(deleted_at: nil, updated_by_token: @actor.token, updated_by_agent: @actor.agent)

@@ -18,7 +18,6 @@ module Assets
     def mutate
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
-        asset.lock!
         Assets::Update.mutate(actor: @actor, slug: @slug, content: combined(asset.content.to_s))
       end
     end
