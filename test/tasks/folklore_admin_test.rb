@@ -41,6 +41,15 @@ class FolkloreAdminTaskTest < ActiveSupport::TestCase
     assert_match(%r{/mcp}, out)
   end
 
+  test "says when no web password was set, and a rerun with one adds it" do
+    out = run_admin(FOLKLORE_ADMIN_HANDLE: "tad", FOLKLORE_ADMIN_EMAIL: "tad@example.com")
+    assert_match(/No web password is set/, out)
+
+    out = run_admin(FOLKLORE_ADMIN_HANDLE: "tad", FOLKLORE_ADMIN_EMAIL: "tad@example.com", FOLKLORE_ADMIN_PASSWORD: "x")
+    refute_match(/No web password/, out)
+    assert User.find_by!(email: "tad@example.com").authenticate("x")
+  end
+
   test "is idempotent: a second run issues no second token and prints no plaintext" do
     run_admin(FOLKLORE_ADMIN_HANDLE: "tad", FOLKLORE_ADMIN_EMAIL: "tad@example.com", FOLKLORE_ADMIN_PASSWORD: "x")
     out = run_admin(FOLKLORE_ADMIN_HANDLE: "tad", FOLKLORE_ADMIN_EMAIL: "tad@example.com", FOLKLORE_ADMIN_PASSWORD: "x")

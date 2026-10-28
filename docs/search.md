@@ -70,8 +70,8 @@ bin/rails "folklore:search_eval[script/search_eval_queries.yml]"
 FOLKLORE_EVAL_QUERIES=script/search_eval_queries.yml bin/rails runner script/search_eval.rb
 ```
 
-The output has one row per query, with its rank in the baseline and in the current search (`#1 of 12`, or `--` when
-the answer is not in the top 10). A summary follows with recall@10, top-1 and mean reciprocal rank. Run it before and
+The output has one row per query, with its rank in the baseline and in the current search (`#1 of 10`: the answer's rank and how many
+results came back, or `--` when the answer is not in the top 10). A summary follows with recall@10, top-1 and mean reciprocal rank. Run it before and
 after a ranking change, against the same database.
 
 **`eval-excluded`.** Notes that quote the eval queries, such as a plan or a session checkpoint, match every query
@@ -80,8 +80,8 @@ place and searchable as usual.
 
 ## The search log
 
-Each search with a query records the query, the filters that differ from their defaults, the result slugs and the
-token that ran it. When the same token then reads one of those results with `read` or `read_path` within five minutes,
-the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
+Each MCP `search` with a query records the query, the filters that differ from their defaults, the result slugs and
+the token and agent that ran it (the web search page is not logged). When the same token and agent then read one of
+those results with `read` or `read_path` within five minutes, the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
 opened, which is the raw material for a bigger eval set. It is a plain table (`search_logs`) and nothing in the app
 reads it back.
