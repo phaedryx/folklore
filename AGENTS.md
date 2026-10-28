@@ -13,7 +13,7 @@ into a project, or merge it into your agent instructions, and replace `<handle>`
    does not show as pending.
 3. **Before you finish, and at any milestone worth resuming from: `update_last_session`.** Write what is done, what is
    open, the next step, and anything the next session would otherwise have to work out again. It replaces the previous
-   checkpoint, and the old text is kept as a version.
+   checkpoint. The old text is kept as a version, readable on the checkpoint's **History** page in the web UI.
 
 ## Facts go stale
 
@@ -97,12 +97,14 @@ Give every entry:
 
 ### Review them before the work they could change
 
-- **Before planning an approach**, search the why-nots for its domain, so a dead path is not proposed again:
-  `search(q: "<domain>", within: "<handle>/why-nots")`.
-- **Before reviewing or revising a change**, search the mistakes for the domains it touches, to catch a recurring wrong
-  belief before someone has to correct it again: `search(q: "<domain>", within: "<handle>/mistakes")`.
+- **Before planning an approach**, pull the why-nots for its domain, so a dead path is not proposed again:
+  `list(path: "<handle>/why-nots", tags: ["<domain>"])`.
+- **Before reviewing or revising a change**, pull the mistakes for the domains it touches, to catch a recurring wrong
+  belief before someone has to correct it again: `list(path: "<handle>/mistakes", tags: ["<domain>"])`.
 
-Search by domain. Do not list the whole directory. An entry nobody searches for is as good as no entry.
+`search` matches content and file names, not tags, so the domain tag is what `list(tags:)` finds. Follow it with
+`search(q: "<domain>", within: "<handle>/why-nots")` to catch an entry whose text names the domain but whose tags
+don't. Do not read the whole directory unfiltered. An entry nobody looks up is as good as no entry.
 
 ### Staleness
 
