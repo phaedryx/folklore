@@ -69,7 +69,7 @@ class AssetShowTest < ActionDispatch::IntegrationTest
 
     get "/member/elsewhere/#{asset.slug}/old-name.md"
     assert_redirected_to show_path(asset)
-    assert_response :moved_permanently
+    assert_response :found
   end
 
   test "an unknown slug is a 404" do

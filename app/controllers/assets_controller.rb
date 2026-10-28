@@ -5,7 +5,7 @@ class AssetsController < ApplicationController
 
   def show
     @asset = Assets::Read.query(slug: params[:slug], actor: current_actor)
-    return redirect_to helpers.asset_url_for(@asset), status: :moved_permanently unless canonical_address?
+    return redirect_to helpers.asset_url_for(@asset) unless canonical_address?
 
     if ActiveModel::Type::Boolean.new.cast(params[:raw])
       # Stored content is untrusted: a sandboxed response gets an opaque
