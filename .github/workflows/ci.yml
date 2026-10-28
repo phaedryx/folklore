@@ -48,11 +48,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: The predecessor's name must not appear anywhere in the repo
-        run: "! git grep -i -q -E 'sceni[u]s' -- ."
+      - name: Neither the predecessor's name nor a private tool's may appear anywhere in the repo
+        run: "! git grep -i -q -E 'sceni[u]s|atelie[r]' -- ."
 
       - name: Nor in any commit message
-        run: "! git log --format=%B | grep -i -q -E 'sceni[u]s'"
+        run: "! git log --format=%B | grep -i -q -E 'sceni[u]s|atelie[r]'"
 
   lint:
     runs-on: ubuntu-latest
