@@ -42,4 +42,18 @@ class VerificationsTest < ActionDispatch::IntegrationTest
     assert_response :forbidden
     assert_nil theirs.reload.verified_at
   end
+
+  test "on a stale asset's page, verify offers the next review date and clears the flag" do
+    asset = create_asset(name: "a.md")
+    Assets::SetStaleAfter.mutate(actor: web_actor, slug: asset.slug, stale_after: Date.current - 3)
+    show = "/member/notes/#{asset.slug}/a.md"
+
+    get show
+    assert_select "form[action='/verifications/#{asset.slug}'] input[type=date][name=stale_after][value='#{(Date.current + 90).iso8601}']"
+
+    post "/verifications/#{asset.slug}", params: { stale_after: (Date.current + 90).iso8601 },
+                                         headers: { "HTTP_REFERER" => "http://www.example.com#{show}" }
+    follow_redirect!
+    assert_select "[data-testid='asset-stale']", false
+  end
 end

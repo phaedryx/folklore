@@ -29,10 +29,17 @@
             class: "inline-flex items-center gap-1 no-underline" do %>
         <%= heroicon_tag "pencil-square", variant: :outline, class: "h-4 w-4" %>Edit
       <% end %>
-      <%= button_to verify_asset_path(@asset.slug), method: :post, form: { class: "contents" },
-            data: { testid: "asset-verify" }, title: "Mark as still true",
-            class: "inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-primary hover:text-primary-hover" do %>
-        <%= heroicon_tag "check-badge", variant: :outline, class: "h-4 w-4" %>Verify
+      <%# A stale asset needs a new review date or verifying leaves it due; offer one, pre-filled. %>
+      <%= form_with url: verify_asset_path(@asset.slug), method: :post, class: "inline-flex items-center gap-2" do |f| %>
+        <% if @asset.stale? %>
+          <%= f.label :stale_after, "Next review", for: "asset_next_review", class: "text-xs text-surface-700" %>
+          <%= f.date_field :stale_after, id: "asset_next_review", value: (Date.current + Review::StaleEntryComponent::DEFAULT_INTERVAL).iso8601,
+                class: "rounded border border-surface-300 px-2 py-0.5 text-xs" %>
+        <% end %>
+        <%= button_tag type: "submit", name: nil, data: { testid: "asset-verify" }, title: "Mark as still true",
+              class: "inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-primary hover:text-primary-hover" do %>
+          <%= heroicon_tag "check-badge", variant: :outline, class: "h-4 w-4" %>Verify
+        <% end %>
       <% end %>
       <%= button_to asset_url_for(@asset), method: :delete, form: { class: "contents" },
             data: { testid: "asset-archive", turbo_confirm: "Archive #{@asset.name}?" },

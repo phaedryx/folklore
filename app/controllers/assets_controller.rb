@@ -58,6 +58,8 @@ class AssetsController < ApplicationController
     @asset = Assets::Read.query(slug: params[:slug], actor: current_actor)
     fill_form_from(@asset)
     @draft = normalize_newlines(asset_params[:content])
+    @draft_name = asset_params[:name]
+    @draft_tags = asset_params[:tags]
     flash.now[:alert] = "This file changed since you opened it. Nothing was saved: the form now holds the " \
                         "current version, and your text is below to copy back in."
     render :edit, status: :conflict
@@ -76,6 +78,8 @@ class AssetsController < ApplicationController
     redirect_to helpers.asset_folder_path(asset), notice: "Archived #{asset.name}."
   rescue Assets::ForbiddenError
     redirect_back fallback_location: root_path, alert: "You don't have permission to archive this file."
+  rescue Assets::AlreadyDeletedError
+    redirect_back fallback_location: root_path, alert: "That file is already archived."
   end
 
   private

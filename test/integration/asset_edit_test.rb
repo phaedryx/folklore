@@ -173,4 +173,34 @@ class AssetEditTest < ActionDispatch::IntegrationTest
     assert_nil theirs.reload.deleted_at
     assert_match(/permission/, flash[:alert])
   end
+
+  test "archiving twice explains instead of failing" do
+    asset = create_asset(name: "bye.md")
+    delete show_path(asset)
+    delete show_path(asset)
+
+    assert_response :redirect
+    assert_match(/already archived/, flash[:alert])
+  end
+
+  test "restoring twice explains instead of failing" do
+    asset = create_asset(name: "bye.md")
+    Assets::Delete.mutate(actor: web_actor, slug: asset.slug)
+    post "/member/archive/#{asset.slug}"
+    post "/member/archive/#{asset.slug}"
+
+    assert_redirected_to "/member/archive"
+    assert_match(/not archived/, flash[:alert])
+  end
+
+  test "a conflict keeps the submitted name and tags in the draft" do
+    asset = create_asset(name: "a.md", content: "v1", tags: %w[old])
+    stale_version = asset.lock_version
+    Assets::Update.mutate(actor: web_actor, slug: asset.slug, content: "theirs")
+
+    submit(asset, content: "mine", name: "renamed.md", tags: "new", expected_version: stale_version)
+
+    assert_select "[data-testid='conflict-draft-name']", text: "renamed.md"
+    assert_select "[data-testid='conflict-draft-tags']", text: "new"
+  end
 end
