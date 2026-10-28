@@ -7,6 +7,8 @@ module FolkloreMcp
     Revoked = Class.new(Error)
 
     LAST_USED_INTERVAL = 60.seconds
+    # RFC 9110: the auth scheme is case-insensitive.
+    BEARER = /\ABearer +(\S+)\s*\z/i
 
     def self.call(header, agent: nil)
       new(header, agent:).call
@@ -18,9 +20,9 @@ module FolkloreMcp
     end
 
     def call
-      raise Unauthenticated, "missing or invalid Authorization header" unless @header.start_with?("Bearer ")
+      plaintext = @header[BEARER, 1]
+      raise Unauthenticated, "missing or invalid Authorization header" unless plaintext
 
-      plaintext = @header.delete_prefix("Bearer ").strip
       token = Token.find_by(token_digest: Token.digest(plaintext))
       raise Unauthenticated, "unknown token" unless token
       raise Revoked, "token revoked" if token.revoked?

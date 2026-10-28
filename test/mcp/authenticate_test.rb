@@ -9,6 +9,12 @@ class FolkloreMcp::AuthenticateTest < ActiveSupport::TestCase
     assert_equal "default", actor.agent
   end
 
+  test "the scheme is matched case-insensitively" do
+    %w[bearer BEARER BeArEr].each do |scheme|
+      assert_equal tokens(:member_default), FolkloreMcp::Authenticate.call("#{scheme} flk_test_member").token, scheme
+    end
+  end
+
   test "an unknown token is unauthenticated" do
     assert_raises(FolkloreMcp::Authenticate::Unauthenticated) do
       FolkloreMcp::Authenticate.call("Bearer flk_nope")
