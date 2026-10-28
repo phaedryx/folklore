@@ -1,0 +1,12 @@
+<section data-testid="backlinks" class="mt-8 rounded-card border border-surface-200 bg-white p-4">
+  <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-surface-700">Linked from</h2>
+  <ul class="flex flex-col gap-1.5">
+    <% @assets.each do |asset| %>
+      <li data-testid="backlink-<%= asset.slug %>" class="flex flex-wrap items-baseline gap-x-2 text-sm">
+        <%= link_to asset.name, helpers.asset_url_for(asset),
+              class: "font-bold no-underline hover:text-primary-hover" %>
+        <span class="text-xs text-surface-700"><%= asset.dir %></span>
+      </li>
+    <% end %>
+  </ul>
+</section>

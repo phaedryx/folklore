@@ -1,0 +1,67 @@
+<% content_for :title, "Activity · Folklore" %>
+<% filters = { actor: @actor_filter, tag: @tag_filter }.compact %>
+
+<header class="mb-6 flex flex-wrap items-end justify-between gap-4">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Activity</h1>
+    <p class="mt-1 text-sm text-surface-700">Every write, newest first. Reload to see new work.</p>
+  </div>
+
+  <%= form_with url: activity_path, method: :get, data: { testid: "activity-filters", turbo: false },
+        class: "flex flex-wrap items-end gap-3 text-sm" do |f| %>
+    <div class="flex flex-col gap-1">
+      <%= f.label :actor, "Actor", class: "text-xs font-bold text-surface-700" %>
+      <%= f.text_field :actor, value: @actor_filter, placeholder: "handle or handle/agent",
+            data: { testid: "filter-actor" }, class: "h-9 rounded-md border border-surface-300 bg-white px-2" %>
+    </div>
+    <div class="flex flex-col gap-1">
+      <%= f.label :tag, "Tag", class: "text-xs font-bold text-surface-700" %>
+      <%= f.text_field :tag, value: @tag_filter, placeholder: "tag name",
+            data: { testid: "filter-tag" }, class: "h-9 rounded-md border border-surface-300 bg-white px-2" %>
+    </div>
+    <%= button_tag type: "submit", name: nil, data: { testid: "filter-submit" },
+          class: "inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white hover:bg-primary-hover" do %>
+      <%= heroicon_tag "funnel", variant: :outline, class: "h-4 w-4" %>
+      <span>Filter</span>
+    <% end %>
+    <% if filters.any? %>
+      <%= link_to activity_path, data: { testid: "filter-clear" }, class: "inline-flex items-center gap-1 text-sm font-bold no-underline" do %>
+        <%= heroicon_tag "x-mark", variant: :outline, class: "h-4 w-4" %>
+        <span>Clear</span>
+      <% end %>
+    <% end %>
+  <% end %>
+</header>
+
+<% if @events.any? %>
+  <div data-testid="activity-feed" class="divide-y divide-surface-200 rounded-card border border-surface-200 bg-white px-4">
+    <% @events.each do |event| %>
+      <%= render Events::EntryComponent.new(event:) %>
+    <% end %>
+  </div>
+<% else %>
+  <p data-testid="activity-empty" class="rounded-md border border-surface-200 bg-white px-4 py-6 text-center text-sm text-surface-700">
+    No activity matches the current filters.
+  </p>
+<% end %>
+
+<% show_newer = @events.any? && (params[:before_id].present? || (@since_id && @full_page)) %>
+<% show_older = @events.any? && (@full_page || @since_id) %>
+<% if show_newer || show_older %>
+  <nav class="mt-6 flex items-center justify-between text-sm font-bold">
+    <% if show_newer %>
+      <%= link_to activity_path(**filters, since_id: @events.first.id), data: { testid: "activity-newer" },
+            class: "inline-flex items-center gap-1 no-underline" do %>
+        <%= heroicon_tag "arrow-up", variant: :outline, class: "h-4 w-4" %><span>Newer</span>
+      <% end %>
+    <% else %>
+      <span></span>
+    <% end %>
+    <% if show_older %>
+      <%= link_to activity_path(**filters, before_id: @events.last.id), data: { testid: "activity-older" },
+            class: "inline-flex items-center gap-1 no-underline" do %>
+        <span>Older</span><%= heroicon_tag "arrow-down", variant: :outline, class: "h-4 w-4" %>
+      <% end %>
+    <% end %>
+  </nav>
+<% end %>

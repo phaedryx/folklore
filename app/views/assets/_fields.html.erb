@@ -1,0 +1,17 @@
+<div class="flex flex-col gap-2">
+  <%= f.label :name, "Name", for: "asset_name", class: "text-sm font-bold text-surface-900" %>
+  <%= f.text_field :name, name: "asset[name]", id: "asset_name", value: name, required: true,
+        class: "h-10 rounded-md border border-surface-300 bg-white px-3 text-base text-surface-900 placeholder:text-surface-500" %>
+</div>
+
+<div class="flex flex-col gap-2">
+  <%= f.label :content, "Content", for: "asset_content", class: "text-sm font-bold text-surface-900" %>
+  <%= f.text_area :content, name: "asset[content]", id: "asset_content", value: content, rows: 24,
+        class: "rounded-md border border-surface-300 bg-white px-3 py-2 font-mono text-sm text-surface-900" %>
+</div>
+
+<div class="flex flex-col gap-2">
+  <%= f.label :tags, "Tags", for: "asset_tags", class: "text-sm font-bold text-surface-900" %>
+  <%= f.text_field :tags, name: "asset[tags]", id: "asset_tags", value: tags, placeholder: "comma-separated",
+        class: "h-10 rounded-md border border-surface-300 bg-white px-3 text-base text-surface-900 placeholder:text-surface-500" %>
+</div>

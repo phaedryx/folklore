@@ -15,6 +15,13 @@ class SignInTest < ActionDispatch::IntegrationTest
     assert_select "input[name=password][type=password]"
   end
 
+  test "each sign-in form field has its own id" do
+    get sign_in_path
+
+    ids = css_select("input[id]").map { |el| el["id"] }
+    assert_equal ids.uniq, ids
+  end
+
   test "signing in with the right password reaches the home page" do
     post sign_in_path, params: { email: "Member@Example.com", password: "member-secret" }
 

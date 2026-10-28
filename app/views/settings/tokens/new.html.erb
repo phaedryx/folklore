@@ -1,0 +1,30 @@
+<% content_for :title, "New token · Settings · Folklore" %>
+
+<header class="mb-6 max-w-xl">
+  <h1 class="text-2xl font-bold tracking-tight">New MCP token</h1>
+  <p class="mt-2 text-sm text-surface-700">
+    Name the agent that will hold it, for example <code>coordinator</code>, <code>ping</code> or <code>laptop</code>:
+    lowercase letters, digits, <code>-</code> and <code>_</code>. The token is shown once; copy it straight away.
+  </p>
+</header>
+
+<%= form_with url: settings_tokens_path, scope: :token, data: { turbo: false }, class: "flex max-w-md flex-col gap-4" do |f| %>
+  <% if @errors.present? %>
+    <ul data-testid="token-errors" class="rounded-md border border-error-300 bg-error-50 px-4 py-3 text-sm text-error-900">
+      <% @errors.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <div class="flex flex-col gap-2">
+    <%= f.label :agent_name, "Agent name", class: "text-sm font-bold text-surface-900" %>
+    <%= f.text_field :agent_name, value: @agent_name, autofocus: true, autocomplete: "off",
+          data: { testid: "token-agent-name" }, class: "h-10 w-full rounded-md border border-surface-300 bg-white px-3 text-base text-surface-900 placeholder:text-surface-500" %>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= f.submit "Issue token", data: { testid: "issue-token" }, class: "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" %>
+    <%= link_to "Cancel", settings_tokens_path, class: "text-sm font-bold" %>
+  </div>
+<% end %>

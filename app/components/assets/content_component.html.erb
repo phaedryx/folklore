@@ -1,0 +1,8 @@
+<% case @rendered.mode %>
+<% when :markdown %>
+  <article data-testid="asset-content" data-render="markdown" class="prose-asset"><%= @rendered.html %></article>
+<% when :code %>
+  <div data-testid="asset-content" data-render="code" class="highlight rounded text-sm"><pre><code><%= @rendered.html %></code></pre></div>
+<% else %>
+  <pre data-testid="asset-content" data-render="plain" class="overflow-x-auto whitespace-pre-wrap break-words rounded bg-primary-900 p-4 text-sm text-surface-100"><code><%= @rendered.html %></code></pre>
+<% end %>

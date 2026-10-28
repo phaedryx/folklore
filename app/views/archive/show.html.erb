@@ -1,0 +1,37 @@
+<% content_for :title, "Archive · #{@owner.handle} · Folklore" %>
+
+<header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-bold tracking-tight">Archive: <%= @owner.handle %></h1>
+  <%= link_to workspace_path(handle: @owner.handle), data: { testid: "back-to-workspace" },
+        class: "inline-flex items-center gap-1 text-sm no-underline" do %>
+    <%= heroicon_tag "arrow-left", variant: :outline, class: "h-4 w-4" %>
+    <span>Back to workspace</span>
+  <% end %>
+</header>
+
+<% if @assets.any? %>
+  <ul data-testid="archive-list" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <% @assets.each do |asset| %>
+      <li data-testid="archive-asset-<%= asset.slug %>"
+          class="flex h-full flex-col items-center gap-2 rounded-card border border-surface-300 bg-white p-4 text-center">
+        <%= heroicon_tag "document", variant: :outline, class: "h-12 w-12 text-surface-500" %>
+        <span class="w-full truncate text-sm text-surface-900"><%= asset.name %></span>
+        <span class="w-full truncate text-xs text-surface-700"><%= asset.dir %></span>
+        <time class="text-xs text-surface-700" datetime="<%= asset.deleted_at.iso8601 %>"><%= asset.deleted_at.strftime("%Y-%m-%d") %></time>
+
+        <% if writable?(asset) %>
+          <div class="mt-auto pt-2">
+            <%= button_to workspace_restore_path(@owner.handle, asset.slug),
+                  title: "Restore", aria: { label: "Restore #{asset.name}" },
+                  data: { testid: "restore-#{asset.slug}" }, form: { class: "inline" },
+                  class: "cursor-pointer border-0 bg-transparent p-0 text-primary hover:text-primary-hover" do %>
+              <%= heroicon_tag "arrow-uturn-left", variant: :outline, class: "h-4 w-4" %>
+            <% end %>
+          </div>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p data-testid="archive-empty" class="text-sm text-surface-700">Archive is empty.</p>
+<% end %>

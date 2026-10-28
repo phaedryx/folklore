@@ -1,0 +1,55 @@
+<div class="flex min-h-screen flex-col">
+  <header class="h-16 shrink-0 border-b border-surface-200 bg-white">
+    <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+      <%= link_to root_path, aria: { label: "Folklore home" },
+            class: "flex items-center gap-2 no-underline" do %>
+        <svg viewBox="0 0 24 24" class="h-6 w-6 fill-current text-primary" aria-hidden="true"><path d="M12 1 Q12 12 23 12 Q12 12 12 23 Q12 12 1 12 Q12 12 12 1 Z"/></svg>
+        <span class="text-lg font-bold tracking-tight text-primary">Folklore</span>
+      <% end %>
+
+      <% if signed_in? %>
+        <nav data-testid="primary-nav" class="flex items-center gap-3 text-sm">
+          <%= link_to workspace_path(handle: @current_user.handle),
+                data: { testid: "nav-workspace" },
+                class: "inline-flex items-center gap-1.5 font-bold text-primary hover:text-primary-hover no-underline" do %>
+            <%= helpers.heroicon_tag "square-3-stack-3d", variant: :outline, class: "h-5 w-5" %>
+            <%= @current_user.handle %>
+          <% end %>
+          <%= link_to search_path, data: { testid: "nav-search" }, class: NAV_LINK do %>
+            <%= helpers.heroicon_tag "magnifying-glass", variant: :outline, class: "h-5 w-5" %>
+            Search
+          <% end %>
+          <%= link_to tasks_path, data: { testid: "nav-tasks" }, class: NAV_LINK do %>
+            <%= helpers.heroicon_tag "clipboard-document-check", variant: :outline, class: "h-5 w-5" %>
+            Tasks
+          <% end %>
+          <%= link_to stale_path, data: { testid: "nav-stale" }, class: NAV_LINK do %>
+            <%= helpers.heroicon_tag "clock", variant: :outline, class: "h-5 w-5" %>
+            Review
+          <% end %>
+          <%= link_to activity_path, data: { testid: "nav-activity" }, class: NAV_LINK do %>
+            <%= helpers.heroicon_tag "queue-list", variant: :outline, class: "h-5 w-5" %>
+            Activity
+          <% end %>
+          <%= link_to settings_tokens_path, data: { testid: "nav-settings" }, class: NAV_LINK do %>
+            <%= helpers.heroicon_tag "cog-6-tooth", variant: :outline, class: "h-5 w-5" %>
+            Settings
+          <% end %>
+          <%= button_to sign_out_path,
+                method: :delete,
+                form: { class: "contents", data: { turbo: false } },
+                data: { testid: "sign-out" },
+                title: "Sign out",
+                class: "cursor-pointer #{NAV_LINK}" do %>
+            <%= helpers.heroicon_tag "arrow-right-start-on-rectangle", variant: :outline, class: "h-5 w-5" %>
+            Sign out
+          <% end %>
+        </nav>
+      <% end %>
+    </div>
+  </header>
+
+  <main class="<%= main_class %>">
+    <%= content %>
+  </main>
+</div>

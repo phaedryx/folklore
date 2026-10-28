@@ -1,44 +1,34 @@
 <% content_for :title, "Sign in · Folklore" %>
 
-<div class="mx-auto flex w-full max-w-sm flex-col gap-6">
+<div class="mx-auto mt-12 flex w-full max-w-sm flex-col gap-6">
   <h1 class="text-2xl font-bold">Sign in to Folklore</h1>
 
-  <% if flash[:alert] %>
-    <p data-testid="flash-alert" class="rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
-      <%= flash[:alert] %>
-    </p>
-  <% end %>
-  <% if flash[:notice] %>
-    <p data-testid="flash-notice" class="rounded-md border border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-900">
-      <%= flash[:notice] %>
-    </p>
-  <% end %>
 
   <%= form_with url: sign_in_path, method: :post, data: { turbo: false }, class: "flex flex-col gap-4" do |f| %>
     <div class="flex flex-col gap-2">
       <%= f.label :email, "Email", class: "text-sm font-bold" %>
       <%= f.email_field :email, required: true, autofocus: true, autocomplete: "email",
             value: params[:email], data: { testid: "sign-in-email" },
-            class: "h-10 rounded-md border border-gray-300 bg-white px-3 text-base" %>
+            class: "h-10 rounded-md border border-surface-300 bg-white px-3 text-base" %>
     </div>
     <div class="flex flex-col gap-2">
       <%= f.label :password, "Password", class: "text-sm font-bold" %>
       <%= f.password_field :password, required: true, autocomplete: "current-password",
             data: { testid: "sign-in-password" },
-            class: "h-10 rounded-md border border-gray-300 bg-white px-3 text-base" %>
+            class: "h-10 rounded-md border border-surface-300 bg-white px-3 text-base" %>
     </div>
     <%= f.submit "Sign in", data: { testid: "sign-in" },
-          class: "inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-2 border-indigo-600 bg-indigo-600 px-8 text-base font-bold text-white hover:bg-indigo-700" %>
+          class: "inline-flex h-12 cursor-pointer items-center justify-center rounded-thick border-2 border-primary bg-primary px-8 text-base font-bold text-white hover:border-primary-hover hover:bg-primary-hover" %>
   <% end %>
 
   <% if Rails.env.development? || Rails.env.test? %>
-    <%= form_with url: "/auth/developer/callback", method: :post, data: { turbo: false }, class: "flex flex-col gap-2 border-t border-gray-200 pt-4" do |f| %>
-      <%= f.label :email, "Developer sign-in (no password)", class: "text-sm" %>
+    <%= form_with url: "/auth/developer/callback", method: :post, data: { turbo: false }, class: "flex flex-col gap-2 border-t border-surface-200 pt-4" do |f| %>
+      <%= f.label :email, "Developer sign-in (no password)", for: "developer_email", class: "text-sm" %>
       <div class="flex gap-2">
-        <%= f.email_field :email, required: true, placeholder: "you@example.com",
-              class: "h-10 flex-1 rounded-md border border-gray-300 bg-white px-3 text-base" %>
-        <%= f.hidden_field :name, value: "Developer" %>
-        <%= f.submit "Go", class: "h-10 cursor-pointer rounded-md border border-gray-300 px-4 text-sm font-bold" %>
+        <%= f.email_field :email, id: "developer_email", required: true, placeholder: "you@example.com",
+              class: "h-10 flex-1 rounded-md border border-surface-300 bg-white px-3 text-base" %>
+        <%= f.hidden_field :name, id: "developer_name", value: "Developer" %>
+        <%= f.submit "Go", class: "h-10 cursor-pointer rounded-md border border-surface-300 px-4 text-sm font-bold" %>
       </div>
     <% end %>
   <% end %>

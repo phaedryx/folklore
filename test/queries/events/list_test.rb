@@ -76,6 +76,14 @@ class Events::ListTest < ActiveSupport::TestCase
     assert_equal [ second, third ], Events::List.query(since_id: first.id).to_a
   end
 
+  test "before_id returns the events before a cursor, newest first" do
+    first = record
+    second = record
+    third = record
+
+    assert_equal [ second, first ], Events::List.query(before_id: third.id).to_a
+  end
+
   test "limit caps results and is itself capped" do
     3.times { record }
 

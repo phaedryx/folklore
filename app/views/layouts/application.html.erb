@@ -18,14 +18,15 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
+    <%# Every stylesheet under app/assets: the Tailwind build and rouge.css. %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <main class="container mx-auto mt-28 px-5 flex">
+  <body class="min-h-screen font-sans text-surface-900 antialiased">
+    <%= render Layout::ShellComponent.new(current_user:, wide: content_for?(:wide_layout)) do %>
+      <%= render Layout::FlashComponent.new(flash:) %>
       <%= yield %>
-    </main>
+    <% end %>
   </body>
 </html>

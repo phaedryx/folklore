@@ -1,0 +1,22 @@
+<li data-testid="stale-entry-<%= @asset.slug %>"
+    class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border-l-4 border-l-warning-500 border border-surface-300 bg-white p-4">
+  <span data-testid="stale-marker"
+        class="inline-flex items-center rounded-full bg-warning-100 px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-warning-800">
+    <%= overdue_label %>
+  </span>
+
+  <div class="min-w-0 flex-1">
+    <%= link_to @asset.name, helpers.asset_url_for(@asset),
+          class: "block truncate font-bold text-surface-900 no-underline hover:text-primary" %>
+    <span class="block truncate text-xs text-surface-700"><%= @asset.dir %> · <%= last_verified_label %></span>
+  </div>
+
+  <%= form_with url: helpers.verify_asset_path(@asset.slug), method: :post, class: "flex items-center gap-2" do |form| %>
+    <%= form.label :stale_after, "Next review", class: "text-xs text-surface-700", for: "stale_after_#{@asset.slug}" %>
+    <%= form.date_field :stale_after, value: suggested_review_date, id: "stale_after_#{@asset.slug}",
+          data: { testid: "stale-next-review-#{@asset.slug}" },
+          class: "rounded border border-surface-300 px-2 py-1 text-xs" %>
+    <%= form.submit "Verify", data: { testid: "stale-verify-#{@asset.slug}" },
+          class: "cursor-pointer rounded-button bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary-hover" %>
+  <% end %>
+</li>

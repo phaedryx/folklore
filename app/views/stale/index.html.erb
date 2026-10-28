@@ -1,0 +1,19 @@
+<% content_for :title, "Review queue · Folklore" %>
+
+<header class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Review queue</h1>
+  <p class="mt-1 text-sm text-surface-700">
+    Files under <code><%= current_user.handle %>/</code> whose review date has passed, most overdue first.
+    Files with no review date never appear here.
+  </p>
+</header>
+
+<% if @assets.empty? %>
+  <p data-testid="stale-empty" class="text-sm text-surface-700">Nothing due for review.</p>
+<% else %>
+  <ul data-testid="stale-list" class="flex list-none flex-col gap-2 p-0">
+    <% @assets.each do |asset| %>
+      <%= render Review::StaleEntryComponent.new(asset:) %>
+    <% end %>
+  </ul>
+<% end %>

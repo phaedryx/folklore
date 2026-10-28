@@ -1,0 +1,29 @@
+<% content_for :title, "Edit #{@asset.name} · Folklore" %>
+
+<h1 class="mb-6 text-2xl font-bold tracking-tight text-surface-900">Edit <%= @asset.location %></h1>
+
+<% if @error.present? %>
+  <p data-testid="error" class="mb-6 rounded-md border border-error-300 bg-error-50 px-4 py-3 text-sm text-error-900"><%= @error %></p>
+<% end %>
+
+<%= form_with url: asset_url_for(@asset), method: :patch, data: { testid: "edit-asset-form", turbo: false },
+      class: "flex max-w-4xl flex-col gap-4" do |f| %>
+  <%= hidden_field_tag "asset[expected_version]", @expected_version %>
+  <%= render "assets/fields", f:, name: @name, content: @content, tags: @tags %>
+
+  <div class="mt-2 flex items-center gap-2">
+    <%= f.submit "Save", class: "inline-flex h-10 cursor-pointer items-center justify-center rounded-button border-2 border-primary bg-primary px-6 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" %>
+    <%= link_to "Cancel", asset_url_for(@asset), class: "inline-flex h-10 items-center justify-center rounded-button border-2 border-primary bg-transparent px-6 text-sm font-bold text-primary no-underline hover:bg-primary-soft" %>
+  </div>
+<% end %>
+
+<% if @draft %>
+  <section class="mt-8 max-w-4xl">
+    <h2 class="mb-2 text-sm font-bold uppercase tracking-wide text-surface-700">Your unsaved edit</h2>
+    <dl class="mb-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+      <dt class="font-bold">Name</dt><dd data-testid="conflict-draft-name" class="font-mono"><%= @draft_name %></dd>
+      <dt class="font-bold">Tags</dt><dd data-testid="conflict-draft-tags" class="font-mono"><%= @draft_tags %></dd>
+    </dl>
+    <pre data-testid="conflict-draft" class="overflow-x-auto whitespace-pre-wrap rounded-md border border-warning-300 bg-warning-50 p-4 font-mono text-sm text-surface-900"><%= @draft %></pre>
+  </section>
+<% end %>

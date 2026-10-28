@@ -70,7 +70,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "reserved handles are rejected" do
-    assert_equal %w[mcp api auth assets rails settings sign_in sign_out], User::RESERVED_HANDLES
+    assert_equal %w[mcp api auth assets rails settings sign_in sign_out files search tasks stale activity verifications up], User::RESERVED_HANDLES
     User::RESERVED_HANDLES.each do |h|
       user = User.new(email: "u#{h}@example.com", name: "U", handle: h)
       refute user.valid?, "expected #{h.inspect} to be rejected as reserved"
