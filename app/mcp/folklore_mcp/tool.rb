@@ -107,9 +107,16 @@ module FolkloreMcp
       end
     end
 
-    def actor_from(server_context)
+    # The request's actor, or the same token acting as `agent` when the tool
+    # takes an agent override. The override is a label within the token's
+    # user; a web session has no token to relabel.
+    def actor_from(server_context, agent: nil)
       actor = server_context && (server_context[:actor] || server_context["actor"])
-      actor or raise MissingActorError, "no actor in server_context"
+      raise MissingActorError, "no actor in server_context" unless actor
+      return actor if agent.to_s.strip.empty?
+      raise Actor::InvalidAgentError, "agent override needs a token; web sessions act as #{Actor::WEB_AGENT}" unless actor.token
+
+      Actor.for_token(actor.token, agent:)
     end
 
     def text_response(text, data: nil)

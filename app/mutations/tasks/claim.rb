@@ -57,7 +57,7 @@ module Tasks
     def claim_by_slug(now)
       asset = Asset.live.find_by(slug: @slug)
       raise Assets::NotFoundError, @slug unless asset
-      raise NotATaskError, "#{@slug} is not a task" unless Task.exists?(asset_id: asset.id)
+      raise NotATaskError, @slug unless Task.exists?(asset_id: asset.id)
 
       target = Task.where(asset_id: asset.id).lock("FOR UPDATE")
       claim(target, now) or raise AlreadyClaimedError, unavailable(asset)
@@ -71,7 +71,7 @@ module Tasks
                    .order("assets.created_at", "assets.id")
                    .limit(1)
                    .lock("FOR UPDATE OF tasks SKIP LOCKED")
-      claim(target, now) or raise NoPendingTaskError, "no pending task under #{@path_prefix}"
+      claim(target, now) or raise NoPendingTaskError, "nothing to claim under #{@path_prefix}"
     end
 
     # Runs the claiming UPDATE over the (at most one) row `target` locks and

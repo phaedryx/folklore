@@ -86,4 +86,20 @@ class Tasks::ClaimConcurrencyTest < ActiveSupport::TestCase
       assert_equal successes.find { |id, _| id == task.asset_id }.last, task.claimed_by_agent
     end
   end
+
+  # The same race through the claim_task tool agents actually call, so the
+  # tool's error mapping is proven under contention too.
+  test "two agents racing through claim_task produce one win and one already-claimed" do
+    task = add("tool.md")
+    responses = Concurrent::Array.new
+
+    race(%w[ping pong]) do |actor|
+      responses << FolkloreMcp::Tools::Tasks::Claim.call(slug: task.slug, server_context: { actor: }).to_h
+    end
+
+    errors, oks = responses.partition { |r| r[:isError] }
+    assert_equal 1, oks.size, responses.inspect
+    assert_equal 1, errors.size, responses.inspect
+    assert_match(/\AAlready claimed: /, errors.first[:content].first[:text])
+  end
 end

@@ -22,7 +22,7 @@ module Tasks
     raise Assets::NotFoundError, slug unless asset
 
     task = Task.lock.find_by(asset_id: asset.id)
-    raise NotATaskError, "#{slug} is not a task" unless task
+    raise NotATaskError, slug unless task
 
     [ asset, task ]
   end
