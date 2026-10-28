@@ -58,7 +58,8 @@ the tool's `outputSchema`. Tools that take `format: "json"` put the JSON in the 
 `get_pending_tasks` print one `slug  location` line per hit (search prints `slug  name  (dir)` with a snippet line
 under it), so line-oriented scripts keep working.
 
-Errors come back with `isError: true` and one of these prefixes:
+Errors come back with `isError: true` and one of these prefixes. A call made with `format: "json"` (`read`,
+`read_path`, `bulk_read`) gets the same text as `{"error": "..."}`, in the text content and the structured content:
 
 | Text | Meaning |
 |---|---|

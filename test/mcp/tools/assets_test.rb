@@ -133,6 +133,20 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_match(/\AInvalid: /, text_of(bad))
   end
 
+  test "read, read_path and bulk_read answer errors as json when asked for json" do
+    responses = {
+      "Not found: 00000000" => Tools::Read.call(slug: "00000000", format: "json", server_context: ctx),
+      "Not found: member/notes/nope.md" => Tools::ReadPath.call(location: "member/notes/nope.md", format: "json", server_context: ctx),
+      "Provide at least one slug or location" => Tools::BulkRead.call(format: "json", server_context: ctx)
+    }
+
+    responses.each do |message, response|
+      assert response.to_h[:isError]
+      assert_equal({ "error" => message }, JSON.parse(text_of(response)))
+      assert_equal({ error: message }, structured(response))
+    end
+  end
+
   # bulk_read
 
   test "bulk_read returns assets by slug and location as text and as json, with per-item errors" do

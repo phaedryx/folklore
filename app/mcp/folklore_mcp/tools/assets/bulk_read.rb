@@ -33,7 +33,7 @@ module FolkloreMcp
         def invoke(server_context:, slugs: [], locations: [], format: "text",
                    include_content: true, max_bytes: ::Assets::BulkRead::DEFAULT_MAX_BYTES)
           actor = actor_from(server_context)
-          return error_response("Provide at least one slug or location") if Array(slugs).empty? && Array(locations).empty?
+          return error_response("Provide at least one slug or location", format:) if Array(slugs).empty? && Array(locations).empty?
 
           result = ::Assets::BulkRead.query(slugs:, locations:, max_bytes:, include_content:, actor:)
           AssetSerializer.preload(result.items.filter_map(&:asset))

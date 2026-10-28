@@ -82,23 +82,26 @@ module FolkloreMcp
         USER_ERRORS[klass] = prefix
       end
 
+      # Failures answer in the format the caller asked for: a tool that takes
+      # `format: "json"` gets `{"error": "..."}` back, as its successes are JSON.
       def call(server_context: nil, **args)
-        return failure(SCOPE_ERROR) unless scope_allows?(server_context)
+        format = args[:format]
+        return failure(SCOPE_ERROR, format:) unless scope_allows?(server_context)
 
         unknown = unknown_arguments(args)
-        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}") if unknown.any?
+        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}", format:) if unknown.any?
 
         new.invoke(**args, server_context:)
       rescue MissingActorError
-        failure("Unauthenticated: no actor on request")
+        failure("Unauthenticated: no actor on request", format:)
       rescue ActiveRecord::RecordInvalid => e
-        failure("Invalid: #{e.record.errors.full_messages.join(', ')}")
+        failure("Invalid: #{e.record.errors.full_messages.join(', ')}", format:)
       rescue *USER_ERRORS.keys => e
-        failure("#{USER_ERRORS.fetch(e.class) { USER_ERRORS.find { |k, _| e.is_a?(k) }.last }}: #{e.message}")
+        failure("#{USER_ERRORS.fetch(e.class) { USER_ERRORS.find { |k, _| e.is_a?(k) }.last }}: #{e.message}", format:)
       rescue => e
         raise if Rails.env.test? && ENV["MCP_RAISE_ERRORS"] == "1"
         Rails.logger.error("[MCP] #{name_value} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
-        failure("Internal error")
+        failure("Internal error", format:)
       end
 
       private
@@ -122,8 +125,11 @@ module FolkloreMcp
         args.keys.map(&:to_s) - properties.keys.map(&:to_s)
       end
 
-      def failure(text)
-        MCP::Tool::Response.new([ { type: "text", text: } ], error: true)
+      def failure(text, format: nil)
+        return MCP::Tool::Response.new([ { type: "text", text: } ], error: true) unless format.to_s == "json"
+
+        payload = { error: text }
+        MCP::Tool::Response.new([ { type: "text", text: JSON.generate(payload) } ], structured_content: payload, error: true)
       end
 
       def json_schema_from(block)
