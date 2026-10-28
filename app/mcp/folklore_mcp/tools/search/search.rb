@@ -3,13 +3,13 @@ module FolkloreMcp
     module Search
       class Search < FolkloreMcp::Tool
         tool_name "search"
-        FolkloreMcp::Tool.user_error(Assets::Search::InvalidArgumentError, "Invalid")
+        FolkloreMcp::Tool.user_error(::Assets::Search::InvalidArgumentError, "Invalid")
 
         DEFAULT_LIMIT = 50
         SNIPPET_WINDOW = 120
         # One fragment around the query words, unmarked, so the line reads as prose.
         HEADLINE_OPTIONS = %q(MaxFragments=1, MaxWords=24, MinWords=12, StartSel="", StopSel="").freeze
-        ANY_TERM = Assets::Search::ANY_TERM
+        ANY_TERM = ::Assets::Search::ANY_TERM
         # Filters at their default are not logged; `stale: false` is a real filter and stays.
         FILTER_DEFAULTS = { within: nil, tags: [], status: nil, task_status: nil, stale: nil, exclude_tags: [],
                             sort: nil, limit: nil, offset: 0, include_versions: false }.freeze
@@ -59,7 +59,7 @@ module FolkloreMcp
           actor = actor_from(server_context)
           filters = { within:, tags:, status:, task_status:, stale:, exclude_tags:, sort:, limit:, offset:,
                       include_versions: }.reject { |key, value| value == FILTER_DEFAULTS[key] || (value.blank? && value != false) }
-          results = Assets::Search.query(
+          results = ::Assets::Search.query(
             query: q, path: within, tags:, status:, task_status:, stale:, exclude_tags:,
             sort:, limit:, offset:, include_versions:, actor:
           )
