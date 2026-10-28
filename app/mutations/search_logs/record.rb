@@ -23,7 +23,8 @@ module SearchLogs
     def mutate
       return nil unless self.class.enabled? && @query.present?
 
-      SearchLog.create!(query: @query, filters: @filters, result_slugs: @result_slugs, token: @actor.token)
+      SearchLog.create!(query: @query, filters: @filters, result_slugs: @result_slugs, token: @actor.token,
+                       actor_agent: @actor.agent)
     end
   end
 end

@@ -29,6 +29,18 @@ class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
     assert_equal asset.slug, SearchLog.sole.followed_slug
   end
 
+  test "a search is followed only by a read from the agent that searched" do
+    asset = ::Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "needle.md", content: "haystack")
+    FolkloreMcp::Tools::Search::Search.call(q: "haystack", server_context: actor_context(agent: "ping"))
+    assert_equal "ping", SearchLog.sole.actor_agent
+
+    FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context(agent: "pong"))
+    assert_nil SearchLog.sole.followed_slug
+
+    FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context(agent: "ping"))
+    assert_equal asset.slug, SearchLog.sole.followed_slug
+  end
+
   test "a failed read follows nothing" do
     search_for_needle
 

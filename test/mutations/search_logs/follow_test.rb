@@ -5,7 +5,7 @@ class SearchLogs::FollowTest < ActiveSupport::TestCase
   teardown { ENV.delete("FOLKLORE_SEARCH_LOG") }
 
   def log(token: tokens(:member_default), slugs: %w[aaaaaaaa bbbbbbbb], created_at: Time.current)
-    SearchLog.create!(query: "cavoodle", filters: {}, result_slugs: slugs, token:, created_at:)
+    SearchLog.create!(query: "cavoodle", filters: {}, result_slugs: slugs, token:, actor_agent: token&.agent_name, created_at:)
   end
 
   test "marks the most recent log whose results include the slug" do
