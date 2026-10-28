@@ -1,0 +1,62 @@
+<% content_for :title, "Tokens · Settings · Folklore" %>
+
+<header class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <h1 class="text-2xl font-bold tracking-tight">MCP tokens</h1>
+  <%= link_to new_settings_token_path, data: { testid: "new-token" }, class: "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white h-9" do %>
+    <%= heroicon_tag "plus", variant: :outline, class: "h-4 w-4" %>
+    <span>New token</span>
+  <% end %>
+</header>
+
+<p class="mb-4 max-w-3xl text-sm text-surface-700">
+  Each token lets one agent reach this server through MCP or the JSON API as you, under its agent name.
+  The agent name labels its writes, its checkpoint and its task claims. A token is shown once, when it is issued:
+  treat it like a password, and revoke any you no longer recognise.
+</p>
+
+<% if @tokens.any? %>
+  <div class="overflow-x-auto rounded-card border border-surface-200 bg-white">
+    <table data-testid="token-list" class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-surface-200 text-left">
+          <th class="px-4 py-2 font-bold">Agent</th>
+          <th class="px-4 py-2 font-bold">Issued</th>
+          <th class="px-4 py-2 font-bold">Last used</th>
+          <th class="px-4 py-2 font-bold">Status</th>
+          <th class="px-4 py-2"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @tokens.each do |token| %>
+          <tr data-testid="token-<%= token.id %>" class="border-b border-surface-100 last:border-0">
+            <td class="px-4 py-2 font-mono"><%= token.agent_name %></td>
+            <td class="px-4 py-2 text-surface-700"><%= token.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="px-4 py-2 text-surface-700"><%= token.last_used_at ? token.last_used_at.strftime("%Y-%m-%d %H:%M") : "never" %></td>
+            <td class="px-4 py-2">
+              <% if token.revoked? %>
+                <span class="text-surface-700">revoked <%= token.revoked_at.strftime("%Y-%m-%d") %></span>
+              <% else %>
+                <span class="font-bold text-success-800">active</span>
+              <% end %>
+            </td>
+            <td class="px-4 py-2 text-right">
+              <% unless token.revoked? %>
+                <%= button_to settings_token_path(token), method: :delete,
+                      form: { data: { turbo_confirm: "Revoke the #{token.agent_name} token? Agents using it stop working at once." } },
+                      data: { testid: "revoke-token-#{token.id}" },
+                      class: "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-transparent px-3 text-xs font-bold text-primary hover:bg-primary-soft" do %>
+                  <%= heroicon_tag "trash", variant: :outline, class: "h-4 w-4" %>
+                  <span>Revoke <%= token.agent_name %></span>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <p data-testid="token-empty" class="rounded-md border border-surface-200 bg-white px-4 py-6 text-center text-sm text-surface-700">
+    No tokens yet. <%= link_to "Issue your first token", new_settings_token_path, class: "font-bold" %>.
+  </p>
+<% end %>

@@ -172,6 +172,16 @@ class FileBrowserFlowTest < ApplicationSystemTestCase
     assert_no_selector "[data-testid='file-row-#{asset.slug}']"
   end
 
+  test "history icon goes to the versions page" do
+    asset = create_asset(path: "member/notes", name: "story.md", content: "v1")
+    Assets::Update.mutate(slug: asset.slug, actor: web_actor, content: "v2")
+
+    visit workspace_path(handle: "member", location: "notes")
+    find("[data-testid='file-history-#{asset.slug}']").click
+
+    assert_selector "[data-testid='version-head']"
+  end
+
   test "action row is hidden entirely on files the viewer doesn't own" do
     asset = create_asset(path: "other/notes", name: "their.md", content: "", fixture: :other)
 

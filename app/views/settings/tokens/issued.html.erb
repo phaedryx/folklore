@@ -1,0 +1,37 @@
+<% content_for :title, "Token issued · Settings · Folklore" %>
+
+<header class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Token for <code><%= @result.token.agent_name %></code> issued</h1>
+</header>
+
+<div class="mb-4 max-w-3xl rounded-md border-2 border-warning-300 bg-warning-50 px-4 py-3 text-sm text-warning-900">
+  <p class="font-bold">Copy this token now. It will not be shown again.</p>
+  <p class="mt-1">Only its hash is stored. If you lose it, revoke it and issue a new one.</p>
+</div>
+
+<div class="flex max-w-3xl items-start gap-2">
+  <pre id="token-plaintext" data-testid="token-plaintext"
+       class="flex-1 overflow-x-auto rounded-md border border-surface-300 bg-white px-4 py-3 font-mono text-sm text-surface-900"><%= @result.plaintext %></pre>
+  <button type="button" data-clipboard-source="#token-plaintext" data-testid="copy-token"
+          class="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-transparent px-4 text-sm font-bold text-primary hover:bg-primary-soft">
+    Copy
+  </button>
+</div>
+
+<h2 class="mt-8 mb-2 text-sm font-bold uppercase tracking-wide text-surface-700">MCP client config</h2>
+<p class="mb-2 max-w-3xl text-sm text-surface-700">Add this to <code>.mcp.json</code> or your client's MCP settings.</p>
+<div class="flex max-w-3xl items-start gap-2">
+  <pre id="token-mcp-config" data-testid="token-mcp-config"
+       class="flex-1 overflow-x-auto rounded-md border border-surface-300 bg-white px-4 py-3 font-mono text-xs text-surface-900"><%= mcp_config_json(@result.plaintext) %></pre>
+  <button type="button" data-clipboard-source="#token-mcp-config" data-testid="copy-mcp-config"
+          class="inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-transparent px-4 text-sm font-bold text-primary hover:bg-primary-soft">
+    Copy
+  </button>
+</div>
+
+<div class="mt-8">
+  <%= link_to settings_tokens_path, data: { testid: "back-to-tokens" }, class: "inline-flex h-9 items-center gap-1.5 rounded-button border-2 border-primary bg-transparent px-4 text-sm font-bold text-primary no-underline hover:bg-primary-soft" do %>
+    <%= heroicon_tag "arrow-left", variant: :outline, class: "h-4 w-4" %>
+    <span>Back to tokens</span>
+  <% end %>
+</div>

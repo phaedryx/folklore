@@ -1,0 +1,42 @@
+<% content_for :title, "Search · Folklore" %>
+
+<header class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Search</h1>
+  <p class="mt-1 text-sm text-surface-700">
+    Full-text search across file content and names in every workspace, ranked by relevance. Narrow by tag.
+  </p>
+</header>
+
+<%= form_with url: search_path, method: :get, data: { testid: "search-form", turbo: false },
+      class: "mb-6 flex flex-wrap items-end gap-3" do |f| %>
+  <div class="flex min-w-64 flex-1 flex-col gap-1">
+    <%= f.label :q, "Query", class: "text-xs font-bold text-surface-700" %>
+    <%= f.search_field :q, value: @query, placeholder: "Search content and filenames",
+          data: { testid: "search-input" }, class: "h-10 w-full rounded-md border border-surface-300 bg-white px-3 text-base text-surface-900 placeholder:text-surface-500" %>
+  </div>
+
+  <div class="flex w-56 flex-col gap-1">
+    <%= f.label :tags, "Tags", class: "text-xs font-bold text-surface-700" %>
+    <%= f.text_field :tags, value: @tag_names.join(", "), placeholder: "comma-separated",
+          data: { testid: "search-tags" }, class: "h-10 w-full rounded-md border border-surface-300 bg-white px-3 text-base text-surface-900 placeholder:text-surface-500" %>
+  </div>
+
+  <%= button_tag type: "submit", name: nil, data: { testid: "search-submit" }, class: "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" do %>
+    <%= heroicon_tag "magnifying-glass", variant: :outline, class: "h-4 w-4" %>
+    <span>Search</span>
+  <% end %>
+<% end %>
+
+<% if @assets %>
+  <% if @assets.any? %>
+    <ul data-testid="search-results" class="flex list-none flex-col gap-2 p-0">
+      <% @assets.each do |asset| %>
+        <%= render Search::ResultComponent.new(asset:) %>
+      <% end %>
+    </ul>
+  <% else %>
+    <p data-testid="search-empty" class="rounded-md border border-surface-200 bg-white px-4 py-6 text-center text-sm text-surface-700">
+      No results<%= " for “#{@query}”" if @query.present? %>.
+    </p>
+  <% end %>
+<% end %>

@@ -1,0 +1,17 @@
+# The activity page: newest first, a page at a time. `before_id` pages back
+# and `since_id` catches up on what happened after an event, both by id so
+# no event is skipped at a page boundary.
+class EventsController < ApplicationController
+  PAGE_SIZE = 50
+
+  def index
+    @actor_filter = params[:actor].presence
+    @tag_filter = params[:tag].presence
+    @since_id = params[:since_id].presence&.to_i
+    events = Events::List.query(actor: @actor_filter, tag: @tag_filter, since_id: @since_id,
+                                before_id: params[:before_id].presence, limit: PAGE_SIZE).to_a
+    # since_id reads forward, oldest first; the page shows newest first either way.
+    @events = @since_id ? events.reverse : events
+    @full_page = events.size == PAGE_SIZE
+  end
+end

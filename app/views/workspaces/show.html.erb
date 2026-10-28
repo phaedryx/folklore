@@ -70,6 +70,10 @@
                     data: { testid: "file-edit-#{asset.slug}" }, class: "text-primary hover:text-primary-hover" do %>
                 <%= heroicon_tag "pencil-square", variant: :outline, class: "h-4 w-4" %>
               <% end %>
+              <%= link_to asset_url_for(asset, action: :versions), title: "History", aria: { label: "History of #{asset.name}" },
+                    data: { testid: "file-history-#{asset.slug}" }, class: "text-primary hover:text-primary-hover" do %>
+                <%= heroicon_tag "clock", variant: :outline, class: "h-4 w-4" %>
+              <% end %>
               <%= button_to asset_url_for(asset), method: :delete,
                     data: { turbo_confirm: "Archive #{asset.name}?", testid: "file-archive-#{asset.slug}" },
                     form: { class: "contents" }, title: "Archive", aria: { label: "Archive #{asset.name}" },

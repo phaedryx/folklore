@@ -27,6 +27,34 @@ class HubFlowTest < ApplicationSystemTestCase
     assert_selector "[data-testid='file-row-#{asset.slug}']", text: "jokes.sh"
   end
 
+  test "search finds the file by content" do
+    create_asset(path: "member/dad-jokes", name: "jokes.sh", content: "echo something distinctive")
+
+    within("[data-testid='primary-nav']") { click_on "Search" }
+    fill_in "Query", with: "distinctive"
+    click_button "Search"
+    within("[data-testid='search-results']") { assert_link "jokes.sh" }
+  end
+
+  test "the review queue verifies an overdue file and it leaves the queue" do
+    asset = create_asset(path: "member/notes", name: "old.md", content: "x")
+    Assets::SetStaleAfter.mutate(actor: web_actor, slug: asset.slug, stale_after: Date.current - 3)
+
+    click_on "Review"
+    assert_selector "[data-testid='stale-entry-#{asset.slug}']", text: "3 days overdue"
+    find("[data-testid='stale-verify-#{asset.slug}']").click
+
+    assert_selector "[data-testid='flash-notice']", text: "Verified."
+    assert_selector "[data-testid='stale-empty']"
+  end
+
+  test "the activity page shows what was just done" do
+    asset = create_asset(path: "member/notes", name: "fresh.md", content: "x")
+
+    click_on "Activity"
+    assert_selector "[data-testid^='activity-asset-']", text: asset.name
+  end
+
   test "archive from the file browser removes the file then restore brings it back" do
     asset = create_asset(path: "member/notes", name: "delete-me.md", content: "bye")
 

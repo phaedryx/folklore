@@ -9,8 +9,14 @@ module AssetsHelper
     when :show then leaf_path(**args)
     when :raw then leaf_path(**args, raw: true)
     when :edit then edit_leaf_path(**args)
+    when :versions then leaf_versions_path(**args)
     else raise ArgumentError, "no asset page for #{action.inspect}"
     end
+  end
+
+  def asset_version_restore_path(asset, version)
+    handle, location = asset.dir.split("/", 2)
+    leaf_version_restore_path(handle:, location:, slug: asset.slug, name: asset.name, version_id: version.id)
   end
 
   def writable?(asset)

@@ -20,6 +20,10 @@
           class: "inline-flex items-center gap-1 no-underline" do %>
       <%= heroicon_tag "arrow-down-tray", variant: :outline, class: "h-4 w-4" %>Download
     <% end %>
+    <%= link_to asset_url_for(@asset, action: :versions), data: { testid: "asset-history" },
+          class: "inline-flex items-center gap-1 no-underline" do %>
+      <%= heroicon_tag "clock", variant: :outline, class: "h-4 w-4" %>History
+    <% end %>
     <% if writable?(@asset) %>
       <%= link_to asset_url_for(@asset, action: :edit), data: { testid: "asset-edit" },
             class: "inline-flex items-center gap-1 no-underline" do %>

@@ -1,0 +1,28 @@
+<article data-testid="activity-<%= @event.id %>" class="flex items-start gap-3 py-3">
+  <div class="min-w-0 flex-1">
+    <header class="flex flex-wrap items-baseline gap-2 text-sm">
+      <% if @event.actor_user %>
+        <%= link_to actor_label, helpers.activity_path(actor: actor_label),
+              data: { testid: "activity-actor-#{@event.id}" },
+              class: "font-bold no-underline hover:text-primary-hover" %>
+      <% else %>
+        <span class="font-bold text-surface-700"><%= actor_label %></span>
+      <% end %>
+      <span data-testid="activity-action-<%= @event.id %>"
+            class="rounded-md bg-surface-100 px-2 py-0.5 text-xs font-bold text-surface-700"><%= @event.action %></span>
+      <% if asset&.deleted_at %>
+        <span data-testid="activity-asset-<%= @event.id %>" class="truncate text-sm text-surface-700"><%= asset.name %> (archived)</span>
+      <% elsif asset %>
+        <%= link_to asset.name, helpers.asset_url_for(asset),
+              data: { testid: "activity-asset-#{@event.id}" },
+              class: "truncate text-sm text-surface-900 no-underline hover:text-primary" %>
+      <% end %>
+    </header>
+    <time class="mt-0.5 block text-xs text-surface-700" datetime="<%= @event.created_at.iso8601 %>">
+      <%= @event.created_at.strftime("%Y-%m-%d %H:%M:%S") %>
+    </time>
+    <% if detail.present? %>
+      <p data-testid="activity-detail-<%= @event.id %>" class="mt-1 text-xs text-surface-700"><%= detail %></p>
+    <% end %>
+  </div>
+</article>

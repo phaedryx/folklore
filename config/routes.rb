@@ -45,6 +45,9 @@ Rails.application.routes.draw do
   # pipeline's. The more specific routes come first, and every one of them
   # before the browse catch-all below.
   scope "/:handle(/*location)/:slug/:name", constraints: { slug:, name: }, format: false do
+    get    "versions" => "versions#index", as: :leaf_versions
+    post   "versions/:version_id/restore" => "versions#restore", as: :leaf_version_restore,
+           constraints: { version_id: /\d+/ }
     get    "edit" => "assets#edit", as: :edit_leaf
     get    ""     => "assets#show", as: :leaf
     patch  ""     => "assets#update"
