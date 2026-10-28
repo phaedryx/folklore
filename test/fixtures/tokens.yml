@@ -1,0 +1,16 @@
+# Plaintexts (never stored): member_default is flk_test_member, other_default is flk_test_other.
+member_default:
+  user: member
+  agent_name: default
+  token_digest: <%= Digest::SHA256.hexdigest("flk_test_member") %>
+
+member_revoked:
+  user: member
+  agent_name: old
+  token_digest: <%= Digest::SHA256.hexdigest("flk_test_member_revoked") %>
+  revoked_at: <%= 1.day.ago.iso8601 %>
+
+other_default:
+  user: other
+  agent_name: default
+  token_digest: <%= Digest::SHA256.hexdigest("flk_test_other") %>

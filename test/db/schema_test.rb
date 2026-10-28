@@ -43,3 +43,13 @@ class SchemaTest < ActiveSupport::TestCase
     assert connection.extension_enabled?("pg_trgm")
   end
 end
+
+class ModelCallbackTest < ActiveSupport::TestCase
+  test "no model declares a lifecycle callback" do
+    offenders = Dir[Rails.root.join("app/models/**/*.rb")].select do |file|
+      File.read(file).match?(/^\s*(before|after|around)_[a-z_]+\b/)
+    end
+
+    assert_empty offenders.map { |f| f.delete_prefix(Rails.root.to_s) }
+  end
+end

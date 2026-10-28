@@ -1,0 +1,9 @@
+member:
+  email: member@example.com
+  name: A Member
+  handle: member
+
+other:
+  email: other@example.com
+  name: Other Member
+  handle: other
