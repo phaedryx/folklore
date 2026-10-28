@@ -21,7 +21,7 @@ module Tags
       asset = Asset.live.find_by(slug: @slug)
       raise NotFoundError, @slug unless asset
       raise ForbiddenError, "cannot write to #{asset.location}" unless @actor.user.can_write_to_workspace?(asset.workspace_handle)
-      raise AlreadyAppliedError, @name if asset.tags.exists?(name: @name)
+      raise AlreadyAppliedError, "tag #{@name} is already on #{@slug}" if asset.tags.exists?(name: @name)
 
       ActiveRecord::Base.transaction do
         AssetTag.create!(asset:, tag: Tag.find_or_create_by!(name: @name))

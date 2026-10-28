@@ -20,7 +20,7 @@ module Tags
       raise ForbiddenError, "cannot write to #{asset.location}" unless @actor.user.can_write_to_workspace?(asset.workspace_handle)
 
       asset_tag = asset.asset_tags.joins(:tag).find_by(tags: { name: @name })
-      raise NotAppliedError, @name unless asset_tag
+      raise NotAppliedError, "tag #{@name} is not on #{@slug}" unless asset_tag
 
       ActiveRecord::Base.transaction do
         asset_tag.destroy!
