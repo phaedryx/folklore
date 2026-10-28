@@ -15,8 +15,8 @@ search(q: "deploy rollback", within: "you/notes", tags: ["runbook"], limit: 10)
 | `within` | A directory prefix; matches it and everything below it |
 | `tags` | Only assets with every one of these tags |
 | `exclude_tags` | Leave out assets with any of these tags |
-| `status` | Note status (`open`, `done`) or a task's state (`pending`, `in_progress`, `done`, `failed`, `cancelled`) |
-| `task_status` | `pending`, `in_progress`, `done`, `failed` or `cancelled` (tasks only) |
+| `status` | Note status (`open`, `done`) or a task's state (`pending`, `in_progress`, `done`, `failed`; `cancelled` is reserved) |
+| `task_status` | `pending`, `in_progress`, `done` or `failed` (tasks only; `cancelled` is reserved) |
 | `stale` | `true` for assets whose review date has passed; `false` for the rest. An asset with no review date is never stale. |
 | `sort` | `name`, `created_at` or `updated_at`, in place of relevance |
 | `limit`, `offset` | Paging. The default limit is 50 and the maximum 500. |

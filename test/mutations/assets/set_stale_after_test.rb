@@ -39,12 +39,19 @@ class Assets::SetStaleAfterTest < ActiveSupport::TestCase
     assert_equal "asset_review_scheduled", Event.where(asset_id: @asset.id).last.action
   end
 
-  test "stamps the scheduling token and agent" do
+  test "records the scheduler in the event, not as the asset's last editor" do
     schedule("2027-01-01", actor: actor_for(:member_default, agent: "ping"))
 
-    @asset.reload
-    assert_equal tokens(:member_default), @asset.updated_by_token
-    assert_equal "ping", @asset.updated_by_agent
+    assert_nil @asset.reload.updated_by_agent
+    assert_equal "ping", Event.where(asset_id: @asset.id).last.actor_agent
+  end
+
+  test "scheduling the date it already has writes nothing" do
+    schedule("2027-01-01")
+
+    assert_no_difference -> { Event.count } do
+      schedule("2027-01-01")
+    end
   end
 
   test "rejects an unparseable date" do

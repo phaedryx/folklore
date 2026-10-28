@@ -899,7 +899,7 @@
   },
   {
     "name": "get_pending_tasks",
-    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed, cancelled or all) for others. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags.",
+    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1731,7 +1731,7 @@
   },
   {
     "name": "search",
-    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by status (a note's open|done or a task's pending|in_progress|done|failed|cancelled), by task_status (tasks only), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
+    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by status (a note's open|done or a task's pending|in_progress|done|failed), by task_status (tasks only), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -2079,7 +2079,7 @@
       ]
     },
     "annotations": {
-      "destructiveHint": false,
+      "destructiveHint": true,
       "idempotentHint": false,
       "openWorldHint": false,
       "readOnlyHint": false
@@ -2205,7 +2205,7 @@
       ]
     },
     "annotations": {
-      "destructiveHint": false,
+      "destructiveHint": true,
       "idempotentHint": true,
       "openWorldHint": false,
       "readOnlyHint": false
@@ -2258,7 +2258,7 @@
     },
     "annotations": {
       "destructiveHint": false,
-      "idempotentHint": true,
+      "idempotentHint": false,
       "openWorldHint": false,
       "readOnlyHint": false
     }

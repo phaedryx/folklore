@@ -7,7 +7,7 @@ module FolkloreMcp
                     "path + name if one exists (snapshotting prior content), otherwise creates it. " \
                     "'path' is the DIRECTORY only (no trailing filename or known file extension — " \
                     "those are rejected); 'name' is the leaf (no whitespace, no '/', not '.' or '..')."
-        annotations idempotent: true
+        annotations idempotent: true, destructive: true
 
         input_schema do
           required(:path).filled(:string)

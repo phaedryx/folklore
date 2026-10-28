@@ -7,7 +7,7 @@ module FolkloreMcp
                     "after which it should be re-checked. Verification is not an edit: it leaves updated_at " \
                     "and version history alone. Pass an empty stale_after to clear the review date; omit it " \
                     "to leave it as is. Find overdue assets with search(stale: true)."
-        annotations idempotent: true
+        annotations idempotent: false
 
         input_schema do
           required(:slug).filled(:string)

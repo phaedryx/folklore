@@ -45,7 +45,8 @@ keep separate checkpoints and exclude each other on task claims. The override is
 can never act as another user. Agent names are lowercase slugs (`a-z`, `0-9`, `-`, `_`). `web` is reserved for the
 browser.
 
-`activity`, `versions` and the `created_by` / `updated_by` / `verified_by` fields show actors as `handle/agent`.
+`activity`, `versions` and the `created_by` / `updated_by` / `verified_by` fields show actors as `handle/agent`. `updated_by` and `updated_at` describe the last edit (content, name, type or
+tags). Setting a status or a review date is not an edit: `activity` records who did it.
 
 ## Who may do what
 

@@ -24,8 +24,12 @@ module Assets
         asset = Assets.writable!(@slug, @actor)
         raise NotANoteError, "#{@slug} is a task; use claim_task, complete_task or fail_task" if asset.task?
 
-        # A lifecycle marker, not content: updated_at and lock_version stay put.
-        asset.update_columns(status:, updated_by_token_id: @actor.token&.id, updated_by_agent: @actor.agent)
+        return asset if asset.status == status
+
+        # A lifecycle marker, not an edit: updated_at, updated_by and
+        # lock_version describe the last edit and stay put. Who set it is in
+        # the event.
+        asset.update_columns(status:)
         Events::Record.mutate(actor: @actor, asset:, action: "asset_status_set", metadata: { "status" => status })
         asset
       end

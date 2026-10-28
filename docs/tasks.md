@@ -51,7 +51,7 @@ get_pending_tasks(path_prefix: "you/backlog", status: "in_progress")
 ```
 
 The structured content gives each task's `claimed_by` (`handle/agent`), `lease_until` and `attempts`. Re-claim your own
-to renew the lease and carry on. `status` also accepts `done`, `failed`, `cancelled` and `all`. An unknown status is
+to renew the lease and carry on. `status` also accepts `done`, `failed`, `all` and the reserved `cancelled`. An unknown status is
 `Invalid`, not an empty list.
 
 ## Example
