@@ -111,6 +111,19 @@ class FileBrowserFlowTest < ApplicationSystemTestCase
     end
   end
 
+  test "tasks appear in the tasks section with their status, not as plain files" do
+    task = Tasks::Add.mutate(actor: web_actor, path: "member/inbox", name: "todo.md", content: "", tags: [ "ops" ])
+    Tasks::Claim.mutate(actor: web_actor, slug: task.slug)
+
+    visit workspace_path(handle: "member", location: "inbox")
+    within "[data-testid='workspace-tasks-section']" do
+      assert_selector "[data-testid='task-row-#{task.slug}']", text: "todo.md"
+      assert_selector "[data-testid='task-status-pill']", text: "in progress"
+      assert_selector "[data-testid='task-claimer']", text: "member/web"
+    end
+    assert_no_selector "[data-testid='file-row-#{task.slug}']"
+  end
+
   test "decision-tagged files appear in the decisions section" do
     asset = create_asset(path: "member/stories/sc-1", name: "use-resque.md", content: "", tags: [ "decision" ])
 

@@ -1,0 +1,26 @@
+<% content_for :title, "Tasks · Folklore" %>
+
+<header class="mb-6">
+  <h1 class="text-2xl font-bold tracking-tight">Tasks</h1>
+  <p class="mt-1 text-sm text-surface-700">
+    Tasks under <code><%= current_user.handle %>/</code>, oldest first.
+    A claimed task shows who holds it and when the claim runs out.
+  </p>
+</header>
+
+<nav aria-label="Task status" class="mb-6 flex flex-wrap gap-2 text-sm">
+  <% [ "all", *Task::STATUSES ].each do |status| %>
+    <%= link_to status.tr("_", " "), tasks_path(status:, tags: @tag_names.join(", ").presence),
+          data: { testid: "tasks-filter-#{status}" },
+          aria: { current: ("page" if status == @status) },
+          class: "rounded-full border px-3 py-1 no-underline #{status == @status ? 'border-primary bg-primary-soft text-primary-hover' : 'border-surface-300 text-surface-700 hover:border-primary'}" %>
+  <% end %>
+</nav>
+
+<% if @tasks.empty? %>
+  <p data-testid="tasks-empty" class="text-sm text-surface-700">No tasks.</p>
+<% else %>
+  <div data-testid="tasks-list">
+    <%= render Tasks::ListComponent.new(tasks: @tasks) %>
+  </div>
+<% end %>

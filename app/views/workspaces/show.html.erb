@@ -14,6 +14,13 @@
 <% if @listing.empty? && !@show_archive_card %>
   <p data-testid="workspace-empty" class="text-sm text-surface-700">This folder is empty.</p>
 <% else %>
+  <% if @listing.tasks.any? %>
+    <section class="mb-8" data-testid="workspace-tasks-section">
+      <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-surface-700">Tasks</h2>
+      <%= render Tasks::ListComponent.new(tasks: @listing.tasks) %>
+    </section>
+  <% end %>
+
   <% if @listing.decisions.any? %>
     <section class="mb-8" data-testid="workspace-decisions-section">
       <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-surface-700">Decisions</h2>

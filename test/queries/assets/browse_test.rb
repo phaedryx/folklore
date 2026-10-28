@@ -39,6 +39,17 @@ class Assets::BrowseTest < ActiveSupport::TestCase
     assert_equal [ n ], listing.other_files
   end
 
+  test "tasks get their own group, ahead of decisions and failures" do
+    t = Tasks::Add.mutate(actor: web_actor, path: "member", name: "t.md", content: "", tags: [ "decision" ])
+    d = create_asset(path: "member", name: "d.md", tags: [ "decision" ])
+    n = create_asset(path: "member", name: "n.md")
+    listing = Assets::Browse.query(dir: "member")
+
+    assert_equal [ t ], listing.tasks
+    assert_equal [ d ], listing.decisions
+    assert_equal [ n ], listing.other_files
+  end
+
   test "is empty for a dir with nothing in it" do
     listing = Assets::Browse.query(dir: "member/nothing/here")
 
