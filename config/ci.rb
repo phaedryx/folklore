@@ -11,6 +11,7 @@ CI.run do
 
   # The predecessor's name must not appear anywhere in this repo.
   step "Leak grep", "! git grep -i -q -E 'sceni[u]s' -- ."
+  step "Leak grep: commit messages", "! git log --format=%B | grep -i -q -E 'sceni[u]s'"
 
   step "Tests: Rails", "bin/rails test"
   step "Tests: System", "bin/rails test:system"

@@ -104,6 +104,40 @@ class Markdown::RendererTest < ActiveSupport::TestCase
     assert_includes rendered.html, "<strong>ok</strong>"
   end
 
+  test "javascript: and data: hrefs are stripped, whatever their case or spacing" do
+    [ "[x](javascript:alert(1))", "[x](JavaScript:alert(1))", "[x](%6Aavascript:alert(1))",
+      "<javascript:alert(1)>", "[x](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)",
+      "[x](DATA:text/html,<script>alert(1)</script>)" ].each do |source|
+      html = render(source, name: "x.md").html
+      fragment = Nokogiri::HTML5.fragment(html)
+
+      fragment.css("a[href]").each do |a|
+        refute_match(/\A\s*(javascript|data):/i, a["href"], source)
+      end
+      refute_match(/javascript:/i, html.gsub("javascript:alert(1)", ""), source) if source.start_with?("<")
+    end
+  end
+
+  test "data: image sources are stripped" do
+    html = render("![i](data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+)", name: "x.md").html
+
+    Nokogiri::HTML5.fragment(html).css("img").each { |img| refute_match(/\Adata:/i, img["src"].to_s) }
+  end
+
+  test "wikilink labels are escaped, resolved or not" do
+    target = create("t.md", "x")
+
+    # Entities decode to a literal <img ...> in the text node the wikilink is expanded from.
+    resolved = render("[[#{target.slug}|&lt;img src=x onerror=alert(1)&gt;]]", name: "x.md").html
+    link = Nokogiri::HTML5.fragment(resolved).at_css("a")
+    assert_equal "<img src=x onerror=alert(1)>", link.text
+    assert_empty Nokogiri::HTML5.fragment(resolved).css("img")
+
+    dangling = render("[[zzzzzzzz|&lt;script&gt;alert(1)&lt;/script&gt;]]", name: "x.md").html
+    assert_empty Nokogiri::HTML5.fragment(dangling).css("script")
+    assert_includes dangling, "&lt;script&gt;"
+  end
+
   test "the wikilink pattern is the one the link sync uses" do
     assert_same Markdown::Wikilinks::PATTERN, Markdown::Renderer::WIKILINK
   end

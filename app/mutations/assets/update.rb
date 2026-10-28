@@ -39,11 +39,18 @@ module Assets
         end
         asset.content_type = @content_type if @content_type.present?
         asset.name = @name if @name.present?
+        tags_changed = @tags.nil? ? false : sync_tags(asset)
+        # A call that changes nothing writes nothing: no stamp, no version
+        # bump, no event.
+        return asset unless asset.changed? || tags_changed
+
         asset.updated_by_token = @actor.token
         asset.updated_by_agent = @actor.agent
+        # Tags live in their own table; touching the row makes a tags-only
+        # change bump lock_version like any other edit.
+        asset.updated_at = Time.current
         asset.save!
 
-        sync_tags(asset) unless @tags.nil?
         Links::Sync.mutate(asset:) if content_changed
         Events::Record.mutate(actor: @actor, asset:, action: "asset_updated")
         asset
@@ -71,6 +78,7 @@ module Assets
       )
     end
 
+    # Returns whether the set changed.
     def sync_tags(asset)
       wanted = @tags.map { |t| Tag.normalize(t) }.reject(&:empty?).uniq
       current = asset.tags.pluck(:name)
@@ -84,6 +92,8 @@ module Assets
         asset.asset_tags.joins(:tag).find_by!(tags: { name: }).destroy!
         Events::Record.mutate(actor: @actor, asset:, action: "tag_removed", metadata: { "tag" => name })
       end
+
+      wanted.sort != current.sort
     end
   end
 end

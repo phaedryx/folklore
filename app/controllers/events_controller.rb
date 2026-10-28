@@ -7,11 +7,13 @@ class EventsController < ApplicationController
   def index
     @actor_filter = params[:actor].presence
     @tag_filter = params[:tag].presence
-    @since_id = params[:since_id].presence&.to_i
+    @since_id = Events::List.parse_cursor(:since_id, params[:since_id].presence)
     events = Events::List.query(actor: @actor_filter, tag: @tag_filter, since_id: @since_id,
                                 before_id: params[:before_id].presence, limit: PAGE_SIZE).to_a
     # since_id reads forward, oldest first; the page shows newest first either way.
     @events = @since_id ? events.reverse : events
     @full_page = events.size == PAGE_SIZE
+  rescue Events::InvalidCursorError => e
+    redirect_to activity_path(actor: @actor_filter, tag: @tag_filter), alert: e.message
   end
 end

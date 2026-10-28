@@ -36,6 +36,7 @@ module FolkloreMcp
           return error_response("Provide at least one slug or location") if Array(slugs).empty? && Array(locations).empty?
 
           result = ::Assets::BulkRead.query(slugs:, locations:, max_bytes:, include_content:, actor:)
+          AssetSerializer.preload(result.items.filter_map(&:asset))
           entries = result.items.map { |item| serialize(item, include_content:) }
           data = { assets: entries, bytes_returned: result.bytes_returned, truncated: result.truncated }
 

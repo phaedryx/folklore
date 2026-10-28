@@ -78,6 +78,32 @@ class Assets::UpdateTest < ActiveSupport::TestCase
     assert_equal "ping", event.actor_agent
   end
 
+  test "an update that changes nothing records no event, no version and keeps the version counter and stamps" do
+    Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "shell")
+    other_agent = actor_for(:member_default, agent: "pong")
+
+    assert_no_difference -> { Event.count } do
+      Assets::Update.mutate(actor: other_agent, slug: @asset.slug, content: "original", name: "hello.md", tags: %w[shell])
+      Assets::Update.mutate(actor: other_agent, slug: @asset.slug)
+    end
+
+    @asset.reload
+    assert_equal 0, @asset.lock_version
+    assert_equal 0, @asset.versions.count
+    assert_not_equal "pong", @asset.updated_by_agent
+  end
+
+  test "a tags-only change bumps the version counter and records asset_updated beside the tag events" do
+    result = update(tags: %w[ruby])
+
+    assert_equal 1, result.lock_version
+    assert_equal 1, @asset.reload.lock_version
+    assert_equal 0, @asset.versions.count
+    assert Event.exists?(action: "tag_added", asset: @asset)
+    assert Event.exists?(action: "asset_updated", asset: @asset)
+    assert_raises(Assets::ConflictError) { update(content: "late", expected_version: 0) }
+  end
+
   test "tags: nil leaves tags, [] clears them, [...] replaces them with events" do
     Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "shell")
 

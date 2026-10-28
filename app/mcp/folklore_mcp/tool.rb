@@ -15,6 +15,7 @@ module FolkloreMcp
   # name derived from the class name would be wrong for most of them.
   class Tool < MCP::Tool
     MissingActorError = Class.new(StandardError)
+    SCOPE_ERROR = "Forbidden: token lacks write scope".freeze
 
     # Errors a caller can act on, with the prefix their message gets. Domain
     # modules add their own with `FolkloreMcp::Tool.user_error(klass, prefix)`.
@@ -80,6 +81,8 @@ module FolkloreMcp
       end
 
       def call(server_context: nil, **args)
+        return failure(SCOPE_ERROR) unless scope_allows?(server_context)
+
         new.invoke(**args, server_context:)
       rescue MissingActorError
         failure("Unauthenticated: no actor on request")
@@ -94,6 +97,15 @@ module FolkloreMcp
       end
 
       private
+
+      # Checked before the tool runs, so a refused call has no side effects.
+      # Web sessions carry no token and are not scope-checked.
+      def scope_allows?(server_context)
+        return true if annotations_value.read_only_hint
+
+        token = server_context && (server_context[:actor] || server_context["actor"])&.token
+        token.nil? || token.writable?
+      end
 
       def failure(text)
         MCP::Tool::Response.new([ { type: "text", text: } ], error: true)
@@ -117,6 +129,15 @@ module FolkloreMcp
       raise Actor::InvalidAgentError, "agent override needs a token; web sessions act as #{Actor::WEB_AGENT}" unless actor.token
 
       Actor.for_token(actor.token, agent:)
+    end
+
+    # Marks a recent search as answered by this read (see SearchLogs::Follow).
+    # This is the one write a read-only tool makes, and it is telemetry: a
+    # failure is logged and never fails the read.
+    def follow_search(actor, asset)
+      SearchLogs::Follow.mutate(actor:, slug: asset.slug)
+    rescue ActiveRecord::ActiveRecordError => e
+      Rails.logger.warn("[MCP] search log follow failed: #{e.class}: #{e.message}")
     end
 
     def text_response(text, data: nil)

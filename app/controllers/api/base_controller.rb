@@ -3,6 +3,7 @@ module Api
   # request authenticates itself. Responses follow the {status, data} shape.
   class BaseController < ActionController::API
     before_action :authenticate!
+    before_action :require_write_scope!, unless: -> { request.get? || request.head? }
 
     rescue_from ::Assets::NotFoundError, with: -> { render_not_found }
     rescue_from ::Assets::ForbiddenError, with: ->(e) { render_forbidden(e.message) }
@@ -27,6 +28,10 @@ module Api
       response.set_header("WWW-Authenticate", "Bearer")
       render status: :unauthorized,
              json: { status: "fail", data: { resource: "unauthenticated", message: e.message } }
+    end
+
+    def require_write_scope!
+      render_forbidden(FolkloreMcp::Tool::SCOPE_ERROR) unless current_actor.token.writable?
     end
 
     def render_success(data, status: :ok)

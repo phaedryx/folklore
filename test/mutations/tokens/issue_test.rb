@@ -22,3 +22,22 @@ class Tokens::IssueTest < ActiveSupport::TestCase
     assert_raises(ActiveRecord::RecordInvalid) { Tokens::Issue.mutate(user: users(:member), agent_name: " ") }
   end
 end
+
+class Tokens::IssueScopesTest < ActiveSupport::TestCase
+  test "issues a read-only token when asked" do
+    result = Tokens::Issue.mutate(user: users(:member), agent_name: "reader", scopes: %w[read])
+
+    assert_equal %w[read], result.token.reload.scopes
+  end
+
+  test "refuses no scopes and unknown scopes" do
+    assert_raises(ActiveRecord::RecordInvalid) { Tokens::Issue.mutate(user: users(:member), agent_name: "a", scopes: []) }
+    assert_raises(ActiveRecord::RecordInvalid) { Tokens::Issue.mutate(user: users(:member), agent_name: "b", scopes: %w[admin]) }
+  end
+
+  test "the read-only fixture carries only the read scope" do
+    assert_equal %w[read], tokens(:member_readonly).scopes
+    refute_predicate tokens(:member_readonly), :writable?
+    assert_predicate tokens(:member_default), :writable?
+  end
+end

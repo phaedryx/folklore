@@ -84,6 +84,17 @@ class Events::ListTest < ActiveSupport::TestCase
     assert_equal [ second, first ], Events::List.query(before_id: third.id).to_a
   end
 
+  test "a cursor id may be an integer or a string of digits, and anything else is invalid" do
+    first = record
+    second = record
+
+    assert_equal [ second ], Events::List.query(since_id: first.id.to_s).to_a
+    [ "abc", "12abc", "1.5", "-1", " ", [ 1 ] ].each do |bad|
+      assert_raises(Events::InvalidCursorError, bad.inspect) { Events::List.query(since_id: bad) }
+      assert_raises(Events::InvalidCursorError, bad.inspect) { Events::List.query(before_id: bad) }
+    end
+  end
+
   test "limit caps results and is itself capped" do
     3.times { record }
 

@@ -77,6 +77,16 @@ class ActivityFeedTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='filter-clear']"
   end
 
+  test "a non-numeric since_id or before_id redirects to the feed with an alert" do
+    %w[since_id before_id].each do |param|
+      get activity_path, params: { param => "abc", actor: "member" }
+
+      assert_redirected_to activity_path(actor: "member")
+      follow_redirect!
+      assert_select "[data-testid='flash-alert']", text: /#{param} must be a non-negative integer/
+    end
+  end
+
   test "shows the empty state when nothing matches" do
     get activity_path(actor: "ghost")
     assert_select "[data-testid='activity-empty']"
