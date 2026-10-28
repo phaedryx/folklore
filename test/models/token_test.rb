@@ -9,6 +9,15 @@ class TokenTest < ActiveSupport::TestCase
     assert_includes token.errors[:token_digest], "can't be blank"
   end
 
+  test "agent_name must be a lowercase slug and never web" do
+    %w[ping pong_2 coordinator-1 a].each do |ok|
+      assert Token.new(user: users(:member), agent_name: ok, token_digest: Token.digest(ok)).valid?, ok
+    end
+    [ "Ping", "a b", "a/b", "a.b", "web", "-x" ].each do |bad|
+      refute Token.new(user: users(:member), agent_name: bad, token_digest: Token.digest(bad)).valid?, bad
+    end
+  end
+
   test "token_digest is unique" do
     digest = Token.digest("flk_abc")
     Token.create!(user: users(:member), agent_name: "a", token_digest: digest)

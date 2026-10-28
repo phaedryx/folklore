@@ -104,6 +104,13 @@ class UserTest < ActiveSupport::TestCase
     refute users(:member).can_write_to_workspace?("other")
   end
 
+  test "authenticate_by_email finds the user case-insensitively and checks the password" do
+    assert_equal users(:member), User.authenticate_by_email(" Member@Example.com ", "member-secret")
+    assert_nil User.authenticate_by_email("member@example.com", "wrong")
+    assert_nil User.authenticate_by_email("ghost@example.com", "member-secret")
+    assert_nil User.authenticate_by_email("other@example.com", "")
+  end
+
   test "password is optional but authenticates when set" do
     user = User.create!(email: "alice@example.com", name: "Alice")
     assert_nil user.password_digest

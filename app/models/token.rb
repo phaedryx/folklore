@@ -6,7 +6,9 @@ class Token < ApplicationRecord
 
   PREFIX = "flk_".freeze
 
-  validates :agent_name, presence: true
+  validates :agent_name, presence: true,
+                         format: { with: Actor::AGENT_REGEX, message: "must be a lowercase slug" },
+                         exclusion: { in: [ Actor::WEB_AGENT ], message: "is reserved" }
   validates :token_digest, presence: true, uniqueness: true
 
   scope :active, -> { where(revoked_at: nil) }

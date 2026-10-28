@@ -15,7 +15,10 @@ module Users
 
     def mutate
       existing = User.find_by("lower(email) = ?", @email)
-      return existing if existing
+      if existing
+        existing.update!(password: @password) if existing.password_digest.blank? && @password.present?
+        return existing
+      end
 
       user = User.new(handle: @handle, email: @email, name: @name.presence || @email.split("@").first)
       user.password = @password if @password.present?

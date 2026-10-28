@@ -7,9 +7,9 @@ class SessionsController < ApplicationController
 
   # Password sign-in (single-user mode).
   def create
-    user = User.find_by("lower(email) = ?", params[:email].to_s.downcase.strip)
+    user = User.authenticate_by_email(params[:email], params[:password])
 
-    if user&.password_digest.present? && user.authenticate(params[:password].to_s)
+    if user
       sign_in(user)
       redirect_to root_path
     else

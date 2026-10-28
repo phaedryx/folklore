@@ -5,7 +5,9 @@ class AssetSerializerTest < ActiveSupport::TestCase
     token = tokens(:member_default)
     asset = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/notes", name: "a.md",
                           content: "body", content_type: "text/markdown", status: "open",
-                          stale_after: Date.new(2026, 12, 1), created_by_token: token, updated_by_token: token)
+                          stale_after: Date.new(2026, 12, 1),
+                          created_by_token: token, created_by_agent: "ping",
+                          updated_by_token: token, updated_by_agent: "pong")
     AssetTag.create!(asset:, tag: Tag.create!(name: "ruby"))
 
     data = AssetSerializer.call(asset)
@@ -23,11 +25,22 @@ class AssetSerializerTest < ActiveSupport::TestCase
     assert_equal 0, data[:version]
     assert_equal "2026-12-01", data[:stale_after]
     assert_nil data[:verified_at]
-    assert_equal({ handle: "member", agent: "default" }, data[:created_by])
-    assert_equal({ handle: "member", agent: "default" }, data[:updated_by])
+    assert_equal({ handle: "member", agent: "ping" }, data[:created_by])
+    assert_equal({ handle: "member", agent: "pong" }, data[:updated_by])
     assert_nil data[:verified_by]
     assert_nil data[:task]
     assert_match(/\A\d{4}-\d{2}-\d{2}T/, data[:created_at])
+  end
+
+  test "a web write records the owner as the actor with the web agent and no token" do
+    asset = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/notes", name: "a.md",
+                          created_by_agent: "web", verified_at: Time.current, verified_by_agent: "web")
+
+    data = AssetSerializer.call(asset)
+
+    assert_equal({ handle: "member", agent: "web" }, data[:created_by])
+    assert_equal({ handle: "member", agent: "web" }, data[:verified_by])
+    assert_nil data[:updated_by]
   end
 
   test "a task asset carries its facet" do

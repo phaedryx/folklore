@@ -7,10 +7,10 @@ namespace :folklore do
     email = ENV["FOLKLORE_ADMIN_EMAIL"].presence
     password = ENV["FOLKLORE_ADMIN_PASSWORD"].presence
 
-    if $stdin.tty?
-      handle ||= prompt("Admin handle (e.g. tad)")
-      email ||= prompt("Admin email")
-      password ||= prompt("Admin password (web sign-in)", secret: true)
+    if $stdin.tty? && ENV["CI"].blank?
+      handle ||= FolkloreAdminPrompt.prompt("Admin handle (e.g. tad)")
+      email ||= FolkloreAdminPrompt.prompt("Admin email")
+      password ||= FolkloreAdminPrompt.prompt("Admin password (web sign-in)", secret: true)
     end
 
     if handle.blank? || email.blank?
@@ -47,8 +47,10 @@ namespace :folklore do
       TEXT
     end
   end
+end
 
-  def prompt(label, secret: false)
+module FolkloreAdminPrompt
+  def self.prompt(label, secret: false)
     print "#{label}: "
     value = secret ? $stdin.noecho(&:gets) : $stdin.gets
     puts if secret

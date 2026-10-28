@@ -22,6 +22,18 @@ class ActorTest < ActiveSupport::TestCase
     assert_equal "default", Actor.for_token(tokens(:member_default), agent: nil).agent
   end
 
+  test "for_token strips the override and rejects labels that are not slugs" do
+    assert_equal "ping", Actor.for_token(tokens(:member_default), agent: " ping ").agent
+
+    [ "a/b", "notes.md", "../x", "Ping", "a b", "-x", "x" * 65 ].each do |bad|
+      assert_raises(Actor::InvalidAgentError, bad.inspect) { Actor.for_token(tokens(:member_default), agent: bad) }
+    end
+  end
+
+  test "an MCP agent cannot pose as the web actor" do
+    assert_raises(Actor::InvalidAgentError) { Actor.for_token(tokens(:member_default), agent: "web") }
+  end
+
   test "for_user has no token and the web agent" do
     actor = Actor.for_user(users(:member))
 

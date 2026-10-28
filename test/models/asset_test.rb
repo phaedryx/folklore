@@ -130,8 +130,16 @@ class AssetTest < ActiveSupport::TestCase
     end
   end
 
+  test "validate_dir! allows only url-safe segment characters and a valid handle first" do
+    assert_nothing_raised { Asset.validate_dir!("member/.hidden/a_b-c.d") }
+    [ "member/a?b", "member/a#b", "member/100%", "member/a b", "member/a\\b", "member/a\u0000b",
+      "MEMBER/notes", "m/notes", "member/é" ].each do |dir|
+      assert_raises(Asset::InvalidDirError, dir.inspect) { Asset.validate_dir!(dir) }
+    end
+  end
+
   test "validate_dir! rejects a last segment that looks like a filename" do
-    error = assert_raises(Asset::InvalidDirError) { Asset.validate_dir!("x/notes.md") }
+    error = assert_raises(Asset::InvalidDirError) { Asset.validate_dir!("member/notes.md") }
 
     assert_match(/looks like a filename/, error.message)
   end

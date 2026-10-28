@@ -13,9 +13,12 @@ class CreateAssets < ActiveRecord::Migration[8.1]
       t.date :stale_after
       t.datetime :verified_at
       t.references :verified_by_token, foreign_key: { to_table: :tokens }
+      t.string :verified_by_agent
       t.datetime :deleted_at
       t.references :created_by_token, foreign_key: { to_table: :tokens }
+      t.string :created_by_agent
       t.references :updated_by_token, foreign_key: { to_table: :tokens }
+      t.string :updated_by_agent
       t.timestamps
       t.virtual :content_tsv, type: :tsvector, as: "to_tsvector('english', coalesce(content, ''))", stored: true
 

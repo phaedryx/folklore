@@ -38,6 +38,15 @@ class Users::ProvisionTest < ActiveSupport::TestCase
     end
   end
 
+  test "an existing user without a password gets one; an existing password is never changed" do
+    user = Users::Provision.mutate(handle: "alice", email: "a@b.com", name: "Alice")
+    Users::Provision.mutate(handle: "alice", email: "a@b.com", name: "Alice", password: "first")
+    Users::Provision.mutate(handle: "alice", email: "a@b.com", name: "Alice", password: "second")
+
+    assert user.reload.authenticate("first")
+    refute user.authenticate("second")
+  end
+
   test "is idempotent on email regardless of case" do
     first = Users::Provision.mutate(handle: "alice", email: "a@b.com", name: "Alice")
     second = Users::Provision.mutate(handle: "alice2", email: "A@B.COM", name: "Other")

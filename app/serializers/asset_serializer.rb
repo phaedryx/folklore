@@ -16,17 +16,18 @@ class AssetSerializer
       version: asset.lock_version,
       stale_after: asset.stale_after&.iso8601,
       verified_at: asset.verified_at&.iso8601,
-      created_by: actor(asset.created_by_token),
-      updated_by: actor(asset.updated_by_token),
-      verified_by: actor(asset.verified_by_token),
+      created_by: actor(asset, asset.created_by_token, asset.created_by_agent),
+      updated_by: actor(asset, asset.updated_by_token, asset.updated_by_agent),
+      verified_by: actor(asset, asset.verified_by_token, asset.verified_by_agent),
       task: task(asset.task)
     }
   end
 
-  def self.actor(token)
-    return nil unless token
+  # Writes are owner-only, so a web write (no token) is the owner acting as "web".
+  def self.actor(asset, token, agent)
+    return nil if agent.nil?
 
-    { handle: token.user.handle, agent: token.agent_name }
+    { handle: (token&.user || asset.owner).handle, agent: }
   end
 
   def self.task(task)

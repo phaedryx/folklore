@@ -33,6 +33,12 @@ class SchemaTest < ActiveSupport::TestCase
     assert_equal 0, count
   end
 
+  test "assets record the acting agent for create, update and verify" do
+    %w[created_by_agent updated_by_agent verified_by_agent].each do |column|
+      assert connection.column_exists?(:assets, column), "assets.#{column} is missing"
+    end
+  end
+
   test "every phase 1 table exists" do
     %w[users tokens assets versions tags asset_tags tasks links events search_logs].each do |table|
       assert connection.table_exists?(table), "missing table #{table}"
@@ -47,7 +53,7 @@ end
 class ModelCallbackTest < ActiveSupport::TestCase
   test "no model declares a lifecycle callback" do
     offenders = Dir[Rails.root.join("app/models/**/*.rb")].select do |file|
-      File.read(file).match?(/^\s*(before|after|around)_[a-z_]+\b/)
+      File.read(file).match?(/^\s*(before|after|around)_[a-z_]+\b|dependent:/)
     end
 
     assert_empty offenders.map { |f| f.delete_prefix(Rails.root.to_s) }

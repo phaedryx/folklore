@@ -16,6 +16,18 @@ module FolkloreMcp
   class Tool < MCP::Tool
     MissingActorError = Class.new(StandardError)
 
+    # Errors a caller can act on, with the prefix their message gets. Domain
+    # modules add their own with `FolkloreMcp::Tool.user_error(klass, prefix)`.
+    USER_ERRORS = {
+      Asset::InvalidNameError => "Invalid",
+      Asset::InvalidDirError => "Invalid",
+      Asset::InvalidStaleAfterError => "Invalid",
+      Actor::InvalidAgentError => "Invalid",
+      Checkpoint::NoHandleError => "Invalid",
+      ActiveRecord::RecordNotFound => "Not found",
+      ActiveRecord::StaleObjectError => "Conflict"
+    }
+
     class << self
       def inherited(subclass)
         super
@@ -63,15 +75,21 @@ module FolkloreMcp
         super.merge(annotations: annotations_value.to_h)
       end
 
+      def user_error(klass, prefix)
+        USER_ERRORS[klass] = prefix
+      end
+
       def call(server_context: nil, **args)
         new.invoke(**args, server_context:)
       rescue MissingActorError
         failure("Unauthenticated: no actor on request")
       rescue ActiveRecord::RecordInvalid => e
         failure("Invalid: #{e.record.errors.full_messages.join(', ')}")
+      rescue *USER_ERRORS.keys => e
+        failure("#{USER_ERRORS.fetch(e.class) { USER_ERRORS.find { |k, _| e.is_a?(k) }.last }}: #{e.message}")
       rescue => e
         raise if Rails.env.test? && ENV["MCP_RAISE_ERRORS"] == "1"
-        Rails.logger.error("[MCP] #{name_value} #{e.class}: #{e.message}")
+        Rails.logger.error("[MCP] #{name_value} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
         failure("Internal error")
       end
 

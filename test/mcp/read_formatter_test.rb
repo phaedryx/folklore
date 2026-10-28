@@ -3,7 +3,7 @@ require "test_helper"
 class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
   def build(name, **attrs)
     Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/notes", name:,
-                  created_by_token: tokens(:member_default), **attrs)
+                  created_by_token: tokens(:member_default), created_by_agent: "ping", **attrs)
   end
 
   test "metadata fields are the documented set" do
@@ -23,7 +23,7 @@ class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
 
     text = FolkloreMcp::ReadFormatter.call(asset, requested: %i[content created_by tags name version])
 
-    assert_equal "name: a.md\ntags: ruby\ncreated_by: member/default\nversion: 0\n---\nbody", text
+    assert_equal "name: a.md\ntags: ruby\ncreated_by: member/ping\nversion: 0\n---\nbody", text
   end
 
   test "backlinks render as slug and location lines in text and as objects in json" do
@@ -45,7 +45,7 @@ class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
     partial = FolkloreMcp::ReadFormatter.call(asset, requested: %i[owner created_by], format: "json")
 
     assert_equal AssetSerializer.call(asset), full
-    assert_equal({ slug: asset.slug, owner: "member", created_by: { handle: "member", agent: "default" } }, partial)
+    assert_equal({ slug: asset.slug, owner: "member", created_by: { handle: "member", agent: "ping" } }, partial)
   end
 
   test "absent actors render as empty text" do

@@ -3,13 +3,13 @@ class Asset < ApplicationRecord
   belongs_to :created_by_token, class_name: "Token", optional: true
   belongs_to :updated_by_token, class_name: "Token", optional: true
   belongs_to :verified_by_token, class_name: "Token", optional: true
-  has_one :task, dependent: :destroy
-  has_many :asset_tags, dependent: :destroy
+  has_one :task
+  has_many :asset_tags
   has_many :tags, through: :asset_tags
-  has_many :versions, dependent: :destroy
-  has_many :links, foreign_key: :src_asset_id, inverse_of: :src_asset, dependent: :destroy
-  has_many :inbound_links, class_name: "Link", foreign_key: :dst_asset_id, inverse_of: :dst_asset, dependent: :nullify
-  has_many :events, dependent: :nullify
+  has_many :versions
+  has_many :links, foreign_key: :src_asset_id, inverse_of: :src_asset
+  has_many :inbound_links, class_name: "Link", foreign_key: :dst_asset_id, inverse_of: :dst_asset
+  has_many :events
 
   scope :live,       -> { where(deleted_at: nil) }
   scope :tombstoned, -> { where.not(deleted_at: nil) }
@@ -27,6 +27,9 @@ class Asset < ApplicationRecord
   # Second path segments the app owns: `<handle>/archive` is the web archive
   # page, `<handle>/state/<agent>` holds checkpoints.
   RESERVED_SEGMENTS = %w[archive state].freeze
+  # Directory segments appear in URLs and on disk when exported, so they are
+  # limited to characters that need no escaping anywhere.
+  DIR_SEGMENT_REGEX = /\A[A-Za-z0-9._-]+\z/
   KNOWN_FILE_EXTENSIONS = %w[
     md markdown txt rb py js ts jsx tsx json yml yaml toml
     html erb css scss sh fish xml csv log conf ini lock
@@ -77,6 +80,13 @@ class Asset < ApplicationRecord
     raise InvalidDirError, "path cannot contain empty segments" if segments.any?(&:empty?)
     if segments.any? { |s| s == "." || s == ".." }
       raise InvalidDirError, "path segments cannot be '.' or '..'"
+    end
+    unless segments.first.match?(User::HANDLE_REGEX)
+      raise InvalidDirError, "path must start with a workspace handle, got #{segments.first.inspect}"
+    end
+    segments.each do |segment|
+      next if segment.match?(DIR_SEGMENT_REGEX)
+      raise InvalidDirError, "path segment #{segment.inspect} may only contain letters, digits, '.', '_' and '-'"
     end
 
     last = segments.last

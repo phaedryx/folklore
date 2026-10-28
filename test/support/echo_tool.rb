@@ -22,6 +22,11 @@ module FolkloreMcpTest
       case fail_with
       when "invalid" then Tag.create!(name: nil)
       when "boom" then raise "kaboom secret details"
+      when "dir" then Asset.validate_dir!("member/../x")
+      when "stale" then Asset.parse_stale_after!("soon")
+      when "agent" then Actor.for_token(actor.token, agent: "Bad Agent")
+      when "missing" then Asset.find_by!(slug: "00000000")
+      when "conflict" then raise ActiveRecord::StaleObjectError.new(Asset.new, "update")
       end
 
       data = { message:, actor: "#{actor.handle}/#{actor.agent}" }

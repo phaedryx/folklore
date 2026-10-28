@@ -13,11 +13,19 @@ class FolkloreAdminTaskTest < ActiveSupport::TestCase
     @saved.each { |k, v| v ? ENV[k] = v : ENV.delete(k) }
   end
 
-  def run_admin(**env)
+  TTY_STDIN = Class.new(StringIO) { def tty? = true }
+
+  # Swaps $stdin so the task never waits on the real terminal, whether or not
+  # the test runner has one.
+  def run_admin(tty: false, **env)
     env.each { |k, v| ENV[k.to_s] = v }
+    original = $stdin
+    $stdin = tty ? TTY_STDIN.new : StringIO.new
     Rake::Task["folklore:admin"].reenable
     out, = capture_io { Rake::Task["folklore:admin"].invoke }
     out
+  ensure
+    $stdin = original
   end
 
   test "provisions the admin and prints a token with the mcp config snippet" do
@@ -40,6 +48,23 @@ class FolkloreAdminTaskTest < ActiveSupport::TestCase
     assert_equal 1, User.find_by!(email: "tad@example.com").tokens.count
     refute_match(/flk_[1-9A-HJ-NP-Za-km-z]{32}/, out)
     assert_match(/already/, out)
+  end
+
+  test "with a terminal but CI set it does not prompt" do
+    ENV["CI"] = "1"
+    out = run_admin(tty: true)
+
+    assert_match(/FOLKLORE_ADMIN_HANDLE/, out)
+    assert_equal 2, User.count
+  ensure
+    ENV.delete("CI")
+  end
+
+  test "a second run adds a password to an admin provisioned without one" do
+    run_admin(FOLKLORE_ADMIN_HANDLE: "tad", FOLKLORE_ADMIN_EMAIL: "tad@example.com")
+    run_admin(FOLKLORE_ADMIN_HANDLE: "tad", FOLKLORE_ADMIN_EMAIL: "tad@example.com", FOLKLORE_ADMIN_PASSWORD: "later")
+
+    assert User.find_by!(email: "tad@example.com").authenticate("later")
   end
 
   test "with no env and no terminal it explains and does nothing" do

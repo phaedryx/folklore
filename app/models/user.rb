@@ -1,6 +1,8 @@
 class User < ApplicationRecord
-  has_many :tokens, dependent: :destroy
-  has_many :assets, foreign_key: :owner_id, inverse_of: :owner, dependent: :restrict_with_exception
+  # No association cleanup options anywhere: they are destroy callbacks in
+  # disguise, and the database foreign keys already refuse to orphan rows.
+  has_many :tokens
+  has_many :assets, foreign_key: :owner_id, inverse_of: :owner
 
   has_secure_password validations: false
 
@@ -8,6 +10,10 @@ class User < ApplicationRecord
   EMAIL_REGEX = /\A[^@\s]+@[^@\s]+\z/
 
   RESERVED_HANDLES = %w[mcp api auth assets rails settings sign_in sign_out].freeze
+
+  # A bcrypt hash of a random string, compared against when no user (or no
+  # password) matches, so an unknown email costs the same as a wrong password.
+  DUMMY_PASSWORD_DIGEST = BCrypt::Password.create(SecureRandom.hex(16), cost: BCrypt::Engine.cost).freeze
 
   validates :email, presence: true,
                     format: { with: EMAIL_REGEX },
@@ -21,6 +27,17 @@ class User < ApplicationRecord
 
   validate :email_unchanged, on: :update
   validate :handle_unchanged_once_set, on: :update
+
+  # Password sign-in: case-insensitive on email, constant-time on failure.
+  def self.authenticate_by_email(email, password)
+    user = find_by("lower(email) = ?", email.to_s.downcase.strip)
+    if user&.password_digest.present?
+      user.authenticate(password.to_s) || nil
+    else
+      BCrypt::Password.new(DUMMY_PASSWORD_DIGEST).is_password?(password.to_s)
+      nil
+    end
+  end
 
   # Writes to a workspace belong to the user whose handle heads its path.
   def can_write_to_workspace?(handle)

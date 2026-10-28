@@ -67,6 +67,16 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     assert_equal "Internal error", text_of(response)
   end
 
+  test "domain input errors are reported with their message, not as Internal error" do
+    { "dir" => /\AInvalid: path segments cannot be/, "stale" => /\AInvalid: stale_after must be/,
+      "agent" => /\AInvalid: agent/, "missing" => /\ANot found/, "conflict" => /\AConflict/ }.each do |mode, pattern|
+      response = Echo.call(message: "hi", fail_with: mode, server_context: actor_context)
+
+      assert response.to_h[:isError], mode
+      assert_match pattern, text_of(response), mode
+    end
+  end
+
   test "an unexpected exception re-raises when MCP_RAISE_ERRORS is set" do
     ENV["MCP_RAISE_ERRORS"] = "1"
     assert_raises(RuntimeError) { Echo.call(message: "hi", fail_with: "boom", server_context: actor_context) }
