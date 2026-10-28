@@ -66,4 +66,11 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
     assert response.to_h[:isError]
     assert_match(/\AInvalid: since/, text_of(response))
   end
+
+  test "activity rejects a non-numeric since_id" do
+    response = Activity.call(since_id: "abc", server_context: actor_context)
+
+    assert response.to_h[:isError]
+    assert_equal "Invalid: since_id must be a non-negative integer, got \"abc\"", text_of(response)
+  end
 end
