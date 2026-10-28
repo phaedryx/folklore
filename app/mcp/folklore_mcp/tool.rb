@@ -131,6 +131,15 @@ module FolkloreMcp
       Actor.for_token(actor.token, agent:)
     end
 
+    # Marks a recent search as answered by this read (see SearchLogs::Follow).
+    # This is the one write a read-only tool makes, and it is telemetry: a
+    # failure is logged and never fails the read.
+    def follow_search(actor, asset)
+      SearchLogs::Follow.mutate(actor:, slug: asset.slug)
+    rescue ActiveRecord::ActiveRecordError => e
+      Rails.logger.warn("[MCP] search log follow failed: #{e.class}: #{e.message}")
+    end
+
     def text_response(text, data: nil)
       respond(format: "text", text:, data:)
     end

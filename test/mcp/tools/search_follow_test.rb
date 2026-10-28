@@ -1,0 +1,53 @@
+require "test_helper"
+
+# A read of a search result marks the search as answered, so the search log
+# can grow the eval set. Wired into read and read_path.
+class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
+  setup { ENV["FOLKLORE_SEARCH_LOG"] = "1" }
+  teardown { ENV.delete("FOLKLORE_SEARCH_LOG") }
+
+  def search_for_needle
+    asset = ::Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "needle.md", content: "haystack")
+    FolkloreMcp::Tools::Search::Search.call(q: "haystack", server_context: actor_context)
+    asset
+  end
+
+  test "read of a search result follows the search" do
+    asset = search_for_needle
+
+    response = FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context)
+
+    refute response.to_h[:isError]
+    assert_equal asset.slug, SearchLog.sole.followed_slug
+  end
+
+  test "read_path of a search result follows the search" do
+    asset = search_for_needle
+
+    FolkloreMcp::Tools::Assets::ReadPath.call(location: asset.location, server_context: actor_context)
+
+    assert_equal asset.slug, SearchLog.sole.followed_slug
+  end
+
+  test "a failed read follows nothing" do
+    search_for_needle
+
+    FolkloreMcp::Tools::Assets::Read.call(slug: "zzzzzzzz", server_context: actor_context)
+
+    assert_nil SearchLog.sole.followed_slug
+  end
+
+  test "a search-log failure does not fail the read" do
+    asset = search_for_needle
+
+    SearchLogs::Follow.singleton_class.alias_method(:original_mutate, :mutate)
+    SearchLogs::Follow.define_singleton_method(:mutate) { |**| raise ActiveRecord::StatementInvalid, "boom" }
+
+    response = FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context)
+
+    refute response.to_h[:isError]
+    assert_equal "haystack", text_of(response)
+  ensure
+    SearchLogs::Follow.singleton_class.alias_method(:mutate, :original_mutate)
+  end
+end

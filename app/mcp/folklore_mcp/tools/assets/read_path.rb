@@ -29,6 +29,7 @@ module FolkloreMcp
           asset = ::Assets::ReadByPath.query(location:, path:, name:, actor:)
           requested = Array(with).map(&:to_sym) & READ_FIELDS
 
+          follow_search(actor, asset)
           rendered = ReadFormatter.render(asset, requested:)
           respond(format:, text: rendered.text, data: rendered.data)
         end

@@ -27,6 +27,7 @@ module FolkloreMcp
           asset = ::Assets::Read.query(slug:, actor:)
           requested = READ_FIELDS.select { |field| flags[field] }
 
+          follow_search(actor, asset)
           rendered = ReadFormatter.render(asset, requested:)
           respond(format:, text: rendered.text, data: rendered.data)
         end
