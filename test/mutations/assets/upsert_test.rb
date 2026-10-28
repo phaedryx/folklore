@@ -28,6 +28,19 @@ class Assets::UpsertTest < ActiveSupport::TestCase
     assert_equal %w[ruby], existing.tags.pluck(:name)
   end
 
+  test "an upsert that matches what is stored returns the asset and writes nothing" do
+    existing = Assets::Create.mutate(actor: @actor, path: "member/notes", name: "u.md", content: "same", tags: %w[shell])
+
+    result = assert_no_difference -> { Event.count } do
+      upsert(content: "same", tags: %w[shell])
+    end
+
+    refute result.created
+    assert_equal existing.id, result.asset.id
+    assert_equal 0, existing.reload.lock_version
+    assert_empty existing.versions
+  end
+
   test "tags: nil on update leaves tags alone" do
     Assets::Create.mutate(actor: @actor, path: "member/notes", name: "u.md", content: "v1", tags: %w[shell])
 
