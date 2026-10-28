@@ -1,3 +1,5 @@
+require "marcel"
+
 class Asset < ApplicationRecord
   belongs_to :owner, class_name: "User"
   belongs_to :created_by_token, class_name: "Token", optional: true
@@ -61,6 +63,16 @@ class Asset < ApplicationRecord
       scope = scope.where(id: AssetTag.where(tag_id: tag.id).select(:asset_id))
     end
     scope
+  end
+
+  def self.sha256(content)
+    content.nil? ? nil : Digest::SHA256.hexdigest(content)
+  end
+
+  # The MIME type a name implies, with text/plain for anything unrecognised.
+  def self.infer_content_type(name)
+    detected = Marcel::MimeType.for("", name:)
+    detected == "application/octet-stream" ? "text/plain" : detected
   end
 
   def self.validate_name!(name)
