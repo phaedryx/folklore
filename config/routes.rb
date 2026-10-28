@@ -11,5 +11,9 @@ Rails.application.routes.draw do
   match  "/auth/:provider/callback" => "sessions#callback", as: :auth_callback, via: %i[get post]
   get    "/auth/failure"            => "sessions#failure"
 
+  namespace :api, defaults: { format: :json } do
+    resources :assets, only: %i[index show create update destroy], param: :slug
+  end
+
   root "home#index"
 end
