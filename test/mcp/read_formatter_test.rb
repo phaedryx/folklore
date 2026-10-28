@@ -7,7 +7,7 @@ class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
   end
 
   test "metadata fields are the documented set" do
-    assert_equal %i[name path content_type status owner tags created_at updated_at backlinks created_by updated_by verified_by version],
+    assert_equal %i[name path content_type kind status owner tags created_at updated_at backlinks created_by updated_by verified_by version],
                  FolkloreMcp::ReadFormatter::METADATA_FIELDS
   end
 

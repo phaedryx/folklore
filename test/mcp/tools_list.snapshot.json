@@ -1,7 +1,7 @@
 [
   {
     "name": "activity",
-    "description": "Recent activity across the store, newest first. Filter by actor (a handle, or handle/agent), tag, and since/before timestamps (ISO 8601). Pass since_id to read forward from a cursor instead: events after that id, oldest first.",
+    "description": "Recent activity across the store, newest first (50 by default). Filter by actor (a handle, handle/agent, or email), tag, and since/before timestamps (ISO 8601 or a plain date and time). Pass since_id to read forward from a cursor instead: events after that id, oldest first.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -357,6 +357,10 @@
                   "null",
                   "string"
                 ]
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
               },
               "status": {
                 "type": [
@@ -1114,7 +1118,7 @@
   },
   {
     "name": "read",
-    "description": "Read an asset by slug. With no flags it returns the raw content (default).\nRequest metadata fields individually with boolean flags — any combination of\nname, path, content_type, status, owner, tags, created_at, updated_at, backlinks,\ncreated_by, updated_by, verified_by, version — and only those fields are returned.\nAdd content: true to include the body alongside the requested metadata. Pass\nformat: \"json\" for structured output (full asset when no flags; selected fields\nwhen flags are set). Returns Not found for unknown or archived assets.",
+    "description": "Read an asset by slug. With no flags it returns the raw content (default).\nRequest metadata fields individually with boolean flags — any combination of\nname, path, content_type, kind, status, owner, tags, created_at, updated_at, backlinks,\ncreated_by, updated_by, verified_by, version — and only those fields are returned.\nAdd content: true to include the body alongside the requested metadata. Pass\nformat: \"json\" for structured output (full asset when no flags; selected fields\nwhen flags are set). Returns Not found for unknown or archived assets.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1146,6 +1150,12 @@
           }
         },
         "content_type": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "kind": {
           "type": "boolean",
           "not": {
             "type": "null"
@@ -1240,6 +1250,10 @@
             "null",
             "string"
           ]
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
         },
         "status": {
           "type": [
@@ -1411,7 +1425,7 @@
   },
   {
     "name": "read_path",
-    "description": "Read an asset by location instead of slug. Provide either location (full path\nincluding filename, e.g. \"member/notes/plan.md\") or path + name (directory + leaf).\nPass format: \"json\" for structured output. Optionally pass with: an array of fields\nto return (content, name, path, content_type, status, owner, tags, created_at,\nupdated_at, backlinks, created_by, updated_by, verified_by, version) — omit with for\nraw content (text) or the full asset (json). Returns Not found for unknown or\narchived assets.",
+    "description": "Read an asset by location instead of slug. Provide either location (full path\nincluding filename, e.g. \"member/notes/plan.md\") or path + name (directory + leaf).\nPass format: \"json\" for structured output. Optionally pass with: an array of fields\nto return (content, name, path, content_type, kind, status, owner, tags, created_at,\nupdated_at, backlinks, created_by, updated_by, verified_by, version) — omit with for\nraw content (text) or the full asset (json). Returns Not found for unknown or\narchived assets.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1464,6 +1478,10 @@
             "null",
             "string"
           ]
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
         },
         "status": {
           "type": [

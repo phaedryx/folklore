@@ -62,5 +62,7 @@ class AssetSerializerTest < ActiveSupport::TestCase
 
     assert_equal "pending", AssetSerializer.call(task_asset)[:status]
     assert_equal "open", AssetSerializer.call(note)[:status]
+    assert_equal "task", AssetSerializer.call(task_asset)[:kind]
+    assert_equal "note", AssetSerializer.call(note)[:kind]
   end
 end

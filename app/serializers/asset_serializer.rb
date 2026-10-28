@@ -16,6 +16,7 @@ class AssetSerializer
       name: asset.name,
       content: asset.content,
       content_type: asset.content_type,
+      kind: asset.task ? "task" : "note",
       status: status(asset),
       owner_handle: asset.owner.handle,
       path: asset.dir,

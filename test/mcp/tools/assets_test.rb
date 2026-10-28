@@ -403,6 +403,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
 
     assert_equal({ pending.slug => "pending", held.slug => "in_progress" }, statuses)
     assert_equal "status: pending", text_of(Tools::Read.call(slug: pending.slug, status: true, server_context: ctx))
+    assert_equal "kind: task\nstatus: pending", text_of(Tools::Read.call(slug: pending.slug, kind: true, status: true, server_context: ctx))
   end
 
   test "an argument a tool does not take is refused as invalid, not an internal error" do

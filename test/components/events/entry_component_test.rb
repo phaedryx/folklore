@@ -34,4 +34,20 @@ class Events::EntryComponentTest < ViewComponent::TestCase
 
     assert_selector "[data-testid='activity-detail-#{event.id}']", text: "shell"
   end
+
+  test "reads a renewal, an expired lease and a cleared review date as such" do
+    asset = create_asset(name: "t.md")
+    renewal = Events::Record.mutate(actor: web_actor, asset:, action: "task_claimed",
+                                    metadata: { "lease_until" => "2026-10-28T16:00:00Z", "renewal" => true })
+    expired = Events::Record.mutate(actor: web_actor, asset:, action: "task_lease_expired",
+                                    metadata: { "claimed_by" => "member/ping", "lease_until" => "2026-10-28T15:00:00Z" })
+    cleared = Events::Record.mutate(actor: web_actor, asset:, action: "asset_review_scheduled", metadata: { "stale_after" => nil })
+
+    assert_equal "renewal · lease until 2026-10-28T16:00:00Z", Events::Detail.call(renewal)
+    assert_equal "member/ping's lease ended 2026-10-28T15:00:00Z", Events::Detail.call(expired)
+    assert_equal "review after: cleared", Events::Detail.call(cleared)
+
+    render_inline Events::EntryComponent.new(event: expired)
+    assert_selector "[data-testid='activity-detail-#{expired.id}']", text: "member/ping's lease ended"
+  end
 end
