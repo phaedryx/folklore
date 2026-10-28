@@ -44,7 +44,7 @@ class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
     full = FolkloreMcp::ReadFormatter.call(asset, requested: [], format: "json")
     partial = FolkloreMcp::ReadFormatter.call(asset, requested: %i[owner created_by], format: "json")
 
-    assert_equal AssetSerializer.call(asset), full
+    assert_equal Assets::Serializer.call(asset), full
     assert_equal({ slug: asset.slug, owner: "member", created_by: { handle: "member", agent: "ping" } }, partial)
   end
 

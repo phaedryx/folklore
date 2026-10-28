@@ -14,7 +14,7 @@ module FolkloreMcp
 
       # "handle/agent" of the task's current claimer, or nil.
       def self.claimed_by(task)
-        "#{task.claimed_by_user.handle}/#{task.claimed_by_agent}" if task.claimed_by_user
+        Actor.label(task.claimed_by_user.handle, task.claimed_by_agent) if task.claimed_by_user
       end
     end
   end

@@ -41,7 +41,7 @@ module FolkloreMcp
               action: event.action, slug: event.asset&.slug, metadata: event.metadata }
           end
           lines = rows.map do |row|
-            who = row[:actor] ? "#{row[:actor][:handle]}/#{row[:actor][:agent]}" : "?"
+            who = row[:actor] ? Actor.label(row[:actor][:handle], row[:actor][:agent]) : "?"
             "#{row[:created_at]}  #{who}  #{row[:action]}  #{row[:slug] || '—'}"
           end
           # The detail goes after the four columns, so a parser of those still works.

@@ -1,6 +1,6 @@
 require "test_helper"
 
-# A list serialized with AssetSerializer touches the owner, tags, the
+# A list serialized with Assets::Serializer touches the owner, tags, the
 # creating/updating/verifying tokens' users and the task's claimer. These
 # pin that the number of queries does not grow with the number of rows.
 class SerializedListQueriesTest < ActionDispatch::IntegrationTest

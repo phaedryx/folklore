@@ -63,7 +63,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
 
     refute response.to_h[:isError], response.to_h.inspect
     assert_equal "body", JSON.parse(text_of(response))["content"]
-    assert_equal AssetSerializer.call(asset), structured(response)
+    assert_equal Assets::Serializer.call(asset), structured(response)
   end
 
   test "read with metadata flags returns those fields in order, then the body after a separator" do

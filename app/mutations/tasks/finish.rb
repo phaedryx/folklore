@@ -46,7 +46,7 @@ module Tasks
     end
 
     def refusal(task)
-      you = "#{@actor.handle}/#{@actor.agent}"
+      you = @actor.label
       case task.status
       when "pending" then "#{@slug} is not claimed; claim it before finishing it"
       when "in_progress" then "#{@slug} is claimed by #{Tasks.label(task.claimed_by_user_id, task.claimed_by_agent)}, not #{you}"
