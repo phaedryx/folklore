@@ -55,7 +55,7 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
     end
   end
 
-  test "the holder re-claiming renews the lease without a second event or attempt" do
+  test "the holder re-claiming renews the lease with a renewal event and no new attempt" do
     asset = add("task.md")
     claim(asset, actor: @ping, lease_seconds: 60)
 
@@ -64,7 +64,9 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
     assert_equal "in_progress", renewed.task.status
     assert_in_delta 90.seconds.from_now, renewed.task.lease_until, 5.seconds
     assert_equal 1, renewed.task.attempts
-    assert_equal [ "task_added", "task_claimed" ], actions(asset)
+    assert_equal [ "task_added", "task_claimed", "task_claimed" ], actions(asset)
+    renewal = Event.where(asset_id: asset.id, action: "task_claimed").order(:id).last
+    assert_equal({ "lease_until" => renewed.task.lease_until.iso8601, "renewal" => true }, renewal.metadata)
   end
 
   # Review Focus 1: two agents on one token are two claimers.
@@ -106,14 +108,14 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
     assert_equal({ "claimed_by" => "member/ping", "lease_until" => expired_at.iso8601 }, expired.metadata)
   end
 
-  test "the holder re-claiming its own expired lease just renews it" do
+  test "the holder re-claiming its own expired lease renews it, not a takeover" do
     asset = add("task.md")
     claim(asset, actor: @ping, lease_seconds: 1)
 
     travel(2.seconds) { claim(asset, actor: @ping) }
 
     assert_equal 1, asset.task.reload.attempts
-    assert_equal [ "task_added", "task_claimed" ], actions(asset)
+    assert_equal [ "task_added", "task_claimed", "task_claimed" ], actions(asset)
   end
 
   test "a finished task cannot be claimed" do
@@ -191,6 +193,12 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
 
     assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog") }
     assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/empty") }
+  end
+
+  test "a trailing slash on path_prefix still finds the directory's tasks" do
+    add("one.md", path: "member/backlog")
+
+    assert_equal "one.md", Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog/").name
   end
 
   test "requires a slug or a path_prefix" do

@@ -28,7 +28,7 @@ module Tasks
     def initialize(actor:, slug:, path_prefix:, tags:, lease_seconds:)
       @actor = actor
       @slug = slug.presence
-      @path_prefix = path_prefix.presence
+      @path_prefix = path_prefix.to_s.delete_suffix("/").presence
       @tags = Array(tags)
       @lease_seconds = lease_seconds.nil? ? DEFAULT_LEASE_SECONDS : lease_seconds
     end
@@ -102,7 +102,13 @@ module Tasks
     def record_events(asset, prev)
       held_before = prev.prev_status == "in_progress"
       renewal = held_before && prev.prev_user_id == @actor.user.id && prev.prev_agent == @actor.agent
-      return if renewal
+      metadata = { "lease_until" => asset.task.reload.lease_until.iso8601 }
+
+      if renewal
+        # Not a new attempt, but the lease moved: the log shows every extension.
+        Events::Record.mutate(actor: @actor, asset:, action: "task_claimed", metadata: metadata.merge("renewal" => true))
+        return
+      end
 
       if held_before
         Events::Record.mutate(actor: @actor, asset:, action: "task_lease_expired", metadata: {
@@ -110,8 +116,7 @@ module Tasks
           "lease_until" => prev.prev_lease_until.in_time_zone.iso8601
         })
       end
-      Events::Record.mutate(actor: @actor, asset:, action: "task_claimed",
-                            metadata: { "lease_until" => (asset.task.reload.lease_until).iso8601 })
+      Events::Record.mutate(actor: @actor, asset:, action: "task_claimed", metadata:)
     end
 
     def unavailable(asset)

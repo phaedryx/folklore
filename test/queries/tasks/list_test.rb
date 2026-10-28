@@ -107,4 +107,10 @@ class Tasks::ListTest < ActiveSupport::TestCase
 
     assert_equal [ "h.md" ], names(path_prefix: "member/multi-word-path")
   end
+
+  test "a trailing slash on path_prefix still lists the directory's tasks" do
+    add("one.md", path: "member/backlog")
+
+    assert_equal [ "one.md" ], names(path_prefix: "member/backlog/")
+  end
 end

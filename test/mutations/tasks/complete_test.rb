@@ -93,6 +93,15 @@ class Tasks::CompleteTest < ActiveSupport::TestCase
     assert_equal "done", asset.task.reload.status
   end
 
+  test "a holder whose expired lease was reclaimed is a wrong claimer" do
+    asset = Tasks::Add.mutate(actor: @member, path: "member/inbox", name: "c9.md", content: "")
+    Tasks::Claim.mutate(actor: @ping, slug: asset.slug, lease_seconds: 1)
+    travel(2.seconds) { Tasks::Claim.mutate(actor: @pong, slug: asset.slug) }
+
+    assert_raises(Tasks::WrongClaimerError) { complete(asset) }
+    assert_equal "done", complete(asset, actor: @pong).task.status
+  end
+
   test "raises NotATaskError for a note and NotFoundError for an unknown slug" do
     note = Assets::Create.mutate(actor: @member, path: "member/notes", name: "n.md", content: "")
 
