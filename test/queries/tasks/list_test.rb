@@ -113,4 +113,15 @@ class Tasks::ListTest < ActiveSupport::TestCase
 
     assert_equal [ "one.md" ], names(path_prefix: "member/backlog/")
   end
+
+  test "preloads the claimer without joining tags into the row set" do
+    task = add("tagged.md", tags: %w[a b c])
+    Tasks::Claim.mutate(actor: @actor, slug: task.slug)
+
+    relation = Tasks::List.query(path_prefix: "member", status: "all")
+    assert_not relation.eager_loading?, "includes on a joined table turns into one wide JOIN"
+    found = relation.to_a
+    assert_equal [ task ], found
+    assert found.first.task.association(:claimed_by_user).loaded?
+  end
 end

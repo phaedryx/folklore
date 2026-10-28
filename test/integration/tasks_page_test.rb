@@ -66,6 +66,14 @@ class TasksPageTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='flash-alert']", text: /status must be one of/
   end
 
+  test "shows at most a page of tasks and says when there are more" do
+    (TasksController::LIMIT + 1).times { |i| add_task(format("t%03d.md", i)) }
+
+    get tasks_path
+    assert_select "[data-testid^='task-row-']", count: TasksController::LIMIT
+    assert_select "[data-testid='tasks-truncated']"
+  end
+
   test "requires sign in" do
     delete sign_out_path
     get tasks_path

@@ -23,4 +23,9 @@
   <div data-testid="tasks-list">
     <%= render Tasks::ListComponent.new(tasks: @tasks) %>
   </div>
+  <% if @truncated %>
+    <p data-testid="tasks-truncated" class="mt-4 text-sm text-surface-700">
+      Showing the oldest <%= TasksController::LIMIT %>. Pick a status or tags to narrow the list.
+    </p>
+  <% end %>
 <% end %>

@@ -8,7 +8,7 @@ module Tasks
       status = status.to_s.presence || "pending"
       raise InvalidStatusError, "status must be one of #{LIST_STATUSES.join(', ')}, got #{status.inspect}" unless LIST_STATUSES.include?(status)
 
-      scope = Asset.live.joins(:task).under_dir(path_prefix.to_s.delete_suffix("/")).includes(:task, :tags, :owner).order(:created_at, :id)
+      scope = Asset.live.joins(:task).under_dir(path_prefix.to_s.delete_suffix("/")).preload(:tags, :owner, task: :claimed_by_user).order(:created_at, :id)
       scope = scope.where(tasks: { status: }) unless status == "all"
       scope.tagged_with(tags)
     end
