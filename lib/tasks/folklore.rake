@@ -57,3 +57,10 @@ module FolkloreAdminPrompt
     value.to_s.strip.presence
   end
 end
+
+namespace :folklore do
+  desc "Run the search eval against a queries YAML (argument or FOLKLORE_EVAL_QUERIES)"
+  task :search_eval, [ :queries_path ] => :environment do |_t, args|
+    SearchEval::Runner.call(args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"])
+  end
+end
