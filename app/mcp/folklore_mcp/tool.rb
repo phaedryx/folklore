@@ -43,10 +43,12 @@ module FolkloreMcp
         @registered_tools ||= []
       end
 
+      # Closed: an argument the schema does not name is refused by the gem as
+      # `Invalid arguments: ...` before the tool runs.
       def input_schema(value = NOT_SET, &block)
         return super(value) unless block
 
-        super(json_schema_from(block))
+        super(json_schema_from(block).merge(additionalProperties: false))
       end
 
       def output_schema(value = NOT_SET, &block)
@@ -83,6 +85,9 @@ module FolkloreMcp
       def call(server_context: nil, **args)
         return failure(SCOPE_ERROR) unless scope_allows?(server_context)
 
+        unknown = unknown_arguments(args)
+        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}") if unknown.any?
+
         new.invoke(**args, server_context:)
       rescue MissingActorError
         failure("Unauthenticated: no actor on request")
@@ -105,6 +110,16 @@ module FolkloreMcp
 
         token = server_context && (server_context[:actor] || server_context["actor"])&.token
         token.nil? || token.writable?
+      end
+
+      # The transport already refuses these against the closed schema; this
+      # covers callers that reach `call` directly, so an unknown keyword is
+      # never an ArgumentError reported as "Internal error".
+      def unknown_arguments(args)
+        properties = input_schema_value&.to_h&.dig(:properties)
+        return [] unless properties
+
+        args.keys.map(&:to_s) - properties.keys.map(&:to_s)
       end
 
       def failure(text)

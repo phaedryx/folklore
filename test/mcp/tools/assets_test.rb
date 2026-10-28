@@ -373,4 +373,31 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_match(/\AInvalid: #{asset.slug} is a task/, text_of(Tools::SetStatus.call(slug: asset.slug, status: "done", server_context: ctx)))
     assert_equal "Not found: 00000000", text_of(Tools::SetStatus.call(slug: "00000000", status: "done", server_context: ctx))
   end
+
+  # The ping skill picks its next task this way: bulk_read in json without
+  # content, then the first entry whose status is in_progress or pending.
+  test "bulk_read json reports a task's lifecycle state as its status" do
+    pending = ::Tasks::Add.mutate(actor: actor_for(:member_default), path: "member/queue", name: "one.md", content: "x")
+    held = ::Tasks::Add.mutate(actor: actor_for(:member_default), path: "member/queue", name: "two.md", content: "y")
+    ::Tasks::Claim.mutate(actor: actor_for(:member_default, agent: "ping"), slug: held.slug)
+
+    response = Tools::BulkRead.call(slugs: [ pending.slug, held.slug ], include_content: false, format: "json", server_context: ctx)
+    statuses = JSON.parse(text_of(response))["assets"].to_h { |asset| [ asset["slug"], asset["status"] ] }
+
+    assert_equal({ pending.slug => "pending", held.slug => "in_progress" }, statuses)
+    assert_equal "status: pending", text_of(Tools::Read.call(slug: pending.slug, status: true, server_context: ctx))
+  end
+
+  test "an argument a tool does not take is refused as invalid, not an internal error" do
+    asset = create("extra.md", content: "x")
+
+    %w[read verify].each do |name|
+      tool = FolkloreMcp.tool_classes.find { |klass| klass.name_value == name }
+      response = tool.call(slug: asset.slug, agent: "ping", server_context: ctx)
+
+      assert response.to_h[:isError], "#{name} accepted an unknown argument"
+      assert_equal "Invalid: unknown argument agent", text_of(response)
+    end
+    assert_nil asset.reload.verified_at
+  end
 end

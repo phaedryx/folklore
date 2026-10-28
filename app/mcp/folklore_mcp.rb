@@ -20,9 +20,10 @@ module FolkloreMcp
     verification is recorded separately from edits. Use `search` with
     `stale: true` to find assets whose review date has passed.
 
-    You act as the agent named by your token. The checkpoint and task tools
-    accept an optional `agent` argument when several agents share one token,
-    so each keeps its own checkpoint and task claims.
+    You act as the agent named by your token. When several agents share one
+    token, pass your own `agent` to `get_last_session`, `update_last_session`,
+    `claim_task`, `complete_task` and `fail_task`, so each keeps its own
+    checkpoint and task claims. No other tool takes `agent`.
   TEXT
 
   def self.tool_classes

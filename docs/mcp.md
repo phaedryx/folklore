@@ -66,6 +66,8 @@ Errors come back with `isError: true` and one of these prefixes:
 | `Forbidden: ...` | Not your workspace, or the token lacks the write scope |
 | `Conflict: <slug> is at version N` | `update` got an `expected_version` that is out of date |
 | `Invalid: ...` | A bad argument: path, name, date, agent, cursor, content over 1 MiB, ... |
+| `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type |
+| `Missing required arguments: ...` | A required argument was left out |
 | `Already claimed: ...`, `Wrong claimer: ...`, `No pending task: ...`, `Not a task: ...` | Task queue outcomes, see [tasks.md](tasks.md) |
 | `Unauthenticated: ...` | No actor on the request |
 | `Internal error` | Anything unexpected. The details go to the server log, never to the client. |
@@ -80,6 +82,8 @@ description, schemas and annotations. In brief:
 - `read(slug)` returns the raw content. Boolean flags (`name`, `path`, `content_type`, `status`, `owner`, `tags`,
   `created_at`, `updated_at`, `backlinks`, `created_by`, `updated_by`, `verified_by`, `version`) return just those
   fields; add `content: true` for the body as well. `backlinks` lists the live assets that link here with `[[slug]]`.
+  `status` is a task's state (`pending`, `in_progress`, ...) for a task and the note status otherwise; the same holds
+  for `status` in `bulk_read` and the JSON API.
   `version` is the counter that `update(expected_version:)` checks.
 - `read_path(location)` or `read_path(path, name)` does the same by address, with `with: [...]` in place of the flags.
 - `bulk_read(slugs, locations)` reads many in one call under a `max_bytes` budget (default 100 000). A key that fails is

@@ -105,6 +105,18 @@ class Assets::SearchTest < ActiveSupport::TestCase
     assert_equal %w[done-note.md], results.map(&:name)
   end
 
+  test "status also matches a task's lifecycle state, as the single status field did" do
+    pending = build("pending-task.md", content: "rails work")
+    done_task = build("done-task.md", content: "rails work")
+    build("done-note.md", content: "rails work", status: "done")
+    build("open-note.md", content: "rails work", status: "open")
+    Task.create!(asset: pending, status: "pending")
+    Task.create!(asset: done_task, status: "done")
+
+    assert_equal %w[pending-task.md], Assets::Search.query(query: "rails", status: "pending").map(&:name)
+    assert_equal %w[done-note.md done-task.md], Assets::Search.query(query: "rails", status: "done").map(&:name).sort
+  end
+
   test "task_status filter restricts to tasks in that lifecycle state" do
     pending = build("pending-task.md", content: "rails work")
     done = build("done-task.md", content: "rails work")

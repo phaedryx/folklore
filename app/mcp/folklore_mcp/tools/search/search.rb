@@ -15,7 +15,8 @@ module FolkloreMcp
                             sort: nil, limit: nil, offset: 0, include_versions: false }.freeze
 
         description "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. " \
-                    "Filter by note status, by task_status (pending|in_progress|done|failed|cancelled), or exclude " \
+                    "Filter by status (a note's open|done or a task's pending|in_progress|done|failed|cancelled), by " \
+                    "task_status (tasks only), or exclude " \
                     "assets having ANY of exclude_tags (e.g. tagged X but not done). " \
                     "Pass stale: true for assets whose stale_after review date has passed (false for the rest; " \
                     "assets with no review date are never stale). " \

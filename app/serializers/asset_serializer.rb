@@ -16,7 +16,7 @@ class AssetSerializer
       name: asset.name,
       content: asset.content,
       content_type: asset.content_type,
-      status: asset.status,
+      status: status(asset),
       owner_handle: asset.owner.handle,
       path: asset.dir,
       dir: asset.dir,
@@ -32,6 +32,12 @@ class AssetSerializer
       verified_by: actor(asset, asset.verified_by_token, asset.verified_by_agent),
       task: task(asset.task)
     }
+  end
+
+  # One `status` field for callers that predate the tasks facet: a task's
+  # lifecycle state, otherwise the note status. `task` keeps the detail.
+  def self.status(asset)
+    asset.task ? asset.task.status : asset.status
   end
 
   # Writes are owner-only, so a web write (no token) is the owner acting as "web".
