@@ -1,0 +1,2320 @@
+[
+  {
+    "name": "activity",
+    "description": "Recent activity across the store, newest first. Filter by actor (a handle, or handle/agent), tag, and since/before timestamps (ISO 8601). Pass since_id to read forward from a cursor instead: events after that id, oldest first.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "since": {
+          "type": "string",
+          "minLength": 1
+        },
+        "before": {
+          "type": "string",
+          "minLength": 1
+        },
+        "since_id": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "limit": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "not": {
+                  "type": "null"
+                }
+              },
+              "created_at": {
+                "type": "string",
+                "minLength": 1
+              },
+              "actor": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              },
+              "slug": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "metadata": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "created_at",
+              "actor",
+              "action",
+              "slug",
+              "metadata"
+            ]
+          }
+        }
+      },
+      "required": [
+        "events"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "add_tag",
+    "description": "Attach a tag to an asset by slug. Creates the tag if it doesn't exist. Normalizes the name to lowercase.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "tag"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "tag",
+        "tags"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "add_task",
+    "description": "Create a new task at the given path, status 'pending'. 'path' is the DIRECTORY only and must be under your own workspace; 'name' is the leaf. Tags pass through as given. Claim it with claim_task, finish it with complete_task or fail_task.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "content_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "path",
+        "name"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "status"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "append",
+    "description": "Append text to an existing asset by slug, on a new line. Snapshots prior content into versions. Not found if archived.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "text"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "version"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "bulk_read",
+    "description": "Read many assets in one call by slug and/or location (full path including filename).\nProvide at least one of slugs: or locations:. Pass format: \"json\" for structured output\n(default text). Set include_content: false to return metadata only. Stops including\nbodies once max_bytes is exceeded and sets truncated: true.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slugs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "include_content": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "max_bytes": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "error": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content_omitted": {
+                "type": "boolean",
+                "not": {
+                  "type": "null"
+                }
+              },
+              "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "content_type": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "status": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "owner_handle": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "type": "string",
+                "minLength": 1
+              },
+              "updated_at": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "integer",
+                "not": {
+                  "type": "null"
+                }
+              },
+              "stale_after": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "verified_at": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "created_by": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "updated_by": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "verified_by": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "backlinks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "location": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "location",
+                    "name"
+                  ]
+                }
+              },
+              "task": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "claimed_by": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "lease_until": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                },
+                "required": []
+              }
+            },
+            "required": []
+          }
+        },
+        "bytes_returned": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "truncated": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "assets",
+        "bytes_returned",
+        "truncated"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "claim_task",
+    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path_prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lease_seconds": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimed_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lease_until": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempts": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "claimed_by",
+        "lease_until",
+        "attempts"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "complete_task",
+    "description": "Mark a task you hold done, with an optional outcome note. Only the (you, agent) that claimed it can complete it; pass the same agent you claimed with. Anyone else gets Wrong claimer.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "slug",
+        "status",
+        "note"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "create",
+    "description": "Create a new asset at the given path. Use 'update' to modify an existing asset by slug. 'path' is the DIRECTORY only (no trailing filename or known file extension — those are rejected); 'name' is the leaf (no whitespace, no '/', not '.' or '..'). Fails with Conflict if a live asset already has that name there.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "content_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "path",
+        "name"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "version"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "delete",
+    "description": "Soft-delete an asset by slug. The tombstone is kept for restore.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "deleted_at": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "deleted_at"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": true,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "fail_task",
+    "description": "Mark a task you hold failed, with a required reason; the reason is kept on the task and in the activity log. Only the (you, agent) that claimed it can fail it; pass the same agent you claimed with. Anyone else gets Wrong claimer.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "reason"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "status",
+        "reason"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "get_last_session",
+    "description": "Read your session checkpoint: where you left off last time. Call this FIRST, before any other tool, at the start of every session. Returns the whole checkpoint in one read; pair with update_last_session before you finish. Each agent has its own checkpoint: pass agent when several agents share one token.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "agent",
+        "location",
+        "content"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "get_pending_tasks",
+    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed, cancelled or all) for others. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "path_prefix": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path_prefix"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": "string",
+                "minLength": 1
+              },
+              "claimed_by": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "lease_until": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "attempts": {
+                "type": "integer",
+                "not": {
+                  "type": "null"
+                }
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "slug",
+              "location",
+              "name",
+              "dir",
+              "status",
+              "claimed_by",
+              "lease_until",
+              "attempts",
+              "tags",
+              "created_at"
+            ]
+          }
+        }
+      },
+      "required": [
+        "tasks"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "list",
+    "description": "List live assets under a path (the directory and its whole subtree), one `slug  location` line each. Optionally filter to assets having ALL of the given tags; sort by name (default), created_at or updated_at; page with limit and offset.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sort": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "offset": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "updated_at": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "slug",
+              "location",
+              "name",
+              "dir",
+              "tags",
+              "status",
+              "updated_at"
+            ]
+          }
+        }
+      },
+      "required": [
+        "assets"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "read",
+    "description": "Read an asset by slug. With no flags it returns the raw content (default).\nRequest metadata fields individually with boolean flags — any combination of\nname, path, content_type, status, owner, tags, created_at, updated_at, backlinks,\ncreated_by, updated_by, verified_by, version — and only those fields are returned.\nAdd content: true to include the body alongside the requested metadata. Pass\nformat: \"json\" for structured output (full asset when no flags; selected fields\nwhen flags are set). Returns Not found for unknown or archived assets.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "name": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "path": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "content_type": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "status": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "owner": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "tags": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "created_at": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "updated_at": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "backlinks": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "created_by": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "updated_by": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "verified_by": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "version": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "content_type": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "status": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "owner_handle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "stale_after": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "verified_at": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "created_by": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "handle": {
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "updated_by": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "handle": {
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "verified_by": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "handle": {
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "backlinks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "slug",
+              "location",
+              "name"
+            ]
+          }
+        },
+        "task": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "minLength": 1
+            },
+            "claimed_by": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "lease_until": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "read_path",
+    "description": "Read an asset by location instead of slug. Provide either location (full path\nincluding filename, e.g. \"member/notes/plan.md\") or path + name (directory + leaf).\nPass format: \"json\" for structured output. Optionally pass with: an array of fields\nto return (content, name, path, content_type, status, owner, tags, created_at,\nupdated_at, backlinks, created_by, updated_by, verified_by, version) — omit with for\nraw content (text) or the full asset (json). Returns Not found for unknown or\narchived assets.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "format": {
+          "type": "string",
+          "minLength": 1
+        },
+        "with": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "content_type": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "status": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "owner_handle": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dir": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "created_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "updated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "stale_after": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "verified_at": {
+          "type": [
+            "null",
+            "string"
+          ]
+        },
+        "created_by": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "handle": {
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "updated_by": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "handle": {
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "verified_by": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "handle": {
+              "type": "string",
+              "minLength": 1
+            },
+            "agent": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "backlinks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "slug",
+              "location",
+              "name"
+            ]
+          }
+        },
+        "task": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "properties": {
+            "status": {
+              "type": "string",
+              "minLength": 1
+            },
+            "claimed_by": {
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "lease_until": {
+              "type": [
+                "null",
+                "string"
+              ]
+            }
+          },
+          "required": []
+        }
+      }
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "remove_tag",
+    "description": "Detach a tag from an asset by slug. The tag itself is not deleted even if it becomes orphaned.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "tag"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tag": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "tag",
+        "tags"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "restore",
+    "description": "Restore a soft-deleted asset by slug. Conflict if a live asset now has its location.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "location"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "search",
+    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by note status, by task_status (pending|in_progress|done|failed|cancelled), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "q": {
+          "type": "string",
+          "minLength": 1
+        },
+        "within": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stale": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        },
+        "exclude_tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sort": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "offset": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "include_versions": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "q"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1
+        },
+        "count": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dir": {
+                "type": "string",
+                "minLength": 1
+              },
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "snippet": {
+                "type": "string"
+              },
+              "displaced_at": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "slug",
+              "name",
+              "dir",
+              "location",
+              "snippet"
+            ]
+          }
+        }
+      },
+      "required": [
+        "query",
+        "count",
+        "results"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "set_stale_after",
+    "description": "Set the date after which an asset should be re-checked, without claiming it still holds. Use this when you know something needs revisiting by a date but have not re-read it; use `verify` when you have. Pass an empty stale_after to clear the review date. Find overdue assets with search(stale: true).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stale_after": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slug",
+        "stale_after"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stale_after": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "slug",
+        "stale_after"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "set_status",
+    "description": "Set a lifecycle status ('open' or 'done') on a note, or clear it (omit/empty status). Not valid for tasks — those use claim_task, complete_task and fail_task.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "slug",
+        "status"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "tags",
+    "description": "Enumerate the tags applied to live assets with a count of live assets per tag, sorted by count desc then name asc. Optionally scope to a path prefix with `within`.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "within": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "count": {
+                "type": "integer",
+                "not": {
+                  "type": "null"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "count"
+            ]
+          }
+        }
+      },
+      "required": [
+        "tags"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  },
+  {
+    "name": "update",
+    "description": "Update an existing asset by slug. Snapshots prior content into versions on content change; an empty content clears it, omitting it leaves it alone. 'name', when renaming, is the leaf only (no whitespace, no '/', not '.' or '..') — it is not a path. Pass expected_version (from read's version field) to refuse the write with Conflict if someone else edited first. Not found if archived.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expected_version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "version"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": false,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "update_last_session",
+    "description": "Overwrite your session checkpoint with where you are now: open threads, next step, anything the next session needs to resume without re-deriving it. Call this before finishing, and whenever you reach a milestone worth resuming from. Replaces the previous checkpoint (the old text is kept as a version). Each agent has its own checkpoint: pass agent when several agents share one token.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "content"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "version"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "upsert",
+    "description": "Create-or-update an asset by path + name. Updates the live asset at that path + name if one exists (snapshotting prior content), otherwise creates it. 'path' is the DIRECTORY only (no trailing filename or known file extension — those are rejected); 'name' is the leaf (no whitespace, no '/', not '.' or '..').",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content": {
+          "type": "string"
+        },
+        "content_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "path",
+        "name"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "created": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "version",
+        "created"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "verify",
+    "description": "Record that an asset's content still holds, and optionally set stale_after — the date after which it should be re-checked. Verification is not an edit: it leaves updated_at and version history alone. Pass an empty stale_after to clear the review date; omit it to leave it as is. Find overdue assets with search(stale: true).",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stale_after": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verified_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stale_after": {
+          "type": [
+            "null",
+            "string"
+          ]
+        }
+      },
+      "required": [
+        "slug",
+        "verified_at",
+        "stale_after"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
+    "name": "versions",
+    "description": "List prior versions of an asset by slug, newest first, with who wrote each.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "not": {
+                  "type": "null"
+                }
+              },
+              "created_at": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content_type": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "actor": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              }
+            },
+            "required": [
+              "id",
+              "created_at",
+              "content_type",
+              "actor"
+            ]
+          }
+        }
+      },
+      "required": [
+        "versions"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": true
+    }
+  }
+]
