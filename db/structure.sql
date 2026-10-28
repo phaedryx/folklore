@@ -725,7 +725,7 @@ CREATE TABLE public.tasks (
     outcome_note text,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT tasks_claim_check CHECK ((((status)::text = 'in_progress'::text) = ((claimed_by_user_id IS NOT NULL) AND (claimed_by_agent IS NOT NULL) AND (lease_until IS NOT NULL)))),
+    CONSTRAINT tasks_claim_check CHECK (((((status)::text = 'in_progress'::text) AND (claimed_by_user_id IS NOT NULL) AND (claimed_by_agent IS NOT NULL) AND (lease_until IS NOT NULL)) OR (((status)::text <> 'in_progress'::text) AND (claimed_by_user_id IS NULL) AND (claimed_by_token_id IS NULL) AND (claimed_by_agent IS NULL) AND (lease_until IS NULL)))),
     CONSTRAINT tasks_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'in_progress'::character varying, 'done'::character varying, 'failed'::character varying, 'cancelled'::character varying])::text[])))
 );
 
@@ -1868,6 +1868,7 @@ ALTER TABLE ONLY public.assets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261028000001'),
 ('20261027000012'),
 ('20261027000011'),
 ('20261027000010'),

@@ -14,8 +14,8 @@ class SearchEval::RunnerTest < ActiveSupport::TestCase
     path
   end
 
-  # Only this test's files: tests run in parallel workers that share tmp/,
-  # and a glob here deleted other workers' files mid-test.
+  # Only this test's files: parallel workers share tmp/, so a glob here
+  # deleted another worker's queries file mid-run.
   teardown do
     Array(@written).each { |path| path.delete if path.exist? }
   end
