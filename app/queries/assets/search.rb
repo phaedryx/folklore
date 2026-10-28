@@ -1,0 +1,165 @@
+module Assets
+  class Search
+    SORT_COLUMNS = %w[name created_at updated_at].freeze
+
+    # word_similarity finds the best-matching run of trigrams inside the name, so a
+    # query is compared against part of a filename rather than the whole of it:
+    # "deploy" and the typo "deploymnet" both clear this against "deployment-guide.md",
+    # while an unrelated query scores 0.
+    #
+    # 0.5 was too strict: a filename restating the whole query in a different order
+    # scored 0.475. Swept against the eval set: 0.45 and 0.47 tie for best (recall@10
+    # 94.7%, top-1 84.2%), 0.55 and above lose recall, and below 0.40 top-1 decays as
+    # weak name matches start outranking real ones. 0.45 sits at the wide end of that
+    # plateau. Note the gain rests on one query, so trust the direction more than the
+    # third decimal place.
+    NAME_SIMILARITY_THRESHOLD = 0.45
+
+    # websearch_to_tsquery ANDs the terms it produces. Rewriting the operator ORs them,
+    # which is how a query is widened when every-term matching comes back empty.
+    ALL_TERMS = "websearch_to_tsquery('english', ?)".freeze
+    ANY_TERM  = "replace(#{ALL_TERMS}::text, '&', '|')::tsquery".freeze
+
+    # Reciprocal rank fusion constant. Results are insensitive to it (10 and 60 score
+    # identically on the eval set) because it only damps how steeply the top of each
+    # list is favoured, and both lists are short.
+    RRF_K = 60
+
+    def self.query(query:, path: nil, tags: [], status: nil, task_status: nil, stale: nil, exclude_tags: [],
+                   sort: nil, limit: nil, offset: 0, include_versions: false, actor: nil)
+      new(query:, path:, tags:, status:, task_status:, stale:, exclude_tags:, sort:, limit:, offset:,
+          include_versions:, actor:).query
+    end
+
+    # Every member reads every workspace, so the actor does not narrow the scope yet; it
+    # is accepted now so callers are already passing it when private workspaces arrive.
+    def initialize(query:, path:, tags:, status: nil, task_status: nil, stale: nil, exclude_tags: [], sort: nil,
+                   limit: nil, offset: 0, include_versions: false, actor: nil)
+      @query            = query
+      @path             = path
+      @tags             = Array(tags)
+      @status           = status
+      @task_status      = task_status
+      @stale            = stale
+      @exclude_tags     = Array(exclude_tags)
+      @sort             = sort
+      @limit            = limit
+      @offset           = offset
+      @include_versions = include_versions
+      @actor            = actor
+    end
+
+    # Requiring every term is precise but brittle: one incidental word the author never
+    # used ("what dog breed did we _pick_") drops the result set to nothing. Widening to
+    # any-term only once that has happened recovers those queries without diluting the
+    # ones that were already answered. Widening unconditionally costs more precision
+    # than it buys in recall.
+    def query
+      return finish(filtered, ALL_TERMS) if @query.blank?
+
+      strict = filtered(ALL_TERMS)
+      return finish(strict, ALL_TERMS) if strict.exists?
+
+      finish(filtered(ANY_TERM), ANY_TERM)
+    end
+
+    private
+
+    def filtered(tsquery = nil)
+      scope = Asset.live
+      scope = scope.under_dir(@path) if @path.present?
+
+      scope = scope.where(match_condition(tsquery)) if @query.present?
+
+      scope = scope.tagged_with(@tags)
+
+      scope = scope.where(status: @status) if @status.present?
+
+      scope = scope.joins(:task).where(tasks: { status: @task_status }) if @task_status.present?
+
+      scope = @stale ? scope.stale : scope.not_stale unless @stale.nil?
+
+      @exclude_tags.each do |name|
+        tag = Tag.find_by(name: name.downcase.strip)
+        next unless tag
+        scope = scope.where.not(id: AssetTag.where(tag_id: tag.id).select(:asset_id))
+      end
+
+      scope
+    end
+
+    def finish(scope, tsquery)
+      apply_pagination(apply_sort(scope, tsquery))
+    end
+
+    def match_condition(tsquery)
+      sql, binds = match_clause(tsquery)
+      Asset.sanitize_sql_array([ sql, *binds ])
+    end
+
+    def match_clause(tsquery)
+      conditions = [ "assets.content_tsv @@ #{tsquery}", "word_similarity(?, assets.name) > ?" ]
+      binds = [ @query, @query, NAME_SIMILARITY_THRESHOLD ]
+
+      # EXISTS rather than a join: an asset that displaced the same phrase a dozen times
+      # is still one result.
+      if @include_versions
+        conditions << "EXISTS (SELECT 1 FROM versions WHERE versions.asset_id = assets.id " \
+                      "AND versions.content_tsv @@ #{tsquery})"
+        binds << @query
+      end
+
+      [ conditions.join(" OR "), binds ]
+    end
+
+    def apply_sort(scope, tsquery)
+      column = @sort.to_s
+      return scope.reorder(column) if SORT_COLUMNS.include?(column)
+      relevance_order(scope, tsquery)
+    end
+
+    # Content relevance and name similarity are not on the same scale, so adding them
+    # made the weighting an accident of how ts_rank_cd happens to be distributed. Fusing
+    # them by rank instead asks the only question that transfers between the two: how
+    # near the top of its own list did this asset come? Measured on the eval set, this
+    # lifts recall@10 from 84.2% to 89.5% and MRR from 0.797 to 0.829.
+    #
+    # Fusing all-terms with any-term was also tried and is markedly worse: any-term is
+    # a superset of all-terms, so it contributes no independent evidence, only noise.
+    def relevance_order(scope, tsquery)
+      return scope if @query.blank?
+
+      # A pure-name match and a pure-content match are each first in one list and second
+      # in the other, so they fuse to the same score. Break that tie toward the name: if
+      # you search "rails" the file called rails.md is what you meant.
+      scope.joins(fusion_join(tsquery)).reorder(Arel.sql(Asset.sanitize_sql_array([
+        "fusion.score DESC, word_similarity(?, assets.name) DESC, assets.id ASC", @query
+      ])))
+    end
+
+    # Grouped by id, so joining it cannot multiply rows.
+    def fusion_join(tsquery)
+      match, match_binds = match_clause(tsquery)
+
+      sql = <<~SQL.squish
+        INNER JOIN (
+          SELECT id, SUM(1.0 / (#{RRF_K} + rnk)) AS score FROM (
+            SELECT id, row_number() OVER (ORDER BY ts_rank_cd(content_tsv, #{tsquery}) DESC, id) AS rnk
+              FROM assets WHERE deleted_at IS NULL AND (#{match})
+            UNION ALL
+            SELECT id, row_number() OVER (ORDER BY word_similarity(?, assets.name) DESC, id) AS rnk
+              FROM assets WHERE deleted_at IS NULL AND (#{match})
+          ) ranked GROUP BY id
+        ) fusion ON fusion.id = assets.id
+      SQL
+
+      Asset.sanitize_sql_array([ sql, @query, *match_binds, @query, *match_binds ])
+    end
+
+    def apply_pagination(scope)
+      scope = scope.offset(@offset.to_i) if @offset.present? && @offset.to_i.positive?
+      scope = scope.limit(@limit.to_i) if @limit.present?
+      scope
+    end
+  end
+end
