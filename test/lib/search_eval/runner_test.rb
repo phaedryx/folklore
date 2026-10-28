@@ -10,11 +10,14 @@ class SearchEval::RunnerTest < ActiveSupport::TestCase
   def queries_file(cases)
     path = Rails.root.join("tmp/search_eval_#{SecureRandom.hex(4)}.yml")
     path.write(cases.to_yaml)
+    (@written ||= []) << path
     path
   end
 
+  # Only this test's files: parallel workers share tmp/, so a glob here
+  # deleted another worker's queries file mid-run.
   teardown do
-    Rails.root.glob("tmp/search_eval_*.yml").each(&:delete)
+    Array(@written).each { |path| path.delete if path.exist? }
   end
 
   test "reports where each expected asset landed and the summary metrics" do

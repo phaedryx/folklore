@@ -6,11 +6,14 @@ module Assets
     ForbiddenError = Assets::ForbiddenError
     NameTakenError = Assets::NameTakenError
 
-    def self.mutate(actor:, path:, name:, content: nil, content_type: nil, tags: [], reserved: false)
-      new(actor:, path:, name:, content:, content_type:, tags:, reserved:).mutate
+    def self.mutate(actor:, path:, name:, content: nil, content_type: nil, tags: [], reserved: false, event: "asset_created")
+      new(actor:, path:, name:, content:, content_type:, tags:, reserved:, event:).mutate
     end
 
-    def initialize(actor:, path:, name:, content:, content_type:, tags:, reserved:)
+    # `event` is the action recorded for the write: Tasks::Add records
+    # task_added in its place, since the facet row it adds in the same
+    # transaction is what the asset is.
+    def initialize(actor:, path:, name:, content:, content_type:, tags:, reserved:, event:)
       @actor = actor
       @path = path.to_s
       @name = name.to_s
@@ -18,6 +21,7 @@ module Assets
       @content_type = content_type
       @tags = Array(tags)
       @reserved = reserved
+      @event = event
     end
 
     def mutate
@@ -45,7 +49,7 @@ module Assets
         )
         Tag.attach(asset, @tags)
         Links::Sync.mutate(asset:)
-        Events::Record.mutate(actor: @actor, asset:, action: "asset_created")
+        Events::Record.mutate(actor: @actor, asset:, action: @event)
       end
       asset
     rescue ActiveRecord::RecordNotUnique
