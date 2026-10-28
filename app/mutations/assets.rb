@@ -12,6 +12,12 @@ module Assets
   InvalidStatusError = Class.new(Error)
   InvalidLocationError = Class.new(Error)
 
+  # Tenancy lives here, not in the queries: every member reads everything,
+  # so the read queries accept `actor:` without narrowing by it (see
+  # test/queries/read_authorization_test.rb), and writes are owner-only,
+  # checked by the mutations through this method and the owner checks in
+  # Create, Delete and Restore.
+  #
   # Finds a live asset the actor may write and row-locks it, or raises. Call
   # it inside the mutation's transaction. Liveness is checked again under the
   # lock, so a delete that committed while this waited is not written through.
