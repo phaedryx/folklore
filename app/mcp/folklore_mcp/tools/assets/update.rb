@@ -9,6 +9,7 @@ module FolkloreMcp
                     "'..') — it is not a path. Pass expected_version (from read's version field) " \
                     "to refuse the write with Conflict if someone else edited first. Not found if " \
                     "archived."
+        annotations destructive: true
 
         input_schema do
           required(:slug).filled(:string)

@@ -98,6 +98,24 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
     refute_match(/elsewhere\.md/, text_of(response))
   end
 
+  test "tags alone narrows to assets having every tag" do
+    build("both.md", content: "haystack", tags: %w[review urgent])
+    build("one.md", content: "haystack", tags: %w[review])
+
+    response = Search.call(q: "haystack", tags: %w[review urgent], server_context: actor_context)
+
+    assert_equal [ "both.md" ], response.to_h[:structuredContent][:results].map { |r| r[:name] }
+  end
+
+  test "stale: false returns only assets not past their review date" do
+    build("overdue.md", content: "haystack", stale_after: Date.current - 1)
+    build("fresh.md", content: "haystack")
+
+    response = Search.call(q: "haystack", stale: false, server_context: actor_context)
+
+    assert_equal [ "fresh.md" ], response.to_h[:structuredContent][:results].map { |r| r[:name] }
+  end
+
   test "stale: true returns only assets past their review date" do
     build("overdue.md", content: "haystack", stale_after: Date.current - 1)
     build("fresh.md", content: "haystack")
@@ -160,7 +178,8 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
   end
 
   test "sort, limit and offset page through the results" do
-    %w[a.md b.md c.md].each { |name| build(name, content: "haystack") }
+    # Created out of name order, so the sort is what puts b second.
+    %w[c.md a.md b.md].each { |name| build(name, content: "haystack") }
 
     response = Search.call(q: "haystack", sort: "name", limit: 1, offset: 1, server_context: actor_context)
 

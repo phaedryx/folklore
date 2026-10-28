@@ -15,8 +15,8 @@ search(q: "deploy rollback", within: "you/notes", tags: ["runbook"], limit: 10)
 | `within` | A directory prefix; matches it and everything below it |
 | `tags` | Only assets with every one of these tags |
 | `exclude_tags` | Leave out assets with any of these tags |
-| `status` | Note status (`open`, `done`) or a task's state (`pending`, `in_progress`, `done`, `failed`, `cancelled`) |
-| `task_status` | `pending`, `in_progress`, `done`, `failed` or `cancelled` (tasks only) |
+| `status` | Note status (`open`, `done`) or a task's state (`pending`, `in_progress`, `done`, `failed`; `cancelled` is reserved) |
+| `task_status` | `pending`, `in_progress`, `done` or `failed` (tasks only; `cancelled` is reserved) |
 | `stale` | `true` for assets whose review date has passed; `false` for the rest. An asset with no review date is never stale. |
 | `sort` | `name`, `created_at` or `updated_at`, in place of relevance |
 | `limit`, `offset` | Paging. The default limit is 50 and the maximum 500. |
@@ -70,8 +70,8 @@ bin/rails "folklore:search_eval[script/search_eval_queries.yml]"
 FOLKLORE_EVAL_QUERIES=script/search_eval_queries.yml bin/rails runner script/search_eval.rb
 ```
 
-The output has one row per query, with its rank in the baseline and in the current search (`#1 of 12`, or `--` when
-the answer is not in the top 10). A summary follows with recall@10, top-1 and mean reciprocal rank. Run it before and
+The output has one row per query, with its rank in the baseline and in the current search (`#1 of 10`: the answer's rank and how many
+results came back, or `--` when the answer is not in the top 10). A summary follows with recall@10, top-1 and mean reciprocal rank. Run it before and
 after a ranking change, against the same database.
 
 **`eval-excluded`.** Notes that quote the eval queries, such as a plan or a session checkpoint, match every query
@@ -80,8 +80,8 @@ place and searchable as usual.
 
 ## The search log
 
-Each search with a query records the query, the filters that differ from their defaults, the result slugs and the
-token that ran it. When the same token then reads one of those results with `read` or `read_path` within five minutes,
-the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
+Each MCP `search` with a query records the query, the filters that differ from their defaults, the result slugs and
+the token and agent that ran it (the web search page is not logged). When the same token and agent then read one of
+those results with `read` or `read_path` within five minutes, the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
 opened, which is the raw material for a bigger eval set. It is a plain table (`search_logs`) and nothing in the app
 reads it back.

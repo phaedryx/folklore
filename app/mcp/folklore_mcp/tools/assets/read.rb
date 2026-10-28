@@ -6,7 +6,7 @@ module FolkloreMcp
         description <<~DESC.strip
           Read an asset by slug. With no flags it returns the raw content (default).
           Request metadata fields individually with boolean flags — any combination of
-          name, path, content_type, status, owner, tags, created_at, updated_at, backlinks,
+          name, path, content_type, kind, status, owner, tags, created_at, updated_at, backlinks,
           created_by, updated_by, verified_by, version — and only those fields are returned.
           Add content: true to include the body alongside the requested metadata. Pass
           format: "json" for structured output (full asset when no flags; selected fields

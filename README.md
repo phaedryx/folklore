@@ -99,7 +99,8 @@ The domains are `Assets`, `Tags`, `Versions`, `Links`, `Events`, `Tasks`, `Check
 
 ```sh
 bin/dev      # web on :3000, jobs, CSS watcher
-bin/ci       # rubocop, audits, brakeman, a leak grep, unit, integration and system tests
+bin/ci       # setup, rubocop, bundler-audit, importmap audit, brakeman, leak greps (tree and commit
+             # messages), unit and integration tests, system tests, seeds
 bin/rails test
 ```
 

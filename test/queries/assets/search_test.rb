@@ -479,6 +479,13 @@ class Assets::SearchTest < ActiveSupport::TestCase
     assert_equal %w[alias-reads-pr1-pr2-split.md], results.map(&:name)
   end
 
+  # The measured constants. The ranking tests do not move when RRF_K changes,
+  # so the value itself is pinned; changing it is a decision for the eval set.
+  test "the fusion constant and name threshold are the measured values" do
+    assert_equal 60, Assets::Search::RRF_K
+    assert_equal 0.45, Assets::Search::NAME_SIMILARITY_THRESHOLD
+  end
+
   # The threshold sits at 0.45: 0.475 is admitted above, and 0.41 is not.
   test "rejects a name whose similarity falls just under the threshold" do
     build("employment.md")

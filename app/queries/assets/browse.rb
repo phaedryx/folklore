@@ -3,8 +3,6 @@ module Assets
   # names of the folders one level below. Folders exist only through the
   # live assets under them, so a folder of archived files disappears.
   class Browse
-    GROUP_TAGS = %w[decision failure].freeze
-
     # A task is listed once, as a task, whatever else it is tagged.
     Listing = Data.define(:files, :folders) do
       def tasks = files.select(&:task?)

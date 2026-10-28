@@ -213,7 +213,8 @@ CREATE TABLE public.search_logs (
     result_slugs character varying[] DEFAULT '{}'::character varying[] NOT NULL,
     token_id bigint,
     followed_slug character varying,
-    created_at timestamp(6) without time zone NOT NULL
+    created_at timestamp(6) without time zone NOT NULL,
+    actor_agent character varying
 );
 
 
@@ -1324,6 +1325,13 @@ CREATE UNIQUE INDEX index_links_on_src_asset_id_and_dst_ref_and_kind ON public.l
 
 
 --
+-- Name: index_search_logs_on_token_id_and_actor_agent_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_search_logs_on_token_id_and_actor_agent_and_created_at ON public.search_logs USING btree (token_id, actor_agent, created_at);
+
+
+--
 -- Name: index_search_logs_on_token_id_and_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1868,6 +1876,7 @@ ALTER TABLE ONLY public.assets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261028000002'),
 ('20261028000001'),
 ('20261027000012'),
 ('20261027000011'),

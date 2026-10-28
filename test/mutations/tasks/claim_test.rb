@@ -90,6 +90,9 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
 
   # Review Focus 2: an expired lease is reclaimable, an unexpired one is not.
   test "an expired lease is reclaimable by another agent and records task_lease_expired" do
+    # Frozen, so a slow run cannot let the 1-second lease lapse before the
+    # unexpired claim is tried.
+    freeze_time
     asset = add("task.md")
     claim(asset, actor: @ping, lease_seconds: 1)
     expired_at = asset.task.reload.lease_until

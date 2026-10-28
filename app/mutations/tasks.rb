@@ -29,6 +29,6 @@ module Tasks
 
   # "handle/agent" for a claimer or an event's actor.
   def self.label(user_id, agent)
-    "#{User.where(id: user_id).pick(:handle)}/#{agent}"
+    Actor.label(User.where(id: user_id).pick(:handle), agent)
   end
 end

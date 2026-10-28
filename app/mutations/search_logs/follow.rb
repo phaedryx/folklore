@@ -1,5 +1,5 @@
 module SearchLogs
-  # Marks a search as answered: the same token read one of its results soon after. The
+  # Marks a search as answered: the same token and agent read one of its results soon after. The
   # `read` tool calls this on every read; a read that no recent search returned is a no-op.
   class Follow
     WINDOW = 5.minutes
@@ -18,7 +18,7 @@ module SearchLogs
     def mutate
       return nil unless Record.enabled? && @actor.token
 
-      log = SearchLog.where(token: @actor.token, followed_slug: nil)
+      log = SearchLog.where(token: @actor.token, actor_agent: @actor.agent, followed_slug: nil)
                      .where(created_at: WINDOW.ago..)
                      .where("? = ANY (result_slugs)", @slug)
                      .order(created_at: :desc, id: :desc)

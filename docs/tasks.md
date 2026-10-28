@@ -23,7 +23,8 @@ gets `Already claimed: <slug> is claimed by handle/agent until ...`.
 - **Renewing.** To keep a task past its lease, claim it again with the same agent. That sets a new lease and records a
   `task_claimed` event marked as a renewal. It does not count as a new attempt.
 - **Expiry.** Once a lease runs out, anyone may claim the task. The takeover records `task_lease_expired`, naming the
-  previous claimer, beside the new `task_claimed`. `attempts` counts how many times the claimer changed.
+  previous claimer, beside the new `task_claimed`. `attempts` counts claims by a new claimer, the first claim included;
+  a renewal does not count.
 - **Finishing late.** The holder can still complete or fail the task after its lease expires, as long as nobody else
   has claimed it in the meantime.
 
@@ -51,7 +52,7 @@ get_pending_tasks(path_prefix: "you/backlog", status: "in_progress")
 ```
 
 The structured content gives each task's `claimed_by` (`handle/agent`), `lease_until` and `attempts`. Re-claim your own
-to renew the lease and carry on. `status` also accepts `done`, `failed`, `cancelled` and `all`. An unknown status is
+to renew the lease and carry on. `status` also accepts `done`, `failed`, `all` and the reserved `cancelled`. An unknown status is
 `Invalid`, not an empty list.
 
 ## Example

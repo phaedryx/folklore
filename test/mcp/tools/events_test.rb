@@ -19,7 +19,7 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
     lines = text_of(response).lines(chomp: true)
     assert_equal 3, lines.size
     assert_match(/\A\d{4}-\d{2}-\d{2}T\S+  member\/ping  asset_updated  #{asset.slug}\z/, lines[0])
-    assert_match(/  member\/ping  tag_added  #{asset.slug}\z/, lines[1])
+    assert_match(/  member\/ping  tag_added  #{asset.slug}  tag: todo\z/, lines[1])
     assert_match(/  member\/ping  asset_created  #{asset.slug}\z/, lines[2])
     rows = response.to_h[:structuredContent][:events]
     assert_equal "tag_added", rows[1][:action]
@@ -66,6 +66,18 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
 
     assert response.to_h[:isError]
     assert_match(/\AInvalid: since/, text_of(response))
+  end
+
+  test "activity accepts a space-separated time, an email actor, and defaults to 50 events" do
+    actor = actor_for(:member_default, agent: "ping")
+    asset = ::Assets::Create.mutate(actor:, path: "member/notes", name: "many.md", content: "")
+    60.times { |i| ::Events::Record.mutate(actor:, asset:, action: "tag_added", metadata: { "tag" => "t#{i}" }) }
+
+    assert_equal 50, text_of(Activity.call(server_context: actor_context)).lines.size
+    assert_equal 50, text_of(Activity.call(actor: "MEMBER@example.com", server_context: actor_context)).lines.size
+    spaced = Activity.call(since: 1.hour.ago.strftime("%Y-%m-%d %H:%M:%S"), limit: 200, server_context: actor_context)
+    refute spaced.to_h[:isError], text_of(spaced)
+    assert_equal 61, text_of(spaced).lines.size
   end
 
   test "activity rejects a non-numeric since_id" do

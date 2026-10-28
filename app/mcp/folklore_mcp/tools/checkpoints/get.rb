@@ -24,7 +24,7 @@ module FolkloreMcp
         def invoke(server_context:, agent: nil)
           actor = actor_from(server_context, agent:)
           location = Checkpoints.location(actor)
-          who = "#{actor.handle}/#{actor.agent}"
+          who = actor.label
           checkpoint = ::Checkpoints::Read.query(actor:)
 
           unless checkpoint

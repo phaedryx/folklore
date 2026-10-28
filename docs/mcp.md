@@ -46,6 +46,8 @@ can never act as another user. Agent names are lowercase slugs (`a-z`, `0-9`, `-
 browser.
 
 `activity`, `versions` and the `created_by` / `updated_by` / `verified_by` fields show actors as `handle/agent`.
+`updated_by` and `updated_at` describe the last edit (content, name, type or tags). Setting a status or a review date
+is not an edit: `activity` records who did it.
 
 ## Who may do what
 
@@ -53,8 +55,9 @@ Every user can read every workspace. Writing to an asset is limited to its owner
 segment of its path. Task lifecycle calls (`claim_task`, `complete_task`, `fail_task`) change only the task's state and
 work on any task. `add_task` creates an asset, so it follows the owner rule.
 
-The second path segment `state` (checkpoints) and `archive` are reserved: `create` and the other generic writers refuse
-them.
+The second path segment `state` (checkpoints) and `archive` are reserved: `create`, `upsert` and `add_task` refuse
+them. Tools that address an existing asset by slug (`update`, `append`, `delete`, ...) still work on a checkpoint; see
+[checkpoints.md](checkpoints.md).
 
 ## Responses
 
@@ -85,11 +88,11 @@ description, schemas and annotations. In brief:
 
 **Reading**
 
-- `read(slug)` returns the raw content. Boolean flags (`name`, `path`, `content_type`, `status`, `owner`, `tags`,
-  `created_at`, `updated_at`, `backlinks`, `created_by`, `updated_by`, `verified_by`, `version`) return just those
-  fields; add `content: true` for the body as well. `backlinks` lists the live assets that link here with `[[slug]]`.
-  `status` is a task's state (`pending`, `in_progress`, ...) for a task and the note status otherwise; the same holds
-  for `status` in `bulk_read` and the JSON API.
+- `read(slug)` returns the raw content. Boolean flags (`name`, `path`, `content_type`, `kind`, `status`, `owner`,
+  `tags`, `created_at`, `updated_at`, `backlinks`, `created_by`, `updated_by`, `verified_by`, `version`) return just
+  those fields; add `content: true` for the body as well. `backlinks` lists the live assets that link here with
+  `[[slug]]`. `kind` is `task` or `note`. `status` is a task's state (`pending`, `in_progress`, ...) for a task and the
+  note status otherwise; the same holds for `kind` and `status` in `bulk_read` and the JSON API.
   `version` is the counter that `update(expected_version:)` checks.
 - `read_path(location)` or `read_path(path, name)` does the same by address, with `with: [...]` in place of the flags.
 - `bulk_read(slugs, locations)` reads many in one call under a `max_bytes` budget (default 100 000). A key that fails is
@@ -99,8 +102,11 @@ description, schemas and annotations. In brief:
   It does not return their text; read an old version on the web UI's **History** page, or find it with
   `search(include_versions: true)`.
 - `tags(within)` counts tags over live assets.
-- `activity` is the event log, newest first. Filter by `actor` (`handle` or `handle/agent`), `tag`, `since` and
-  `before` (ISO 8601). `since_id` reads forward from an event id, oldest first. A non-numeric id is `Invalid`.
+- `activity` is the event log, newest first, 50 events unless you pass `limit` (at most 200). Filter by `actor`
+  (`handle`, `handle/agent` or an email), `tag`, `since` and `before` (ISO 8601, or a plain `2026-10-01 10:00:00`).
+  `since_id` reads forward from an event id, oldest first. A non-numeric id is `Invalid`. Each line is
+  `time  handle/agent  action  slug`, followed by the event's detail when it has one (a tag, a note, a renewal, the
+  claimer whose lease ended).
 
 **Writing**
 

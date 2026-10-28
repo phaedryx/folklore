@@ -4,8 +4,8 @@ module FolkloreMcp
       class Pending < FolkloreMcp::Tool
         tool_name "get_pending_tasks"
         description "List tasks under a path prefix, oldest first, one `slug  location` line each. " \
-                    "Lists pending tasks by default; pass status (pending, in_progress, done, failed, " \
-                    "cancelled or all) for others. To resume after a crash, look for in_progress tasks " \
+                    "Lists pending tasks by default; pass status (pending, in_progress, done, failed " \
+                    "or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks " \
                     "first: a claim you were holding does not show as pending. Optionally filter to " \
                     "tasks having ALL of the given tags."
         annotations read_only: true, idempotent: true

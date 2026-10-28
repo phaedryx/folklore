@@ -1,8 +1,6 @@
 module Events
   # One row of the activity page: who, what, on which asset, and any note.
   class EntryComponent < ViewComponent::Base
-    DETAIL_KEYS = %w[tag note reason stale_after status].freeze
-
     def initialize(event:)
       @event = event
     end
@@ -18,7 +16,7 @@ module Events
     end
 
     def detail
-      @event.metadata.to_h.slice(*DETAIL_KEYS).compact_blank.map { |key, value| "#{key}: #{value}" }.join(" · ")
+      Events::Detail.call(@event)
     end
   end
 end

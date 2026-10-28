@@ -26,7 +26,6 @@ module FolkloreMcp
       Asset::InvalidStaleAfterError => "Invalid",
       Actor::InvalidAgentError => "Invalid",
       Checkpoint::NoHandleError => "Invalid",
-      ActiveRecord::RecordNotFound => "Not found",
       ActiveRecord::StaleObjectError => "Conflict"
     }
 
@@ -98,6 +97,9 @@ module FolkloreMcp
         failure("Unauthenticated: no actor on request", format:)
       rescue ActiveRecord::RecordInvalid => e
         failure("Invalid: #{e.record.errors.full_messages.join(', ')}", format:)
+      rescue ActiveRecord::RecordNotFound => e
+        # Rails' own wording names tables and columns; say what was missing.
+        failure("Not found: #{e.model&.underscore&.humanize&.downcase || 'record'}", format:)
       rescue *USER_ERRORS.keys => e
         failure("#{USER_ERRORS.fetch(e.class) { USER_ERRORS.find { |k, _| e.is_a?(k) }.last }}: #{e.message}", format:)
       rescue => e

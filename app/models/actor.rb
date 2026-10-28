@@ -24,7 +24,16 @@ class Actor < Data.define(:user, :token, :agent)
     new(user:, token: nil, agent: WEB_AGENT)
   end
 
+  # How an actor is written everywhere it is shown: "handle/agent".
+  def self.label(handle, agent)
+    "#{handle}/#{agent}"
+  end
+
   def handle
     user.handle
+  end
+
+  def label
+    Actor.label(handle, agent)
   end
 end

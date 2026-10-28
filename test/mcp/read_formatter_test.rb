@@ -7,7 +7,7 @@ class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
   end
 
   test "metadata fields are the documented set" do
-    assert_equal %i[name path content_type status owner tags created_at updated_at backlinks created_by updated_by verified_by version],
+    assert_equal %i[name path content_type kind status owner tags created_at updated_at backlinks created_by updated_by verified_by version],
                  FolkloreMcp::ReadFormatter::METADATA_FIELDS
   end
 
@@ -44,7 +44,7 @@ class FolkloreMcp::ReadFormatterTest < ActiveSupport::TestCase
     full = FolkloreMcp::ReadFormatter.call(asset, requested: [], format: "json")
     partial = FolkloreMcp::ReadFormatter.call(asset, requested: %i[owner created_by], format: "json")
 
-    assert_equal AssetSerializer.call(asset), full
+    assert_equal Assets::Serializer.call(asset), full
     assert_equal({ slug: asset.slug, owner: "member", created_by: { handle: "member", agent: "ping" } }, partial)
   end
 

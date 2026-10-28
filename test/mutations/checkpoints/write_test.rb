@@ -6,7 +6,7 @@ class Checkpoints::WriteTest < ActiveSupport::TestCase
   end
 
   def write(content, actor: @actor)
-    Checkpoints::Write.mutate(actor:, content:)
+    Checkpoints::Write.mutate(actor:, content:).asset
   end
 
   def read(actor = @actor)
@@ -92,5 +92,11 @@ class Checkpoints::WriteTest < ActiveSupport::TestCase
     token = Token.create!(user: handleless, agent_name: "default", token_digest: Token.digest("flk_test_nohandle"))
 
     assert_raises(Checkpoint::NoHandleError) { write("x", actor: Actor.for_token(token)) }
+  end
+
+  test "reports whether the write changed anything" do
+    assert Checkpoints::Write.mutate(actor: @actor, content: "first").changed
+    assert Checkpoints::Write.mutate(actor: @actor, content: "second").changed
+    refute Checkpoints::Write.mutate(actor: @actor, content: "second").changed
   end
 end

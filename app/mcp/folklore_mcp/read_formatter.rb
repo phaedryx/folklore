@@ -3,7 +3,7 @@ module FolkloreMcp
   # metadata fields in a fixed order, as text lines or a JSON object.
   class ReadFormatter
     METADATA_FIELDS = %i[
-      name path content_type status owner tags created_at updated_at
+      name path content_type kind status owner tags created_at updated_at
       backlinks created_by updated_by verified_by version
     ].freeze
 
@@ -52,7 +52,7 @@ module FolkloreMcp
     private
 
     def data
-      @data ||= AssetSerializer.call(@asset)
+      @data ||= ::Assets::Serializer.call(@asset)
     end
 
     def backlinks
@@ -82,7 +82,7 @@ module FolkloreMcp
     end
 
     def actor_text(actor)
-      actor ? "#{actor[:handle]}/#{actor[:agent]}" : ""
+      actor ? Actor.label(actor[:handle], actor[:agent]) : ""
     end
   end
 end

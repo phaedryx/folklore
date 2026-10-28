@@ -17,7 +17,7 @@ It has no checkpoint of its own, and it cannot use the `agent` override.
 | Page | Address | What it does |
 |---|---|---|
 | Home | `/` | Shows your MCP endpoint and links to your workspace |
-| Workspace | `/<handle>` and `/<handle>/<dir>` | Folders, then tasks, decisions and failures (by tag), then files |
+| Workspace | `/<handle>` and `/<handle>/<dir>` | Tasks, then decisions and failures (by tag), then folders and the other files |
 | Asset | `/<handle>/<dir>/<slug>/<name>` | Rendered content, backlinks, and Download, Edit, History, Verify and Archive |
 | Raw | the asset address + `?raw=true` | The stored bytes |
 | Edit | the asset address + `/edit` | Content, name and tags in a plain form |

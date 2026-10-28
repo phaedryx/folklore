@@ -2,13 +2,13 @@ module Api
   class AssetsController < BaseController
     def index
       assets = ::Assets::List.query(path: params.require(:path), tags: Array(params[:tags]), actor: current_actor)
-                             .preload(AssetSerializer::PRELOADS)
-      render_success({ assets: assets.map { |asset| AssetSerializer.call(asset) } })
+                             .preload(Assets::Serializer::PRELOADS)
+      render_success({ assets: assets.map { |asset| Assets::Serializer.call(asset) } })
     end
 
     def show
       asset = ::Assets::Read.query(slug: params[:slug], actor: current_actor)
-      render_success({ asset: AssetSerializer.call(asset) })
+      render_success({ asset: Assets::Serializer.call(asset) })
     end
 
     def create
@@ -21,7 +21,7 @@ module Api
         content_type: attrs[:content_type],
         tags: attrs[:tags] || []
       )
-      render_success({ asset: AssetSerializer.call(asset) }, status: :created)
+      render_success({ asset: Assets::Serializer.call(asset) }, status: :created)
     end
 
     def update
@@ -35,7 +35,7 @@ module Api
         tags: attrs.key?(:tags) ? attrs[:tags] : nil,
         expected_version: attrs[:expected_version]
       )
-      render_success({ asset: AssetSerializer.call(asset) })
+      render_success({ asset: Assets::Serializer.call(asset) })
     end
 
     def destroy

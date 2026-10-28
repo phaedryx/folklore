@@ -28,11 +28,11 @@ class Versions::RestoreTest < ActiveSupport::TestCase
     assert_equal 0, Event.where(action: "asset_updated", created_at: events.first.created_at..).count
   end
 
-  test "restoring the version equal to the head writes no snapshot" do
+  test "restoring the version equal to the head writes nothing" do
     head_equal = @asset.versions.order(:created_at).last # "v2"
     Assets::Update.mutate(actor: @actor, slug: @asset.slug, content: "v2")
 
-    assert_no_difference -> { Version.count } do
+    assert_no_difference [ "Version.count", "Event.count" ] do
       Versions::Restore.mutate(actor: @actor, slug: @asset.slug, version_id: head_equal.id)
     end
   end

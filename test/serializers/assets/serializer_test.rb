@@ -1,6 +1,6 @@
 require "test_helper"
 
-class AssetSerializerTest < ActiveSupport::TestCase
+class Assets::SerializerTest < ActiveSupport::TestCase
   test "serializes an asset with its actors, task and tags" do
     token = tokens(:member_default)
     asset = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/notes", name: "a.md",
@@ -10,7 +10,7 @@ class AssetSerializerTest < ActiveSupport::TestCase
                           updated_by_token: token, updated_by_agent: "pong")
     AssetTag.create!(asset:, tag: Tag.create!(name: "ruby"))
 
-    data = AssetSerializer.call(asset)
+    data = Assets::Serializer.call(asset)
 
     assert_equal asset.slug, data[:slug]
     assert_equal "a.md", data[:name]
@@ -36,7 +36,7 @@ class AssetSerializerTest < ActiveSupport::TestCase
     asset = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/notes", name: "a.md",
                           created_by_agent: "web", verified_at: Time.current, verified_by_agent: "web")
 
-    data = AssetSerializer.call(asset)
+    data = Assets::Serializer.call(asset)
 
     assert_equal({ handle: "member", agent: "web" }, data[:created_by])
     assert_equal({ handle: "member", agent: "web" }, data[:verified_by])
@@ -48,7 +48,7 @@ class AssetSerializerTest < ActiveSupport::TestCase
     Task.create!(asset:, status: "in_progress", claimed_by_user: users(:member),
                  claimed_by_token: tokens(:member_default), claimed_by_agent: "ping", lease_until: 10.minutes.from_now)
 
-    task = AssetSerializer.call(asset)[:task]
+    task = Assets::Serializer.call(asset)[:task]
 
     assert_equal "in_progress", task[:status]
     assert_equal "member/ping", task[:claimed_by]
@@ -60,7 +60,9 @@ class AssetSerializerTest < ActiveSupport::TestCase
     Task.create!(asset: task_asset, status: "pending")
     note = Asset.create!(owner: users(:member), slug: Asset.generate_slug, dir: "member/inbox", name: "n.md", status: "open")
 
-    assert_equal "pending", AssetSerializer.call(task_asset)[:status]
-    assert_equal "open", AssetSerializer.call(note)[:status]
+    assert_equal "pending", Assets::Serializer.call(task_asset)[:status]
+    assert_equal "open", Assets::Serializer.call(note)[:status]
+    assert_equal "task", Assets::Serializer.call(task_asset)[:kind]
+    assert_equal "note", Assets::Serializer.call(note)[:kind]
   end
 end

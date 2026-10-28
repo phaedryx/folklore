@@ -3,9 +3,12 @@ module FolkloreMcp
     module Events
       class Activity < FolkloreMcp::Tool
         tool_name "activity"
-        description "Recent activity across the store, newest first. Filter by actor (a handle, or " \
-                    "handle/agent), tag, and since/before timestamps (ISO 8601). Pass since_id to " \
-                    "read forward from a cursor instead: events after that id, oldest first."
+        description "Recent activity across the store, newest first (50 by default). Filter by actor " \
+                    "(a handle, handle/agent, or email), tag, and since/before timestamps (ISO 8601 " \
+                    "or a plain date and time). Pass since_id to read forward from a cursor instead: " \
+                    "events after that id, oldest first."
+        # The tool's default, as before; the web page shows more.
+        DEFAULT_LIMIT = 50
         annotations read_only: true, idempotent: true
 
         input_schema do
@@ -31,16 +34,18 @@ module FolkloreMcp
         def invoke(server_context:, actor: nil, tag: nil, since: nil, before: nil, since_id: nil, limit: nil)
           actor_from(server_context)
           events = ::Events::List.query(actor:, tag:, since: parse_time(:since, since), before: parse_time(:before, before),
-                                        since_id:, limit: limit || ::Events::List::DEFAULT_LIMIT)
+                                        since_id:, limit: limit || DEFAULT_LIMIT)
           rows = events.map do |event|
             { id: event.id, created_at: event.created_at.iso8601,
               actor: event.actor_user && { handle: event.actor_user.handle, agent: event.actor_agent.to_s },
               action: event.action, slug: event.asset&.slug, metadata: event.metadata }
           end
           lines = rows.map do |row|
-            who = row[:actor] ? "#{row[:actor][:handle]}/#{row[:actor][:agent]}" : "?"
+            who = row[:actor] ? Actor.label(row[:actor][:handle], row[:actor][:agent]) : "?"
             "#{row[:created_at]}  #{who}  #{row[:action]}  #{row[:slug] || '—'}"
           end
+          # The detail goes after the four columns, so a parser of those still works.
+          lines = lines.zip(events).map { |line, event| [ line, ::Events::Detail.call(event).presence ].compact.join("  ") }
 
           text_response(lines.any? ? lines.join("\n") : "No activity", data: { events: rows })
         end
@@ -52,6 +57,9 @@ module FolkloreMcp
 
           Time.zone.iso8601(value)
         rescue ArgumentError
+          parsed = Time.zone.parse(value) rescue nil
+          return parsed if parsed
+
           raise ::Events::InvalidTimestampError, "#{field} must be an ISO 8601 timestamp, got #{value.inspect}"
         end
       end

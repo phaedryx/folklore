@@ -11,7 +11,7 @@ module Tasks
       facet = task.task
       return unless facet.claimed_by_user
 
-      "#{facet.claimed_by_user.handle}/#{facet.claimed_by_agent}"
+      Actor.label(facet.claimed_by_user.handle, facet.claimed_by_agent)
     end
 
     def lease_label(task) = task.task.lease_expired? ? "lease expired" : "lease until"

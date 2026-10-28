@@ -52,7 +52,9 @@ module Events
       when User then { actor_user_id: @actor.id }
       else
         handle, agent = @actor.to_s.split("/", 2)
-        user_id = User.where(handle:).pick(:id) || -1
+        # An email names the user too, as it did before handles were the actor label.
+        users = handle.include?("@") ? User.where(email: handle.downcase.strip) : User.where(handle:)
+        user_id = users.pick(:id) || -1
         agent.present? ? { actor_user_id: user_id, actor_agent: agent } : { actor_user_id: user_id }
       end
     end

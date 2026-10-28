@@ -20,6 +20,9 @@ module Versions
         version = asset.versions.find_by(id: @version_id)
         raise NotFoundError, "version #{@version_id} is not on #{@slug}" unless version
 
+        # Restoring the text the asset already has changes nothing and records nothing.
+        return asset if version.content == asset.content && version.content_type == asset.content_type
+
         if version.content != asset.content
           Version.create!(asset:, content: asset.content, content_type: asset.content_type,
                           actor_user: @actor.user, actor_token: @actor.token, actor_agent: @actor.agent)

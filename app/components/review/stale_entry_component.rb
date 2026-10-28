@@ -17,7 +17,7 @@ module Review
     def last_verified_label
       return "never verified" unless @asset.verified_at
 
-      by = @asset.verified_by_agent && "#{(@asset.verified_by_token&.user || @asset.owner).handle}/#{@asset.verified_by_agent}"
+      by = @asset.verified_by_agent && Actor.label((@asset.verified_by_token&.user || @asset.owner).handle, @asset.verified_by_agent)
       "verified #{@asset.verified_at.to_date.to_fs(:long)}#{" by #{by}" if by}"
     end
 

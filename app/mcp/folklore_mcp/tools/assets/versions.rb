@@ -26,7 +26,7 @@ module FolkloreMcp
               actor: version.actor_user && { handle: version.actor_user.handle, agent: version.actor_agent.to_s } }
           end
           lines = rows.map do |row|
-            by = row[:actor] ? "#{row[:actor][:handle]}/#{row[:actor][:agent]}" : "?"
+            by = row[:actor] ? Actor.label(row[:actor][:handle], row[:actor][:agent]) : "?"
             "- #{row[:created_at]}  by #{by}  (#{row[:content_type]})"
           end
 

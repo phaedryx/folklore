@@ -7,7 +7,7 @@ module FolkloreMcp
           Read an asset by location instead of slug. Provide either location (full path
           including filename, e.g. "member/notes/plan.md") or path + name (directory + leaf).
           Pass format: "json" for structured output. Optionally pass with: an array of fields
-          to return (content, name, path, content_type, status, owner, tags, created_at,
+          to return (content, name, path, content_type, kind, status, owner, tags, created_at,
           updated_at, backlinks, created_by, updated_by, verified_by, version) — omit with for
           raw content (text) or the full asset (json). Returns Not found for unknown or
           archived assets.

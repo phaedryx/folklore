@@ -21,6 +21,10 @@ namespace :folklore do
 
     user = Users::Provision.mutate(handle:, email:, name: handle, password:)
     puts "Admin: #{user.handle} <#{user.email}>"
+    if user.password_digest.blank?
+      puts "No web password is set, so the web UI cannot be signed into yet. Run this again with " \
+           "FOLKLORE_ADMIN_PASSWORD set to add one."
+    end
 
     if user.tokens.active.exists?
       puts "An MCP token already exists for #{user.handle}; issue another from the web UI or `bin/rails runner`."
