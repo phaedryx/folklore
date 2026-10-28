@@ -21,6 +21,25 @@ class Tags::ApplyTest < ActiveSupport::TestCase
     assert_equal({ "tag" => "ruby" }, event.metadata)
   end
 
+  test "adding and removing a tag is an edit, as a tags change through update is" do
+    other = actor_for(:member_default, agent: "pong")
+
+    Tags::Apply.mutate(actor: other, slug: @asset.slug, tag: "ruby")
+    @asset.reload
+    assert_equal 1, @asset.lock_version
+    assert_equal "pong", @asset.updated_by_agent
+
+    Tags::Remove.mutate(actor: @actor, slug: @asset.slug, tag: "ruby")
+    @asset.reload
+    assert_equal 2, @asset.lock_version
+    assert_equal "ping", @asset.updated_by_agent
+    assert_equal %w[asset_created tag_added asset_updated tag_removed asset_updated], Event.where(asset: @asset).order(:id).pluck(:action)
+
+    assert_raises(Assets::ConflictError) do
+      Assets::Update.mutate(actor: @actor, slug: @asset.slug, content: "late", expected_version: 0)
+    end
+  end
+
   test "raises AlreadyAppliedError when the tag is already on the asset" do
     Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "ruby")
 

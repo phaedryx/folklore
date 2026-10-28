@@ -17,14 +17,15 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
 
     refute response.to_h[:isError], text_of(response)
     lines = text_of(response).lines(chomp: true)
-    assert_equal 2, lines.size
-    assert_match(/\A\d{4}-\d{2}-\d{2}T\S+  member\/ping  tag_added  #{asset.slug}\z/, lines[0])
-    assert_match(/  member\/ping  asset_created  #{asset.slug}\z/, lines[1])
+    assert_equal 3, lines.size
+    assert_match(/\A\d{4}-\d{2}-\d{2}T\S+  member\/ping  asset_updated  #{asset.slug}\z/, lines[0])
+    assert_match(/  member\/ping  tag_added  #{asset.slug}\z/, lines[1])
+    assert_match(/  member\/ping  asset_created  #{asset.slug}\z/, lines[2])
     rows = response.to_h[:structuredContent][:events]
-    assert_equal "tag_added", rows[0][:action]
-    assert_equal({ handle: "member", agent: "ping" }, rows[0][:actor])
-    assert_equal({ "tag" => "todo" }, rows[0][:metadata])
-    assert_equal asset.slug, rows[0][:slug]
+    assert_equal "tag_added", rows[1][:action]
+    assert_equal({ handle: "member", agent: "ping" }, rows[1][:actor])
+    assert_equal({ "tag" => "todo" }, rows[1][:metadata])
+    assert_equal asset.slug, rows[1][:slug]
   end
 
   test "activity filters by actor handle/agent, tag, since and since_id" do

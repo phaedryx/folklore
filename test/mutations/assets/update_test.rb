@@ -81,6 +81,7 @@ class Assets::UpdateTest < ActiveSupport::TestCase
   test "an update that changes nothing records no event, no version and keeps the version counter and stamps" do
     Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "shell")
     other_agent = actor_for(:member_default, agent: "pong")
+    version_before = @asset.reload.lock_version
 
     assert_no_difference -> { Event.count } do
       Assets::Update.mutate(actor: other_agent, slug: @asset.slug, content: "original", name: "hello.md", tags: %w[shell])
@@ -88,7 +89,7 @@ class Assets::UpdateTest < ActiveSupport::TestCase
     end
 
     @asset.reload
-    assert_equal 0, @asset.lock_version
+    assert_equal version_before, @asset.lock_version
     assert_equal 0, @asset.versions.count
     assert_not_equal "pong", @asset.updated_by_agent
   end
