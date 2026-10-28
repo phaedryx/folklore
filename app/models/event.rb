@@ -10,6 +10,7 @@ class Event < ApplicationRecord
     tag_added tag_removed
     task_added task_claimed task_completed task_failed task_cancelled task_lease_expired
     version_restored asset_verified asset_review_scheduled asset_status_set
+    asset_imported
   ].freeze
 
   validates :action, inclusion: { in: ACTIONS }

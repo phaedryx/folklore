@@ -130,7 +130,8 @@ Before writing anything, import collects every problem in the bundle and refuses
 - the manifest's format and version, its counts, and every file's `sha256`;
 - every slug is new to this instance. Importing the same bundle twice is refused; there is no merge;
 - no live asset's location is already taken here;
-- every `owner` exists as a user;
+- every `owner` exists as a user, and owns the workspace its `dir` starts with;
+- every file sits where its front matter says it should (`assets/<dir>/<name>`, or `archived/<slug>/<dir>/<name>`);
 - every `dir` and `name` passes folklore's usual rules. The reserved `<handle>/state` directory is allowed only as
   `<handle>/state/<agent>`, where checkpoints live (see [checkpoints](checkpoints.md));
 - content is within the 1 MiB cap;
@@ -138,7 +139,7 @@ Before writing anything, import collects every problem in the bundle and refuses
 
 Then it inserts the assets with their slugs, timestamps and review dates as given, adds their tags, versions and task
 rows, resolves `[[slug]]` links once every asset is in (so a link to an asset later in the bundle resolves), and
-records one `asset_imported` event per asset. The report lists links whose target is in neither the bundle nor the
+records one `asset_imported` event per asset. Archived assets get their links when they are restored. The report lists links whose target is in neither the bundle nor the
 instance.
 
 Import keeps no record of who created or last edited an asset on the instance it came from. Its history before the
