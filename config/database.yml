@@ -1,5 +1,6 @@
-# PostgreSQL. Each Atelier workstream gets its own development and test
-# databases when ATELIER_WORKSTREAM is set; production reads DATABASE_URL.
+# PostgreSQL. FOLKLORE_DB_SUFFIX, when set, is appended to the development and
+# test database names so several checkouts on one machine use separate
+# databases. Production reads DATABASE_URL.
 default: &default
   adapter: postgresql
   encoding: unicode
@@ -9,14 +10,14 @@ default: &default
 
 development:
   <<: *default
-  database: folklore_development<%= "_#{ENV['ATELIER_WORKSTREAM']}" if ENV['ATELIER_WORKSTREAM'].present? %>
+  database: folklore_development<%= "_#{ENV['FOLKLORE_DB_SUFFIX']}" if ENV['FOLKLORE_DB_SUFFIX'].present? %>
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
   <<: *default
-  database: folklore_test<%= "_#{ENV['ATELIER_WORKSTREAM']}" if ENV['ATELIER_WORKSTREAM'].present? %>
+  database: folklore_test<%= "_#{ENV['FOLKLORE_DB_SUFFIX']}" if ENV['FOLKLORE_DB_SUFFIX'].present? %>
 
 # Production reads the connection URL from DATABASE_URL, for example
 # DATABASE_URL="postgres://folklore:secret@localhost/folklore_production".
