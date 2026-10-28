@@ -27,9 +27,13 @@ Each token has scopes:
   `activity`, `get_pending_tasks` and `get_last_session`.
 - `write` lets it call everything else.
 
-A token without `write` gets `Forbidden: token lacks write scope` from any other tool, before the tool runs. The JSON
-API answers its non-GET requests the same way, with a 403. New tokens get both scopes unless you untick `write`.
-Each tool's `readOnlyHint` annotation is what decides which scope it needs.
+A token without `write` gets `Forbidden: token lacks write scope` from any other tool, and a token without `read` gets
+`Forbidden: token lacks read scope` from the read-only ones, before the tool runs. The JSON API answers the same way
+with a 403: GET needs `read`, every other method `write`. New tokens get both scopes unless you untick one. Each
+tool's `readOnlyHint` annotation is what decides which scope it needs.
+
+The read-only tools write one thing: the search log. `search` records the query and `read`/`read_path` mark a recent
+search as followed (see [search.md](search.md)). It is telemetry, so a failure to log never fails the call.
 
 ## Agent identity
 

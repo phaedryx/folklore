@@ -16,6 +16,7 @@ module FolkloreMcp
   class Tool < MCP::Tool
     MissingActorError = Class.new(StandardError)
     SCOPE_ERROR = "Forbidden: token lacks write scope".freeze
+    READ_SCOPE_ERROR = "Forbidden: token lacks read scope".freeze
 
     # Errors a caller can act on, with the prefix their message gets. Domain
     # modules add their own with `FolkloreMcp::Tool.user_error(klass, prefix)`.
@@ -86,7 +87,8 @@ module FolkloreMcp
       # `format: "json"` gets `{"error": "..."}` back, as its successes are JSON.
       def call(server_context: nil, **args)
         format = args[:format]
-        return failure(SCOPE_ERROR, format:) unless scope_allows?(server_context)
+        scope_error = scope_error(server_context)
+        return failure(scope_error, format:) if scope_error
 
         unknown = unknown_arguments(args)
         return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}", format:) if unknown.any?
@@ -107,12 +109,17 @@ module FolkloreMcp
       private
 
       # Checked before the tool runs, so a refused call has no side effects.
+      # A read-only tool needs the read scope and any other the write scope.
       # Web sessions carry no token and are not scope-checked.
-      def scope_allows?(server_context)
-        return true if annotations_value.read_only_hint
-
+      def scope_error(server_context)
         token = server_context && (server_context[:actor] || server_context["actor"])&.token
-        token.nil? || token.writable?
+        return if token.nil?
+
+        if annotations_value.read_only_hint
+          READ_SCOPE_ERROR unless token.readable?
+        else
+          SCOPE_ERROR unless token.writable?
+        end
       end
 
       # The transport already refuses these against the closed schema; this
@@ -153,12 +160,17 @@ module FolkloreMcp
     end
 
     # Marks a recent search as answered by this read (see SearchLogs::Follow).
-    # This is the one write a read-only tool makes, and it is telemetry: a
-    # failure is logged and never fails the read.
     def follow_search(actor, asset)
-      SearchLogs::Follow.mutate(actor:, slug: asset.slug)
+      telemetry { SearchLogs::Follow.mutate(actor:, slug: asset.slug) }
+    end
+
+    # The search log is the only thing read-only tools write (`search` records
+    # a query, `read` and `read_path` mark one followed). It is telemetry: a
+    # failure is logged and never fails the call.
+    def telemetry
+      yield
     rescue ActiveRecord::ActiveRecordError => e
-      Rails.logger.warn("[MCP] search log follow failed: #{e.class}: #{e.message}")
+      Rails.logger.warn("[MCP] #{self.class.name_value} search log failed: #{e.class}: #{e.message}")
     end
 
     def text_response(text, data: nil)

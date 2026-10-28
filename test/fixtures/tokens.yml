@@ -1,5 +1,5 @@
 # Plaintexts (never stored): member_default is flk_test_member, other_default is flk_test_other,
-# member_readonly is flk_test_member_readonly.
+# member_readonly is flk_test_member_readonly, member_writeonly flk_test_member_writeonly.
 member_default:
   user: member
   agent_name: default
@@ -21,3 +21,9 @@ member_readonly:
   agent_name: reader
   token_digest: <%= Digest::SHA256.hexdigest("flk_test_member_readonly") %>
   scopes: [ read ]
+
+member_writeonly:
+  user: member
+  agent_name: writer
+  token_digest: <%= Digest::SHA256.hexdigest("flk_test_member_writeonly") %>
+  scopes: [ write ]

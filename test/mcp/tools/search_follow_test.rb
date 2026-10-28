@@ -37,6 +37,20 @@ class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
     assert_nil SearchLog.sole.followed_slug
   end
 
+  test "a search-log failure does not fail the search" do
+    ::Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "needle.md", content: "haystack")
+
+    SearchLogs::Record.singleton_class.alias_method(:original_mutate, :mutate)
+    SearchLogs::Record.define_singleton_method(:mutate) { |**| raise ActiveRecord::StatementInvalid, "boom" }
+
+    response = FolkloreMcp::Tools::Search::Search.call(q: "haystack", server_context: actor_context)
+
+    refute response.to_h[:isError], text_of(response)
+    assert_match(/needle\.md/, text_of(response))
+  ensure
+    SearchLogs::Record.singleton_class.alias_method(:mutate, :original_mutate)
+  end
+
   test "a search-log failure does not fail the read" do
     asset = search_for_needle
 

@@ -43,6 +43,21 @@ class FolkloreMcp::ScopesTest < ActiveSupport::TestCase
     assert_equal "body", text_of(response)
   end
 
+  test "every read-only tool refuses a write-only token" do
+    domain_tools.select { |tool| tool.annotations_value.read_only_hint }.each do |tool|
+      response = tool.call(server_context: actor_context(:member_writeonly))
+
+      assert_equal "Forbidden: token lacks read scope", text_of(response), tool.name_value
+    end
+  end
+
+  test "a write-only token can still call write tools" do
+    response = FolkloreMcp::Tools::Assets::Create.call(path: "member/notes", name: "w.md", content: "x",
+                                                       server_context: actor_context(:member_writeonly))
+
+    refute response.to_h[:isError], text_of(response)
+  end
+
   test "a web session has no token and is not scope-checked" do
     response = FolkloreMcp::Tools::Assets::Create.call(path: "member/notes", name: "w.md", content: "x",
                                                        server_context: { actor: Actor.for_user(users(:member)) })
