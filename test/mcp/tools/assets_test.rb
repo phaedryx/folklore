@@ -181,6 +181,9 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     tagged = Tools::List.call(path: "member/notes", tags: %w[shell], server_context: ctx)
     assert_equal "#{a.slug}  member/notes/a.md", text_of(tagged)
 
+    slashed = Tools::List.call(path: "member/notes/", server_context: ctx)
+    assert_equal text_of(response), text_of(slashed)
+
     assert_equal "No assets under member/empty", text_of(Tools::List.call(path: "member/empty", server_context: ctx))
   end
 

@@ -19,8 +19,10 @@ class Asset < ApplicationRecord
   # re-verified, so it is never stale.
   scope :stale,      -> { where(stale_after: ...Date.current) }
   scope :not_stale,  -> { where(stale_after: nil).or(where(stale_after: Date.current..)) }
-  # Assets in the given directory or any directory below it.
+  # Assets in the given directory or any directory below it. A trailing slash
+  # names the same directory.
   scope :under_dir, ->(prefix) {
+    prefix = prefix.to_s.sub(%r{/+\z}, "")
     where(dir: prefix).or(where("assets.dir LIKE ?", "#{sanitize_sql_like(prefix)}/%"))
   }
 
