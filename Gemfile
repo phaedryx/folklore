@@ -43,7 +43,7 @@ gem "heroicons-rails", "~> 1.2"
 
 # Markdown to HTML (GFM), syntax highlighting and version diffs
 gem "commonmarker", "~> 2.0"
-gem "rouge", "~> 4.0"
+gem "rouge", "~> 5.1"
 gem "diff-lcs", "~> 2.0"
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
