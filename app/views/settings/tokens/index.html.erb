@@ -20,6 +20,7 @@
       <thead>
         <tr class="border-b border-surface-200 text-left">
           <th class="px-4 py-2 font-bold">Agent</th>
+          <th class="px-4 py-2 font-bold">Scopes</th>
           <th class="px-4 py-2 font-bold">Issued</th>
           <th class="px-4 py-2 font-bold">Last used</th>
           <th class="px-4 py-2 font-bold">Status</th>
@@ -30,6 +31,7 @@
         <% @tokens.each do |token| %>
           <tr data-testid="token-<%= token.id %>" class="border-b border-surface-100 last:border-0">
             <td class="px-4 py-2 font-mono"><%= token.agent_name %></td>
+            <td class="px-4 py-2 font-mono text-surface-700"><%= token.scopes.join(", ") %></td>
             <td class="px-4 py-2 text-surface-700"><%= token.created_at.strftime("%Y-%m-%d %H:%M") %></td>
             <td class="px-4 py-2 text-surface-700"><%= token.last_used_at ? token.last_used_at.strftime("%Y-%m-%d %H:%M") : "never" %></td>
             <td class="px-4 py-2">

@@ -30,6 +30,27 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     assert_equal 401, response.status
   end
 
+  test "a read-only token may read but not write" do
+    asset = create("r.md", content: "hello")
+
+    get "/api/assets/#{asset.slug}", headers: headers("flk_test_member_readonly")
+    assert_equal 200, response.status
+
+    assert_no_difference -> { Asset.count } do
+      post "/api/assets", params: { asset: { path: "member/notes", name: "w.md", content: "x" } }.to_json,
+                          headers: headers("flk_test_member_readonly")
+    end
+    assert_equal 403, response.status
+    assert_equal [ "Forbidden: token lacks write scope" ], body.dig("data", "base")
+
+    patch "/api/assets/#{asset.slug}", params: { asset: { content: "changed" } }.to_json, headers: headers("flk_test_member_readonly")
+    assert_equal 403, response.status
+    delete "/api/assets/#{asset.slug}", headers: headers("flk_test_member_readonly")
+    assert_equal 403, response.status
+    assert_equal "hello", asset.reload.content
+    assert_nil asset.deleted_at
+  end
+
   # Index
 
   test "index requires path and returns the serialized assets under it" do

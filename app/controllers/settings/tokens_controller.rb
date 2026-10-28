@@ -6,11 +6,16 @@ module Settings
 
     def new
       @agent_name = ""
+      @scopes = Token::SCOPES
     end
 
     def create
-      @agent_name = params.require(:token)[:agent_name].to_s
-      @result = Tokens::Issue.mutate(user: current_user, agent_name: @agent_name)
+      attrs = params.require(:token).permit(:agent_name, scopes: [])
+      @agent_name = attrs[:agent_name].to_s
+      # The form always submits scopes (a blank hidden field when every box is
+      # unchecked); a request without the key gets both.
+      @scopes = attrs.key?(:scopes) ? Array(attrs[:scopes]).compact_blank : Token::SCOPES
+      @result = Tokens::Issue.mutate(user: current_user, agent_name: @agent_name, scopes: @scopes)
       render :issued
     rescue ActiveRecord::RecordInvalid => e
       @errors = e.record.errors.full_messages

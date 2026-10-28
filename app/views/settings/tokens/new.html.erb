@@ -23,6 +23,18 @@
           data: { testid: "token-agent-name" }, class: "h-10 w-full rounded-md border border-surface-300 bg-white px-3 text-base text-surface-900 placeholder:text-surface-500" %>
   </div>
 
+  <fieldset class="flex flex-col gap-2">
+    <legend class="text-sm font-bold text-surface-900">Scopes</legend>
+    <%= hidden_field_tag "token[scopes][]", "", id: nil %>
+    <% Token::SCOPES.each do |scope| %>
+      <label class="flex items-center gap-2 text-sm text-surface-900">
+        <%= check_box_tag "token[scopes][]", scope, @scopes.include?(scope), id: "token_scopes_#{scope}",
+              data: { testid: "token-scope-#{scope}" } %>
+        <span><code><%= scope %></code><%= scope == "write" ? ": create, edit, archive, tag, claim and checkpoint" : ": read, list, search and activity" %></span>
+      </label>
+    <% end %>
+  </fieldset>
+
   <div class="flex items-center gap-3">
     <%= f.submit "Issue token", data: { testid: "issue-token" }, class: "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" %>
     <%= link_to "Cancel", settings_tokens_path, class: "text-sm font-bold" %>

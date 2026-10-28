@@ -27,6 +27,29 @@ class SettingsTokensTest < ActionDispatch::IntegrationTest
     assert_no_match plaintext, response.body
   end
 
+  test "a new token gets both scopes by default, and read only when write is unchecked" do
+    get new_settings_token_path
+    assert_select "input[type=checkbox][name='token[scopes][]'][value=read][checked]"
+    assert_select "input[type=checkbox][name='token[scopes][]'][value=write][checked]"
+
+    post settings_tokens_path, params: { token: { agent_name: "both", scopes: %w[read write] } }
+    assert_equal %w[read write], users(:member).tokens.find_by!(agent_name: "both").scopes
+
+    post settings_tokens_path, params: { token: { agent_name: "reader2", scopes: %w[read] } }
+    assert_equal %w[read], users(:member).tokens.find_by!(agent_name: "reader2").scopes
+
+    get settings_tokens_path
+    assert_select "[data-testid='token-#{users(:member).tokens.find_by!(agent_name: "reader2").id}']", text: /read\b(?!, write)/
+  end
+
+  test "no scopes re-renders the form with the error" do
+    post settings_tokens_path, params: { token: { agent_name: "none", scopes: [ "" ] } }
+
+    assert_response :unprocessable_content
+    assert_select "[data-testid='token-errors']", text: /Scopes/
+    assert_select "input[type=checkbox][name='token[scopes][]'][value=write]:not([checked])"
+  end
+
   test "an invalid agent name re-renders the form with the error" do
     post settings_tokens_path, params: { token: { agent_name: "Not A Slug" } }
 
