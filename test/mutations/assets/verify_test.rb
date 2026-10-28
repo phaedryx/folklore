@@ -40,8 +40,17 @@ class Assets::VerifyTest < ActiveSupport::TestCase
     @asset.reload
     assert_equal before.to_i, @asset.updated_at.to_i
     assert_equal 0, @asset.versions.count
+    assert_equal 0, @asset.lock_version
     assert_nil @asset.updated_by_agent
     assert_equal "asset_verified", Event.where(asset_id: @asset.id).last.action
+  end
+
+  test "an update with the version read before a verify still succeeds" do
+    verify
+
+    Assets::Update.mutate(actor: @actor, slug: @asset.slug, content: "v2", expected_version: 0)
+
+    assert_equal "v2", @asset.reload.content
   end
 
   test "rejects an unparseable stale_after" do

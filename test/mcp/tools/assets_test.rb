@@ -210,6 +210,15 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal 1, asset.versions.count
   end
 
+  test "content over the cap is reported as Invalid, not Internal error" do
+    asset = create("big.md")
+
+    response = Tools::Append.call(slug: asset.slug, text: "x" * (Asset::MAX_CONTENT_BYTES + 1), server_context: ctx)
+
+    assert response.to_h[:isError]
+    assert_match(/\AInvalid: content is \d+ bytes, over the 1 MiB cap/, text_of(response))
+  end
+
   test "update with a stale expected_version is a Conflict naming the current version" do
     asset = create("u.md", content: "v1")
     Tools::Update.call(slug: asset.slug, content: "v2", server_context: ctx)

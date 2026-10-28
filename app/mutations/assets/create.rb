@@ -23,12 +23,15 @@ module Assets
     def mutate
       Asset.validate_dir!(@path, allow_reserved: @reserved)
       Asset.validate_name!(@name)
+      Asset.validate_content!(@content)
       unless @actor.user.can_write_to_workspace?(@path.split("/").first)
         raise ForbiddenError, "cannot write to #{@path}"
       end
 
       asset = nil
-      ActiveRecord::Base.transaction do
+      # A savepoint, so a unique violation inside a caller's transaction
+      # (an upsert retry, a task add) does not abort the caller.
+      ActiveRecord::Base.transaction(requires_new: true) do
         asset = Asset.create!(
           owner: @actor.user,
           slug: Asset.generate_slug,

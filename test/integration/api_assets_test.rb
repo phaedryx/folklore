@@ -95,6 +95,10 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     post "/api/assets", params: { asset: { path: "member/notes", name: "a b.md" } }.to_json, headers: headers
     assert_equal 422, response.status
     assert_match(/whitespace/, body.dig("data", "name").first)
+
+    post "/api/assets", params: { asset: { path: "member/notes", name: "big.md", content: "x" * (Asset::MAX_CONTENT_BYTES + 1) } }.to_json, headers: headers
+    assert_equal 422, response.status
+    assert_match(/over the 1 MiB cap/, body.dig("data", "content").first)
   end
 
   # Update
@@ -116,6 +120,9 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     assert_equal 409, response.status
     assert_equal "version_conflict", body.dig("data", "code")
     assert_equal "v2", asset.reload.content
+
+    patch "/api/assets/#{asset.slug}", params: { asset: { content: "v3", expected_version: "" } }.to_json, headers: headers
+    assert_equal 200, response.status, "a blank expected_version skips the check"
 
     patch "/api/assets/00000000", params: { asset: { content: "x" } }.to_json, headers: headers
     assert_equal 404, response.status

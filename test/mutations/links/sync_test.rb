@@ -65,8 +65,10 @@ class Links::SyncTest < ActiveSupport::TestCase
     live = create("live.md", "[[#{target.slug}]]")
     gone = create("gone.md", "[[#{target.slug}]]")
     Assets::Delete.mutate(actor: @actor, slug: gone.slug)
+    dangling = create("dangling.md", "[[zzzzzzzz]]")
 
     assert_equal [ live ], Links::Backlinks.query(asset: target).to_a
+    assert_equal [ [ "zzzzzzzz", nil ] ], dangling.links.pluck(:dst_ref, :dst_asset_id)
   end
 
   test "syncing is idempotent" do

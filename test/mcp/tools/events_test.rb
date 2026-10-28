@@ -50,6 +50,16 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
     assert_equal [], nothing.to_h[:structuredContent][:events]
   end
 
+  test "activity accepts a date-only since, read in the app time zone" do
+    ::Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "a.md", content: "")
+
+    response = Activity.call(since: Date.current.iso8601, server_context: actor_context)
+
+    refute response.to_h[:isError], text_of(response)
+    assert_match(/asset_created/, text_of(response))
+    assert_equal "No activity", text_of(Activity.call(since: Date.tomorrow.iso8601, server_context: actor_context))
+  end
+
   test "activity rejects an unparseable timestamp" do
     response = Activity.call(since: "yesterday-ish", server_context: actor_context)
 

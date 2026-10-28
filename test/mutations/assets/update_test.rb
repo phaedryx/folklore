@@ -99,6 +99,14 @@ class Assets::UpdateTest < ActiveSupport::TestCase
     assert_equal "v2", @asset.reload.content
   end
 
+  test "a blank expected_version skips the check" do
+    update(content: "v2")
+
+    update(content: "v3", expected_version: "")
+
+    assert_equal "v3", @asset.reload.content
+  end
+
   test "a stale expected_version raises ConflictError naming the current version and writes nothing" do
     update(content: "v2")
 

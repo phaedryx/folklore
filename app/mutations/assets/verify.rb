@@ -27,12 +27,11 @@ module Assets
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
         asset.lock!
-        asset.verified_at = Time.current
-        asset.verified_by_token = @actor.token
-        asset.verified_by_agent = @actor.agent
-        asset.stale_after = Asset.parse_stale_after!(@stale_after) unless @stale_after.equal?(UNCHANGED)
-        asset.record_timestamps = false
-        asset.save!
+        changes = { verified_at: Time.current, verified_by_token_id: @actor.token&.id, verified_by_agent: @actor.agent }
+        changes[:stale_after] = Asset.parse_stale_after!(@stale_after) unless @stale_after.equal?(UNCHANGED)
+        # Not an edit: neither updated_at nor lock_version moves, so a caller
+        # holding the version from before the verify can still update.
+        asset.update_columns(changes)
         Events::Record.mutate(actor: @actor, asset:, action: "asset_verified",
                               metadata: { "stale_after" => asset.stale_after&.iso8601 })
         asset

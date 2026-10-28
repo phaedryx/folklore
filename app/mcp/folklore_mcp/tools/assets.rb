@@ -13,6 +13,7 @@ module FolkloreMcp
       FolkloreMcp::Tool.user_error(::Assets::InvalidStatusError, "Invalid")
       FolkloreMcp::Tool.user_error(::Assets::InvalidLocationError, "Invalid")
       FolkloreMcp::Tool.user_error(::Versions::NotFoundError, "Not found")
+      FolkloreMcp::Tool.user_error(::Asset::ContentTooLargeError, "Invalid")
 
       # Fields a tool may return about one asset; every one optional because
       # `read` returns only what was asked for.

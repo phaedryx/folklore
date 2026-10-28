@@ -18,6 +18,17 @@ class Assets::SetStatusTest < ActiveSupport::TestCase
     assert_nil set("").status
   end
 
+  test "is not a content edit: no version bump or updated_at move, but the actor is stamped" do
+    before = @note.updated_at
+
+    travel(1.day) { set("done", actor: actor_for(:member_default, agent: "ping")) }
+
+    @note.reload
+    assert_equal 0, @note.lock_version
+    assert_equal before.to_i, @note.updated_at.to_i
+    assert_equal "ping", @note.updated_by_agent
+  end
+
   test "writes an asset_status_set event carrying the status" do
     set("done")
 

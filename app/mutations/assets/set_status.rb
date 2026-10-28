@@ -25,7 +25,8 @@ module Assets
         asset.lock!
         raise NotANoteError, "#{@slug} is a task; use claim_task, complete_task or fail_task" if asset.task?
 
-        asset.update!(status:, updated_by_token: @actor.token, updated_by_agent: @actor.agent)
+        # A lifecycle marker, not content: updated_at and lock_version stay put.
+        asset.update_columns(status:, updated_by_token_id: @actor.token&.id, updated_by_agent: @actor.agent)
         Events::Record.mutate(actor: @actor, asset:, action: "asset_status_set", metadata: { "status" => status })
         asset
       end

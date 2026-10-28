@@ -24,8 +24,9 @@ module Assets
 
     def mutate
       Asset.validate_name!(@name) if @name.present?
+      Asset.validate_content!(@content)
 
-      ActiveRecord::Base.transaction do
+      ActiveRecord::Base.transaction(requires_new: true) do
         asset = Assets.writable!(@slug, @actor)
         asset.lock!
         check_version!(asset)
@@ -54,7 +55,7 @@ module Assets
     private
 
     def check_version!(asset)
-      return if @expected_version.nil? || @expected_version.to_i == asset.lock_version
+      return if @expected_version.blank? || @expected_version.to_i == asset.lock_version
 
       raise ConflictError, "#{asset.slug} is at version #{asset.lock_version}"
     end

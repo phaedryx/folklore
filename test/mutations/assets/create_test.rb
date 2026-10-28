@@ -122,7 +122,10 @@ class Assets::CreateTest < ActiveSupport::TestCase
     assert_equal "member/tools.v1", create(path: "member/tools.v1").dir
   end
 
-  test "refuses content over the cap" do
-    assert_raises(ActiveRecord::StatementInvalid) { create(content: "x" * (1.megabyte + 1)) }
+  test "refuses content over the cap with a domain error and writes nothing" do
+    assert_raises(Asset::ContentTooLargeError) { create(content: "x" * (Asset::MAX_CONTENT_BYTES + 1)) }
+    assert_equal 0, Asset.count
+
+    assert_nothing_raised { create(content: "x" * Asset::MAX_CONTENT_BYTES) }
   end
 end

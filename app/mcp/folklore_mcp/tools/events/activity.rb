@@ -50,7 +50,7 @@ module FolkloreMcp
         def parse_time(field, value)
           return nil if value.blank?
 
-          Time.iso8601(value)
+          Time.zone.iso8601(value)
         rescue ArgumentError
           raise ::Events::InvalidTimestampError, "#{field} must be an ISO 8601 timestamp, got #{value.inspect}"
         end

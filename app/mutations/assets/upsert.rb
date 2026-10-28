@@ -23,6 +23,10 @@ module Assets
       return update(existing) if existing
 
       create
+    rescue Assets::NameTakenError
+      # Lost the race to another writer creating the same location: update
+      # what they created, which is what an upsert promises.
+      update(Asset.live.find_by!(dir: @path, name: @name))
     end
 
     private

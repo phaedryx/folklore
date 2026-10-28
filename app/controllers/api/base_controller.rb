@@ -13,6 +13,7 @@ module Api
     rescue_from ::Asset::InvalidDirError, with: ->(e) { render_fail({ path: [ e.message ] }) }
     rescue_from ::Asset::InvalidNameError, with: ->(e) { render_fail({ name: [ e.message ] }) }
     rescue_from ::Asset::InvalidStaleAfterError, with: ->(e) { render_fail({ stale_after: [ e.message ] }) }
+    rescue_from ::Asset::ContentTooLargeError, with: ->(e) { render_fail({ content: [ e.message ] }) }
     rescue_from ActiveRecord::RecordInvalid, with: ->(e) { render_fail(e.record.errors.as_json) }
     rescue_from ActionController::ParameterMissing, with: ->(e) { render_fail({ e.param => [ "is required" ] }) }
 

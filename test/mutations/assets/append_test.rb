@@ -36,6 +36,13 @@ class Assets::AppendTest < ActiveSupport::TestCase
     assert Event.exists?(action: "asset_updated", asset: a)
   end
 
+  test "refuses to grow past the content cap" do
+    a = log("x" * (Asset::MAX_CONTENT_BYTES - 2))
+
+    assert_raises(Asset::ContentTooLargeError) { Assets::Append.mutate(actor: @actor, slug: a.slug, text: "yy") }
+    assert_equal 0, a.versions.count
+  end
+
   test "raises NotFoundError for an unknown or deleted slug, ForbiddenError for another member" do
     a = log("x")
     assert_raises(Assets::NotFoundError) { Assets::Append.mutate(actor: @actor, slug: "00000000", text: "y") }

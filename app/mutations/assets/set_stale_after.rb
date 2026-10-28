@@ -22,10 +22,10 @@ module Assets
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
         asset.lock!
-        asset.stale_after = Asset.parse_stale_after!(@stale_after)
-        # A review date is not content, so updated_at stays put.
-        asset.record_timestamps = false
-        asset.save!
+        # A review date is not content: updated_at and lock_version stay put,
+        # but the row records who scheduled it.
+        asset.update_columns(stale_after: Asset.parse_stale_after!(@stale_after),
+                             updated_by_token_id: @actor.token&.id, updated_by_agent: @actor.agent)
         Events::Record.mutate(actor: @actor, asset:, action: "asset_review_scheduled",
                               metadata: { "stale_after" => asset.stale_after&.iso8601 })
         asset
