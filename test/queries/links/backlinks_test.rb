@@ -18,4 +18,14 @@ class Links::BacklinksTest < ActiveSupport::TestCase
   test "an asset nobody links to has no backlinks" do
     assert_empty Links::Backlinks.query(asset: asset("lonely.md"))
   end
+
+  # Only resolved links count: a link left dangling (its target archived, or
+  # never existing) names the slug in dst_ref but resolves to nothing.
+  test "a dangling link whose dst_ref names the target is not a backlink" do
+    target = asset("target.md")
+    source = asset("source.md")
+    Link.create!(src_asset: source, dst_asset: nil, dst_ref: target.slug, kind: "wikilink")
+
+    assert_empty Links::Backlinks.query(asset: target)
+  end
 end

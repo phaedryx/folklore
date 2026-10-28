@@ -122,6 +122,7 @@ module Assets
     end
 
     def match_clause(tsquery)
+      # Strictly greater, as measured; a name scoring exactly the threshold is out.
       conditions = [ "assets.content_tsv @@ #{tsquery}", "word_similarity(?, assets.name) > ?" ]
       binds = [ @query, @query, NAME_SIMILARITY_THRESHOLD ]
 
