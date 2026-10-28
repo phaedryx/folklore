@@ -26,6 +26,7 @@ module Assets
         raise AlreadyDeletedError, @slug if asset.deleted_at?
 
         asset.update!(deleted_at: Time.current, updated_by_token: @actor.token, updated_by_agent: @actor.agent)
+        Links::Sync.mutate(asset:)
         Events::Record.mutate(actor: @actor, asset:, action: "asset_deleted")
       end
       asset
