@@ -3,9 +3,13 @@ module FolkloreMcp
     module Search
       class Search < FolkloreMcp::Tool
         tool_name "search"
+        FolkloreMcp::Tool.user_error(Assets::Search::InvalidArgumentError, "Invalid")
 
         DEFAULT_LIMIT = 50
         SNIPPET_WINDOW = 120
+        # One fragment around the query words, unmarked, so the line reads as prose.
+        HEADLINE_OPTIONS = %q(MaxFragments=1, MaxWords=24, MinWords=12, StartSel="", StopSel="").freeze
+        ANY_TERM = Assets::Search::ANY_TERM
         # Filters at their default are not logged; `stale: false` is a real filter and stays.
         FILTER_DEFAULTS = { within: nil, tags: [], status: nil, task_status: nil, stale: nil, exclude_tags: [],
                             sort: nil, limit: nil, offset: 0, include_versions: false }.freeze
@@ -60,7 +64,7 @@ module FolkloreMcp
             sort:, limit:, offset:, include_versions:, actor:
           )
           results = results.limit(DEFAULT_LIMIT) if limit.blank?
-          entries = results.includes(:owner).map { |asset| entry_for(asset, q, include_versions) }
+          entries = entries_for(results.to_a, q, include_versions)
 
           SearchLogs::Record.mutate(actor:, query: q, filters:, result_slugs: entries.map { |e| e[:slug] })
 
@@ -71,42 +75,63 @@ module FolkloreMcp
 
         private
 
-        def entry_for(asset, query, include_versions)
-          snippet, displaced_at = best_snippet(asset, query, include_versions)
-          { slug: asset.slug, name: asset.name, dir: asset.dir, location: asset.location, snippet:, displaced_at: }
+        # Which content a snippet comes from is decided the way the match was: by the
+        # database, on stems. A substring check in Ruby would miss "databases" against
+        # "database" and fall through to an old version, calling a live result edited.
+        def entries_for(assets, query, include_versions)
+          ids = assets.map(&:id)
+          current = headlines(Asset.where(id: ids), "assets", query)
+          displaced = include_versions ? version_headlines(ids - current.keys, query) : {}
+
+          assets.map do |asset|
+            snippet, displaced_at =
+              if current.key?(asset.id) then [ current[asset.id], nil ]
+              elsif displaced.key?(asset.id) then displaced[asset.id]
+              else [ head_of(asset.content), nil ]
+              end
+            { slug: asset.slug, name: asset.name, dir: asset.dir, location: asset.location, snippet:, displaced_at: }
+          end
+        end
+
+        # Snippets for the rows whose content mentions any query term, keyed by id.
+        def headlines(scope, table, query)
+          scope.where("#{table}.content_tsv @@ #{ANY_TERM}", query)
+               .pluck(:id, Arel.sql(headline_sql(table, query)))
+               .to_h { |id, text| [ id, squish(text) ] }
+        end
+
+        # An asset can match only through content it no longer has, in which case snippeting
+        # its current body shows the searcher something that has nothing to do with the query.
+        # The most recent matching version is the one that was edited away last.
+        def version_headlines(ids, query)
+          return {} if ids.empty?
+
+          Version.where(asset_id: ids).where("versions.content_tsv @@ #{ANY_TERM}", query)
+                 .select("DISTINCT ON (versions.asset_id) versions.asset_id, versions.created_at, " \
+                         "#{headline_sql('versions', query)} AS headline")
+                 .order("versions.asset_id, versions.created_at DESC")
+                 .to_h { |v| [ v.asset_id, [ squish(v.headline), v.created_at.to_date.iso8601 ] ] }
+        end
+
+        def headline_sql(table, query)
+          Asset.sanitize_sql_array([
+            "ts_headline('english', coalesce(#{table}.content, ''), #{ANY_TERM}, ?)", query, HEADLINE_OPTIONS
+          ])
+        end
+
+        # A name-only match has nothing in its body to point at; the opening is the context.
+        def head_of(content)
+          text = squish(content)
+          text.length > SNIPPET_WINDOW ? "#{text[0, SNIPPET_WINDOW]}…" : text
+        end
+
+        def squish(text)
+          text.to_s.gsub(/\s+/, " ").strip
         end
 
         def line_for(entry)
           snippet = entry[:displaced_at] ? "(edited #{entry[:displaced_at]}) #{entry[:snippet]}" : entry[:snippet]
           "#{entry[:slug]}  #{entry[:name]}  (#{entry[:dir]})\n    #{snippet}"
-        end
-
-        # An asset can match only through content it no longer has, in which case snippeting
-        # its current body shows the searcher something that has nothing to do with the query.
-        def best_snippet(asset, query, include_versions)
-          return [ snippet_for(asset.content, query), nil ] if !include_versions || matches?(asset.content, query)
-
-          version = asset.versions.order(created_at: :desc).find { |v| matches?(v.content, query) }
-          return [ snippet_for(asset.content, query), nil ] unless version
-
-          [ snippet_for(version.content, query), version.created_at.to_date.iso8601 ]
-        end
-
-        def matches?(content, query)
-          content.to_s.downcase.include?(query.to_s.downcase)
-        end
-
-        def snippet_for(content, query)
-          text = content.to_s.gsub(/\s+/, " ").strip
-          return "" if text.empty?
-
-          index = text.downcase.index(query.to_s.downcase)
-          start = index ? [ index - 20, 0 ].max : 0
-          window = text[start, SNIPPET_WINDOW].to_s
-
-          leading = start.positive? ? "…" : ""
-          trailing = (start + window.length) < text.length ? "…" : ""
-          "#{leading}#{window}#{trailing}"
         end
       end
     end

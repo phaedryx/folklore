@@ -1,6 +1,9 @@
 module Assets
   class Search
+    InvalidArgumentError = Class.new(ArgumentError)
+
     SORT_COLUMNS = %w[name created_at updated_at].freeze
+    MAX_LIMIT = 500
 
     # word_similarity finds the best-matching run of trigrams inside the name, so a
     # query is compared against part of a filename rather than the whole of it:
@@ -47,6 +50,7 @@ module Assets
       @offset           = offset
       @include_versions = include_versions
       @actor            = actor
+      validate_pagination!
     end
 
     # Requiring every term is precise but brittle: one incidental word the author never
@@ -54,16 +58,32 @@ module Assets
     # any-term only once that has happened recovers those queries without diluting the
     # ones that were already answered. Widening unconditionally costs more precision
     # than it buys in recall.
+    #
+    # A negated term never widens: "kubernetes -cluster" parses to kubernet & !cluster, and
+    # ORing that would match everything that lacks the word, which is the whole corpus.
     def query
       return finish(filtered, ALL_TERMS) if @query.blank?
 
       strict = filtered(ALL_TERMS)
-      return finish(strict, ALL_TERMS) if strict.exists?
+      return finish(strict, ALL_TERMS) if strict.exists? || negated?
 
       finish(filtered(ANY_TERM), ANY_TERM)
     end
 
     private
+
+    def validate_pagination!
+      if @limit.present? && !(1..MAX_LIMIT).cover?(@limit.to_i)
+        raise InvalidArgumentError, "limit must be between 1 and #{MAX_LIMIT}, got #{@limit.inspect}"
+      end
+      if @offset.present? && @offset.to_i.negative?
+        raise InvalidArgumentError, "offset cannot be negative, got #{@offset.inspect}"
+      end
+    end
+
+    def negated?
+      Asset.connection.select_value(Asset.sanitize_sql_array([ "SELECT #{ALL_TERMS}::text", @query ])).to_s.include?("!")
+    end
 
     def filtered(tsquery = nil)
       scope = Asset.live

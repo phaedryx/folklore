@@ -116,6 +116,36 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
     assert_equal Date.current.iso8601, response.to_h[:structuredContent][:results].first[:displaced_at]
   end
 
+  # The database matched this on stems; a literal substring check would miss the current
+  # content and fall through to an old version, claiming the live result was edited away.
+  test "a result whose current content matches by stemming is not labelled as edited" do
+    note = build("db.md", content: "old: postgres databases rock")
+    rewrite(note, "postgres database is our choice")
+
+    response = Search.call(q: "postgres databases", include_versions: true, server_context: actor_context)
+
+    line = text_of(response).split("\n")[1]
+    refute_match(/edited/, line)
+    assert_match(/postgres database is our choice/, line)
+    assert_nil response.to_h[:structuredContent][:results].first[:displaced_at]
+  end
+
+  test "the snippet lands on the words of a multi-word query, not the head of the document" do
+    filler = "intro filler " * 40
+    build("deep.md", content: "#{filler}the production service restarted overnight")
+
+    response = Search.call(q: "production service", server_context: actor_context)
+
+    assert_match(/production service restarted/, text_of(response).split("\n")[1])
+  end
+
+  test "a bad limit is reported as Invalid rather than Internal error" do
+    response = Search.call(q: "haystack", limit: -1, server_context: actor_context)
+
+    assert response.to_h[:isError]
+    assert_match(/\AInvalid: limit/, text_of(response))
+  end
+
   test "without include_versions displaced content stays hidden" do
     note = build("db.md", content: "we chose postgres")
     rewrite(note, "we chose sqlite")

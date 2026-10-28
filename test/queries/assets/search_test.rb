@@ -332,6 +332,27 @@ class Assets::SearchTest < ActiveSupport::TestCase
     assert_equal %w[exact.md], results.map(&:name)
   end
 
+  # websearch_to_tsquery turns "-cluster" into !'cluster'. Rewriting & to | would make
+  # that "anything without cluster", which is the whole corpus. Negated queries stay strict.
+  test "a negated query is not widened into everything but the negated term" do
+    build("a.md", content: "kubernetes cluster")
+    build("b.md", content: "python django")
+    build("c.md", content: "ruby on rails")
+
+    results = Assets::Search.query(query: "kubernetes -cluster")
+
+    assert_empty results
+  end
+
+  test "a negated query still finds what matches it strictly" do
+    build("a.md", content: "kubernetes cluster")
+    build("b.md", content: "kubernetes helm chart")
+
+    results = Assets::Search.query(query: "kubernetes -cluster")
+
+    assert_equal %w[b.md], results.map(&:name)
+  end
+
   test "widening respects the other filters" do
     build("tagged.md", content: "cavoodle family dog", tags: %w[pets])
     build("untagged.md", content: "cavoodle family dog")
@@ -410,6 +431,29 @@ class Assets::SearchTest < ActiveSupport::TestCase
     results = Assets::Search.query(query: "rails")
 
     assert_equal %w[rails.md verbose.md], results.map(&:name)
+  end
+
+  # Three assets, two lists. rails.md leads on name but trails on content; b.md is second on
+  # name (by id, both b and c score zero) and first on content. Their fused scores are
+  # 1/61 + 1/63 against 1/62 + 1/61, so b.md wins: the sum of both ranks decides, not
+  # either list alone.
+  test "fuses the content rank with the name rank" do
+    build("rails.md", content: "rails once")
+    build("b.md", content: "rails rails rails rails rails")
+    build("c.md", content: "rails rails")
+
+    results = Assets::Search.query(query: "rails")
+
+    assert_equal %w[b.md rails.md c.md], results.map(&:name)
+  end
+
+  test "a limit outside 1..500 or a negative offset is refused" do
+    build("a.md", content: "rails")
+
+    assert_raises(Assets::Search::InvalidArgumentError) { Assets::Search.query(query: "rails", limit: 0) }
+    assert_raises(Assets::Search::InvalidArgumentError) { Assets::Search.query(query: "rails", limit: 501) }
+    assert_raises(Assets::Search::InvalidArgumentError) { Assets::Search.query(query: "rails", offset: -1) }
+    assert_equal %w[a.md], Assets::Search.query(query: "rails", limit: 500, offset: 0).map(&:name)
   end
 
   # Real miss from the eval set: the filename says everything the query does, in a
