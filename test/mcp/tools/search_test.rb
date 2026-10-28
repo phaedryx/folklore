@@ -14,6 +14,10 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
     asset.update!(content:)
   end
 
+  test "resolves the asset search query from inside the tools namespace" do
+    assert_same ::Assets::Search::ANY_TERM, FolkloreMcp::Tools::Search::Search::ANY_TERM
+  end
+
   test "is registered as search, read-only and idempotent" do
     assert_equal "search", Search.name_value
     assert_includes FolkloreMcp::Tool.registered_tools, Search
