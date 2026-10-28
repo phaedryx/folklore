@@ -22,7 +22,7 @@ gem "view_component"
 gem "lograge"
 
 # MCP server, mounted at /mcp; tools live in app/mcp/
-gem "mcp"
+gem "mcp", "~> 1.8"
 gem "dry-schema"
 
 # Password sign-in for single-user mode
