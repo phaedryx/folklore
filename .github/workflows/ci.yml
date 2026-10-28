@@ -45,9 +45,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: The predecessor's name must not appear anywhere in the repo
         run: "! git grep -i -q -E 'sceni[u]s' -- ."
+
+      - name: Nor in any commit message
+        run: "! git log --format=%B | grep -i -q -E 'sceni[u]s'"
 
   lint:
     runs-on: ubuntu-latest
