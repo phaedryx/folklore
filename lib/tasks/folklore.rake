@@ -68,3 +68,17 @@ namespace :folklore do
     SearchEval::Runner.call(args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"])
   end
 end
+
+namespace :folklore do
+  desc "Write every asset to a bundle directory (HANDLE=<handle> for one workspace); see docs/bundle.md"
+  task :export, [ :path ] => :environment do |_t, args|
+    abort "usage: bin/rails \"folklore:export[path/to/bundle]\"" if args[:path].blank?
+
+    result = Bundles::Export.query(dir: args[:path], handle: ENV["HANDLE"])
+    counts = result.counts
+    puts "Exported #{counts[:assets]} assets (#{counts[:archived]} archived, #{counts[:tasks]} tasks) " \
+         "and #{counts[:versions]} versions to #{args[:path]}"
+  rescue Bundles::Export::NotEmptyError => e
+    abort "folklore:export: #{e.message}. Export into an empty or new directory."
+  end
+end

@@ -109,7 +109,8 @@ task:
 ```
 
 `in_progress` is refused. A claim is held by a live agent under a lease, and an imported lease would describe an
-agent that is not there. Write such a task as `pending` and let it be claimed again.
+agent that is not there. Write such a task as `pending` and let it be claimed again; `folklore:export` does this
+itself.
 
 ## Versions
 
