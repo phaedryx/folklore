@@ -2,6 +2,9 @@ ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
 
+OmniAuth.config.test_mode = true
+OmniAuth.config.logger = Rails.logger
+
 Dir[Rails.root.join("test/support/**/*.rb")].sort.each { |file| require file }
 
 module ActiveSupport
@@ -11,6 +14,10 @@ module ActiveSupport
 
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
+
+    teardown do
+      OmniAuth.config.mock_auth.clear
+    end
 
     def actor_for(fixture_name, agent: nil)
       Actor.for_token(tokens(fixture_name), agent:)

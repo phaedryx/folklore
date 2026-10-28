@@ -2,6 +2,7 @@ member:
   email: member@example.com
   name: A Member
   handle: member
+  password_digest: <%= BCrypt::Password.create("member-secret", cost: 4) %>
 
 other:
   email: other@example.com
