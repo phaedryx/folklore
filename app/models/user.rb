@@ -9,7 +9,10 @@ class User < ApplicationRecord
   HANDLE_REGEX = /\A[a-z](?:[a-z0-9]|-(?=[a-z0-9])){1,31}\z/
   EMAIL_REGEX = /\A[^@\s]+@[^@\s]+\z/
 
-  RESERVED_HANDLES = %w[mcp api auth assets rails settings sign_in sign_out].freeze
+  # The first URL segment is a workspace handle, so every top-level route the
+  # web UI owns is reserved here too.
+  RESERVED_HANDLES = %w[mcp api auth assets rails settings sign_in sign_out
+                        files search tasks stale activity verifications up].freeze
 
   # A bcrypt hash of a random string, compared against when no user (or no
   # password) matches, so an unknown email costs the same as a wrong password.

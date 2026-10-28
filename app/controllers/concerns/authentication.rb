@@ -5,7 +5,7 @@ module Authentication
 
   included do
     before_action :set_current_user
-    helper_method :current_user, :signed_in?
+    helper_method :current_user, :signed_in?, :current_actor
   end
 
   private
@@ -16,6 +16,11 @@ module Authentication
 
   def current_user
     Current.user
+  end
+
+  # Web writes act as the signed-in user with the reserved `web` agent.
+  def current_actor
+    Actor.for_user(current_user) if current_user
   end
 
   def signed_in?

@@ -25,6 +25,7 @@
 
   <body class="min-h-screen font-sans text-surface-900 antialiased">
     <%= render Layout::ShellComponent.new(current_user:, wide: content_for?(:wide_layout)) do %>
+      <%= render Layout::FlashComponent.new(flash:) %>
       <%= yield %>
     <% end %>
   </body>

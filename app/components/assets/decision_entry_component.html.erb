@@ -1,0 +1,9 @@
+<li data-testid="decision-entry-<%= @asset.slug %>"
+    class="flex items-center gap-3 rounded-card border-l-4 border-l-primary border border-surface-300 bg-white p-4">
+  <span data-testid="decision-marker"
+        class="inline-flex items-center rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-medium uppercase tracking-wide text-primary-hover">
+    decision
+  </span>
+  <%= link_to @asset.name, helpers.asset_url_for(@asset),
+        class: "min-w-0 flex-1 truncate font-bold text-surface-900 no-underline hover:text-primary" %>
+</li>

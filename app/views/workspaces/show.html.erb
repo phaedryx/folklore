@@ -1,0 +1,95 @@
+<% content_for :title, "#{@dir} · Folklore" %>
+
+<div class="flex flex-wrap items-start justify-between gap-4">
+  <%= render Layout::HeaderComponent.new(owner: @owner, location: @location) %>
+  <% if @own_workspace %>
+    <%= link_to new_file_path(path: @dir), data: { testid: "new-file" },
+          class: "inline-flex h-9 items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" do %>
+      <%= heroicon_tag "plus", variant: :outline, class: "h-4 w-4" %>
+      <span>New file</span>
+    <% end %>
+  <% end %>
+</div>
+
+<% if @listing.empty? && !@show_archive_card %>
+  <p data-testid="workspace-empty" class="text-sm text-surface-700">This folder is empty.</p>
+<% else %>
+  <% if @listing.decisions.any? %>
+    <section class="mb-8" data-testid="workspace-decisions-section">
+      <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-surface-700">Decisions</h2>
+      <ul class="space-y-2">
+        <% @listing.decisions.each do |asset| %>
+          <%= render Assets::DecisionEntryComponent.new(asset:) %>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <% if @listing.failures.any? %>
+    <section class="mb-8" data-testid="workspace-failures-section">
+      <h2 class="mb-3 text-sm font-bold uppercase tracking-wide text-surface-700">Failures</h2>
+      <ul class="space-y-2">
+        <% @listing.failures.each do |asset| %>
+          <%= render Assets::FailureEntryComponent.new(asset:) %>
+        <% end %>
+      </ul>
+    </section>
+  <% end %>
+
+  <% if @listing.folders.any? || @listing.other_files.any? || @show_archive_card %>
+    <ul data-testid="browser-list" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <% @listing.folders.each do |folder| %>
+        <li data-testid="folder-row-<%= folder %>">
+          <%= link_to workspace_path(handle: @owner.handle, location: [ @location, folder ].compact.join("/")),
+                class: "flex h-full flex-col items-center gap-2 rounded-card border border-surface-300 bg-white p-4 text-center no-underline hover:border-primary hover:bg-primary-soft" do %>
+            <%= heroicon_tag "folder", variant: :outline, class: "h-12 w-12 text-primary" %>
+            <span class="w-full truncate text-sm font-bold text-surface-900"><%= folder %></span>
+          <% end %>
+        </li>
+      <% end %>
+
+      <% @listing.other_files.each do |asset| %>
+        <li data-testid="file-row-<%= asset.slug %>"
+            class="flex h-full flex-col items-center gap-2 rounded-card border border-surface-300 bg-white p-4 text-center hover:border-primary">
+          <%= link_to asset_url_for(asset), class: "flex w-full flex-col items-center gap-2 no-underline" do %>
+            <%= heroicon_tag "document", variant: :outline, class: "h-12 w-12 text-surface-500" %>
+            <span class="w-full truncate text-sm text-surface-900"><%= asset.name %></span>
+          <% end %>
+
+          <% if asset.tags.any? %>
+            <div data-testid="file-tags-<%= asset.slug %>" class="flex flex-wrap justify-center gap-1">
+              <% asset.tags.each do |tag| %>
+                <%= render ::Tags::ChipComponent.new(name: tag.name) %>
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if @own_workspace %>
+            <div data-testid="file-actions-<%= asset.slug %>" class="mt-auto flex items-center gap-3">
+              <%= link_to asset_url_for(asset, action: :edit), title: "Edit", aria: { label: "Edit #{asset.name}" },
+                    data: { testid: "file-edit-#{asset.slug}" }, class: "text-primary hover:text-primary-hover" do %>
+                <%= heroicon_tag "pencil-square", variant: :outline, class: "h-4 w-4" %>
+              <% end %>
+              <%= button_to asset_url_for(asset), method: :delete,
+                    data: { turbo_confirm: "Archive #{asset.name}?", testid: "file-archive-#{asset.slug}" },
+                    form: { class: "contents" }, title: "Archive", aria: { label: "Archive #{asset.name}" },
+                    class: "inline-flex cursor-pointer items-center border-0 bg-transparent p-0 text-primary hover:text-primary-hover" do %>
+                <%= heroicon_tag "archive-box-arrow-down", variant: :outline, class: "h-4 w-4" %>
+              <% end %>
+            </div>
+          <% end %>
+        </li>
+      <% end %>
+
+      <% if @show_archive_card %>
+        <li data-testid="folder-row-archive" class="order-last">
+          <%= link_to workspace_archive_path(@owner.handle), data: { testid: "archive-card-link" },
+                class: "flex h-full flex-col items-center gap-2 rounded-card border border-surface-300 bg-white p-4 text-center no-underline hover:border-primary hover:bg-primary-soft" do %>
+            <%= heroicon_tag "archive-box", variant: :outline, class: "h-12 w-12 text-surface-500" %>
+            <span class="w-full truncate text-sm font-bold text-surface-700">Archive</span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+<% end %>
