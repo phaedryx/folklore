@@ -80,7 +80,7 @@ module FolkloreMcp
         # "database" and fall through to an old version, calling a live result edited.
         def entries_for(assets, query, include_versions)
           ids = assets.map(&:id)
-          current = headlines(Asset.where(id: ids), "assets", query)
+          current = current_headlines(ids, query)
           displaced = include_versions ? version_headlines(ids - current.keys, query) : {}
 
           assets.map do |asset|
@@ -93,10 +93,13 @@ module FolkloreMcp
           end
         end
 
-        # Snippets for the rows whose content mentions any query term, keyed by id.
-        def headlines(scope, table, query)
-          scope.where("#{table}.content_tsv @@ #{ANY_TERM}", query)
-               .pluck(:id, Arel.sql(headline_sql(table, query)))
+        # Snippets for the assets whose current content mentions any query term, keyed by id.
+        def current_headlines(ids, query)
+          Asset.where(id: ids)
+               .where("assets.content_tsv @@ #{ANY_TERM}", query)
+               .pluck(:id, Arel.sql(Asset.sanitize_sql_array([
+                 "ts_headline('english', coalesce(assets.content, ''), #{ANY_TERM}, ?)", query, HEADLINE_OPTIONS
+               ])))
                .to_h { |id, text| [ id, squish(text) ] }
         end
 
@@ -106,17 +109,15 @@ module FolkloreMcp
         def version_headlines(ids, query)
           return {} if ids.empty?
 
-          Version.where(asset_id: ids).where("versions.content_tsv @@ #{ANY_TERM}", query)
-                 .select("DISTINCT ON (versions.asset_id) versions.asset_id, versions.created_at, " \
-                         "#{headline_sql('versions', query)} AS headline")
+          Version.where(asset_id: ids)
+                 .where("versions.content_tsv @@ #{ANY_TERM}", query)
+                 .select(Version.sanitize_sql_array([
+                   "DISTINCT ON (versions.asset_id) versions.asset_id, versions.created_at, " \
+                   "ts_headline('english', coalesce(versions.content, ''), #{ANY_TERM}, ?) AS headline",
+                   query, HEADLINE_OPTIONS
+                 ]))
                  .order("versions.asset_id, versions.created_at DESC")
                  .to_h { |v| [ v.asset_id, [ squish(v.headline), v.created_at.to_date.iso8601 ] ] }
-        end
-
-        def headline_sql(table, query)
-          Asset.sanitize_sql_array([
-            "ts_headline('english', coalesce(#{table}.content, ''), #{ANY_TERM}, ?)", query, HEADLINE_OPTIONS
-          ])
         end
 
         # A name-only match has nothing in its body to point at; the opening is the context.
