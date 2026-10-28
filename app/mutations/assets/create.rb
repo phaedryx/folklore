@@ -3,9 +3,8 @@ module Assets
   # (dir, name) among live assets is the database's call: the partial unique
   # index decides the race, and its violation surfaces as NameTakenError.
   class Create
-    Error = Class.new(StandardError)
-    ForbiddenError = Class.new(Error)
-    NameTakenError = Class.new(Error)
+    ForbiddenError = Assets::ForbiddenError
+    NameTakenError = Assets::NameTakenError
 
     def self.mutate(actor:, path:, name:, content: nil, content_type: nil, tags: [], reserved: false)
       new(actor:, path:, name:, content:, content_type:, tags:, reserved:).mutate

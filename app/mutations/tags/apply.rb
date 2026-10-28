@@ -1,10 +1,9 @@
 module Tags
   class Apply
-    Error = Class.new(StandardError)
-    NotFoundError = Class.new(Error)
-    ForbiddenError = Class.new(Error)
-    AlreadyAppliedError = Class.new(Error)
-    InvalidTagError = Class.new(Error)
+    NotFoundError = Tags::NotFoundError
+    ForbiddenError = Tags::ForbiddenError
+    AlreadyAppliedError = Tags::AlreadyAppliedError
+    InvalidTagError = Tags::InvalidTagError
 
     def self.mutate(actor:, slug:, tag:)
       new(actor:, slug:, tag:).mutate

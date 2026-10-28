@@ -1,9 +1,8 @@
 module Tags
   class Remove
-    Error = Class.new(StandardError)
-    NotFoundError = Class.new(Error)
-    ForbiddenError = Class.new(Error)
-    NotAppliedError = Class.new(Error)
+    NotFoundError = Tags::NotFoundError
+    ForbiddenError = Tags::ForbiddenError
+    NotAppliedError = Tags::NotAppliedError
 
     def self.mutate(actor:, slug:, tag:)
       new(actor:, slug:, tag:).mutate
