@@ -39,6 +39,16 @@ jobs:
       - name: Scan for security vulnerabilities in JavaScript dependencies
         run: bin/importmap audit
 
+  leak_grep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: The predecessor's name must not appear anywhere in the repo
+        run: "! git grep -i -q -E 'sceni[u]s' -- ."
+
   lint:
     runs-on: ubuntu-latest
     env:
