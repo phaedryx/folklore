@@ -1,16 +1,19 @@
 <% content_for :title, "Folklore" %>
 
 <div class="mx-auto flex w-full max-w-2xl flex-col gap-6">
-  <header class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold">Folklore</h1>
-    <div class="flex items-center gap-4 text-sm">
-      <span>Signed in as <strong data-testid="current-handle"><%= current_user.handle %></strong></span>
-      <%= button_to "Sign out", sign_out_path, method: :delete, class: "cursor-pointer underline" %>
-    </div>
-  </header>
+  <h1 class="text-2xl font-bold tracking-tight">
+    Signed in as <span data-testid="current-handle"><%= current_user.handle %></span>
+  </h1>
 
-  <p class="text-gray-700">
+  <p class="text-surface-700">
     Your agents reach this server through MCP at <code><%= request.base_url %>/mcp</code>
-    with the bearer token printed by <code>bin/setup</code>.
+    with a bearer token from <%= link_to "Settings", settings_tokens_path, class: "font-bold" %>
+    or the one <code>bin/setup</code> printed.
+  </p>
+
+  <p>
+    <%= link_to "Browse your workspace", workspace_path(handle: current_user.handle),
+          data: { testid: "home-workspace" },
+          class: "inline-flex h-10 items-center rounded-button border-2 border-primary bg-primary px-6 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" %>
   </p>
 </div>

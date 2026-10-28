@@ -1,0 +1,104 @@
+/* Material Palenight for Rouge. Scope: `.highlight`.
+ * The comment colour is raised from canonical #676e95 to #8f97be for
+ * contrast on #292d3e (4.77:1); line numbers keep #676e95.
+ */
+.highlight {
+  color: #a6accd;
+  background: #292d3e;
+}
+
+/* Comments */
+.highlight .c,
+.highlight .ch,
+.highlight .c1,
+.highlight .cm,
+.highlight .cs,
+.highlight .sd   { color: #8f97be; font-style: italic; }
+.highlight .cp,
+.highlight .cpf  { color: #c792ea; }
+
+/* Keywords */
+.highlight .k,
+.highlight .kc,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr   { color: #c792ea; }
+.highlight .kt   { color: #ffcb6b; }
+.highlight .nt   { color: #f07178; }
+
+/* Names */
+.highlight .n,
+.highlight .nx,
+.highlight .nv,
+.highlight .vc,
+.highlight .vg,
+.highlight .vi   { color: #a6accd; }
+.highlight .na   { color: #c792ea; }
+.highlight .nb   { color: #82aaff; }
+.highlight .nc,
+.highlight .ne,
+.highlight .nn   { color: #ffcb6b; }
+.highlight .ni   { color: #f78c6c; }
+.highlight .nd   { color: #82aaff; }
+.highlight .nf,
+.highlight .fm,
+.highlight .nl   { color: #82aaff; }
+.highlight .no   { color: #f78c6c; }
+
+/* Strings */
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sb,
+.highlight .sc,
+.highlight .sh,
+.highlight .sx,
+.highlight .dl   { color: #c3e88d; }
+.highlight .ss   { color: #f78c6c; }
+.highlight .si   { color: #89ddff; }
+.highlight .se   { color: #89ddff; }
+.highlight .sr   { color: #89ddff; }
+.highlight .sa   { color: #c792ea; }
+
+/* Numbers */
+.highlight .m,
+.highlight .mi,
+.highlight .mf,
+.highlight .il,
+.highlight .mh,
+.highlight .mo,
+.highlight .mb   { color: #f78c6c; }
+
+/* Operators / punctuation */
+.highlight .o,
+.highlight .ow,
+.highlight .p,
+.highlight .pi   { color: #89ddff; }
+
+/* Errors / invalid */
+.highlight .err  { color: #ff5370; text-decoration: underline; }
+
+/* Generic (diffs, markdown headings) */
+.highlight .gh,
+.highlight .gu   { color: #82aaff; font-weight: 700; }
+.highlight .gd   { color: #f07178; }
+.highlight .gi   { color: #c3e88d; }
+.highlight .gs   { font-weight: 700; }
+.highlight .ge   { font-style: italic; }
+.highlight .gp   { color: #676e95; }
+.highlight .gt   { color: #ff5370; }
+
+/* Line numbers */
+.highlight .lineno,
+.highlight .gl   { color: #676e95; }
+
+/* Block chrome */
+.highlight pre {
+  margin: 0;
+  padding: 1em;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}

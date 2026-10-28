@@ -1,1 +1,285 @@
 @import "tailwindcss";
+
+@theme {
+  /* ==========================================================================
+     Palette, derived from Material Palenight.
+     Rouge (app/assets/stylesheets/rouge.css) uses the canonical Palenight
+     colours directly; these ramps stretch each of those accents into a 50-900
+     ramp for the light app shell around it. The shell stays light on purpose:
+     the views assume ink on white cards over a surface-50 page.
+
+       primary    #C792EA purple  at 400   (keywords)
+       secondary  #89DDFF cyan    at 300   (operators)
+       surface    #A6ACCD fg      at 400, #676E95 comments at 600,
+                  #1B1E2B (Palenight's darker chrome) at 900, the body ink
+       success    #C3E88D green   at 300   (strings)
+       warning    #FFCB6B yellow  at 300   (types)
+       error      #F07178 / #FF5370 at 400 / 500
+       info       #82AAFF blue    at 400   (functions)
+
+     primary-900 is the Palenight code background #292D3E, not a purple: the
+     ramp bends from purple into Palenight's blue-grey from 800 down, so dark
+     chrome painted with primary-800/900 matches highlighted code.
+
+     --------------------------------------------------------------------------
+     WHICH STEP CAN CARRY TEXT
+
+     Body text needs WCAG AA 4.5:1. "white" is --color-white; "ink" is
+     --color-surface-900, the default body colour set on html below.
+
+       ramp        white text from   ink text up to   dead step
+       primary          600               500            -
+       secondary        700               500           600
+       surface          600               500            -
+       success          700               600            -
+       warning          700               500           600
+       error            700               500           600
+       info             600               500            -
+
+     Read it as: a filled button in `bg-success-*` or `bg-warning-*` needs 700
+     or darker before white text is legible. success-500 is 2.2:1 and
+     warning-500 2.4:1: Palenight's accents are tuned for a dark background,
+     so their mid steps look like buttons and fail as ones. error-600 is the
+     near miss at 4.4:1; use 700.
+
+     A "dead step" carries neither white nor ink at 4.5:1: secondary-600,
+     warning-600 and error-600. Use them for borders, icons, and large or bold
+     display text (all of which need only 3:1, which every step in the gap
+     clears) but not for body copy.
+
+     Known gap: surface-500 (#878db3) is 3.2:1 on white. It is used for
+     placeholders and muted meta text; that is under AA for body copy, so keep
+     it to text that is supplementary, and reach for surface-700 when the
+     words matter. No colour passes 4.5:1 against both white and the ink.
+     -------------------------------------------------------------------------- */
+
+  /* ---------- Primary (Palenight purple) ---------- */
+  --color-primary-50:  #faf5fe;
+  --color-primary-100: #f3e8fc;
+  --color-primary-200: #e7d2f8;
+  --color-primary-300: #d8b6f2;
+  --color-primary-400: #c792ea;
+  --color-primary-500: #ad70d8;
+  --color-primary-600: #9459c4;
+  --color-primary-700: #7e4aae;
+  --color-primary-800: #4f4479;
+  --color-primary-900: #292d3e;
+
+  /* ---------- Secondary (Palenight cyan) ---------- */
+  --color-secondary-50:  #effbff;
+  --color-secondary-100: #d9f5ff;
+  --color-secondary-200: #b8ecff;
+  --color-secondary-300: #89ddff;
+  --color-secondary-400: #5fc8f0;
+  --color-secondary-500: #3aaed8;
+  --color-secondary-600: #268fb5;
+  --color-secondary-700: #1c7090;
+  --color-secondary-800: #16566e;
+  --color-secondary-900: #0e3646;
+
+  /* ---------- Surface (Palenight blue-grey; replaces Tailwind's neutral) ---------- */
+  --color-surface-50:  #f6f7fb;
+  --color-surface-100: #eceef6;
+  --color-surface-200: #dcdfee;
+  --color-surface-300: #c4c8e0;
+  --color-surface-400: #a6accd;
+  --color-surface-500: #878db3;
+  --color-surface-600: #676e95;
+  --color-surface-700: #4e5579;
+  --color-surface-800: #32374d;
+  --color-surface-900: #1b1e2b;
+
+  /* ---------- Success (Palenight green) ---------- */
+  --color-success-50:  #f7fcef;
+  --color-success-100: #edf8dc;
+  --color-success-200: #dcf1bb;
+  --color-success-300: #c3e88d;
+  --color-success-400: #a8d66a;
+  --color-success-500: #8bbf4b;
+  --color-success-600: #6f9e36;
+  --color-success-700: #567d29;
+  --color-success-800: #3f5c1f;
+  --color-success-900: #273a13;
+
+  /* ---------- Warning (Palenight yellow) ---------- */
+  --color-warning-50:  #fffaeb;
+  --color-warning-100: #fff2cf;
+  --color-warning-200: #ffe3a0;
+  --color-warning-300: #ffcb6b;
+  --color-warning-400: #f7b44a;
+  --color-warning-500: #e0962f;
+  --color-warning-600: #b97621;
+  --color-warning-700: #94591a;
+  --color-warning-800: #714315;
+  --color-warning-900: #4d2e0f;
+
+  /* ---------- Error (Palenight red) ---------- */
+  --color-error-50:  #fff3f5;
+  --color-error-100: #ffe0e5;
+  --color-error-200: #ffc2cb;
+  --color-error-300: #f99aa8;
+  --color-error-400: #f07178;
+  --color-error-500: #ff5370;
+  --color-error-600: #d93a55;
+  --color-error-700: #b02a42;
+  --color-error-800: #851f32;
+  --color-error-900: #561523;
+
+  /* ---------- Info (Palenight blue) ---------- */
+  --color-info-50:  #f2f6ff;
+  --color-info-100: #e0eaff;
+  --color-info-200: #c4d6ff;
+  --color-info-300: #a5c0ff;
+  --color-info-400: #82aaff;
+  --color-info-500: #5f8cec;
+  --color-info-600: #4670cc;
+  --color-info-700: #3657a6;
+  --color-info-800: #29427e;
+  --color-info-900: #1c2c53;
+
+  /* ---------- Semantic aliases ----------
+     700 is the lightest primary step that carries white text comfortably
+     (6.0:1); 600 is 4.6:1, barely over, and 500 only 3.4:1, so buttons must
+     not drift lighter. 800 is 8.5:1 on white and 7.3:1 on primary-soft. */
+  --color-primary:        var(--color-primary-700);
+  --color-primary-hover:  var(--color-primary-800);
+  --color-primary-soft:   var(--color-primary-100);
+
+  /* ---------- Utility colors ---------- */
+  --color-black: #1b1e2b;
+  --color-white: #fefdff;
+
+  /* No focus token in Palenight. info-800 is the darkest blue step, for
+     contrast against the surface-50 page behind the 4px outline offset. */
+  --color-focus: var(--color-info-800);
+
+  /* ---------- Typography ---------- */
+  --font-sans:  'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, serif;
+
+  /* ---------- Radii (button == card == 1rem; thick CTA == 3rem) ---------- */
+  --radius-card:   1rem;
+  --radius-button: 1rem;
+  --radius-thick:  3rem;
+
+  /* ---------- Breakpoints (Tailwind defaults + custom xs/xmd/mxl/xxl/3xl) ---------- */
+  --breakpoint-xs:  500px;
+  --breakpoint-xmd: 900px;
+  --breakpoint-mxl: 1150px;
+  --breakpoint-xxl: 1366px;
+  --breakpoint-3xl: 1920px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-surface-900);
+    background-color: var(--color-surface-50);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 4px;
+  }
+
+  a {
+    color: var(--color-primary);
+  }
+  a:hover {
+    color: var(--color-primary-hover);
+  }
+}
+
+.prose-asset {
+  line-height: 1.65;
+  color: var(--color-surface-900);
+  background: #ffffff;
+  border: 1px solid var(--color-surface-200);
+  border-radius: 8px;
+  padding: 2rem 2.5rem;
+}
+.prose-asset > :first-child { margin-top: 0; }
+.prose-asset > :last-child { margin-bottom: 0; }
+.prose-asset h1, .prose-asset h2, .prose-asset h3, .prose-asset h4 {
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.25;
+}
+.prose-asset h1 { font-size: 1.875rem; }
+.prose-asset h2 { font-size: 1.5rem; }
+.prose-asset h3 { font-size: 1.25rem; }
+.prose-asset h4 { font-size: 1.125rem; }
+.prose-asset p,
+.prose-asset ul,
+.prose-asset ol,
+.prose-asset blockquote,
+.prose-asset pre,
+.prose-asset table {
+  margin: 0.75em 0;
+}
+.prose-asset ul { list-style: disc; padding-left: 1.5em; }
+.prose-asset ol { list-style: decimal; padding-left: 1.5em; }
+.prose-asset li { margin: 0.25em 0; }
+.prose-asset blockquote {
+  border-left: 3px solid var(--color-surface-300);
+  padding-left: 1em;
+  color: var(--color-surface-700);
+}
+.prose-asset code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--color-surface-100);
+  padding: 0.125em 0.35em;
+  border-radius: 4px;
+}
+.prose-asset pre {
+  background: var(--color-surface-50);
+  border: 1px solid var(--color-surface-200);
+  border-radius: 6px;
+  padding: 1em;
+  overflow-x: auto;
+}
+.prose-asset pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.875rem;
+}
+.prose-asset .highlight {
+  border-radius: 6px;
+  overflow: hidden;
+}
+.prose-asset .highlight pre {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.prose-asset .highlight code {
+  color: inherit;
+  background: transparent;
+}
+.prose-asset table {
+  border-collapse: collapse;
+  width: 100%;
+}
+.prose-asset th, .prose-asset td {
+  border: 1px solid var(--color-surface-200);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+.prose-asset th {
+  background: var(--color-surface-50);
+  font-weight: 700;
+}
+.prose-asset hr {
+  border: 0;
+  border-top: 1px solid var(--color-surface-200);
+  margin: 2em 0;
+}
+
+/* Side-by-side version diff (Versions::DiffComponent). */
+.diff-line { min-height: 1.5em; }
+.diff-added { background: var(--color-success-100); color: var(--color-success-900); }
+.diff-removed { background: var(--color-error-100); color: var(--color-error-900); }
+.diff-empty { min-height: 1.5em; background: var(--color-surface-50); }

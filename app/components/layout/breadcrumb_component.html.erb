@@ -1,0 +1,15 @@
+<nav aria-label="breadcrumb" class="text-sm">
+  <ol class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-surface-700">
+    <li>
+      <%= link_to @handle, helpers.workspace_path(handle: @handle),
+            class: "font-medium text-surface-700 no-underline hover:text-primary" %>
+    </li>
+    <% crumbs.each do |crumb| %>
+      <li aria-hidden="true" class="text-surface-400">/</li>
+      <li>
+        <%= link_to crumb[:label], crumb[:url],
+              class: "text-surface-700 no-underline hover:text-primary" %>
+      </li>
+    <% end %>
+  </ol>
+</nav>
