@@ -3,7 +3,6 @@ module FolkloreMcp
     module Search
       class Search < FolkloreMcp::Tool
         tool_name "search"
-        FolkloreMcp::Tool.user_error(::Assets::Search::InvalidArgumentError, "Invalid")
 
         DEFAULT_LIMIT = 50
         SNIPPET_WINDOW = 120

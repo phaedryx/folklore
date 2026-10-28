@@ -69,7 +69,7 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
 
   test "domain input errors are reported with their message, not as Internal error" do
     { "dir" => /\AInvalid: path segments cannot be/, "stale" => /\AInvalid: stale_after must be/,
-      "agent" => /\AInvalid: agent/, "missing" => /\ANot found/, "conflict" => /\AConflict/ }.each do |mode, pattern|
+      "agent" => /\AInvalid: agent/, "missing" => /\ANot found: asset\z/, "conflict" => /\AConflict/ }.each do |mode, pattern|
       response = Echo.call(message: "hi", fail_with: mode, server_context: actor_context)
 
       assert response.to_h[:isError], mode
