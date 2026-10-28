@@ -12,7 +12,8 @@ curl -s -X POST http://localhost:3000/mcp \
 
 On `initialize`, the server sends instructions that tell the agent three things: read its checkpoint first and write
 one before it stops, verify a fact that still holds instead of editing it, and use `search` with `stale: true` to find
-what is due for review. Clients on protocol `2024-11-05` do not receive these instructions, which is why the
+what is due for review. `search` needs a query, so this finds overdue notes on a topic; the whole review queue is the
+web UI's `/stale` page. Clients on protocol `2024-11-05` do not receive these instructions, which is why the
 checkpoint tools repeat them in their own descriptions.
 
 ## Tokens and scopes
@@ -27,9 +28,13 @@ Each token has scopes:
   `activity`, `get_pending_tasks` and `get_last_session`.
 - `write` lets it call everything else.
 
-A token without `write` gets `Forbidden: token lacks write scope` from any other tool, before the tool runs. The JSON
-API answers its non-GET requests the same way, with a 403. New tokens get both scopes unless you untick `write`.
-Each tool's `readOnlyHint` annotation is what decides which scope it needs.
+A token without `write` gets `Forbidden: token lacks write scope` from any other tool, and a token without `read` gets
+`Forbidden: token lacks read scope` from the read-only ones, before the tool runs. The JSON API answers the same way
+with a 403: GET needs `read`, every other method `write`. New tokens get both scopes unless you untick one. Each
+tool's `readOnlyHint` annotation is what decides which scope it needs.
+
+The read-only tools write one thing: the search log. `search` records the query and `read`/`read_path` mark a recent
+search as followed (see [search.md](search.md)). It is telemetry, so a failure to log never fails the call.
 
 ## Agent identity
 
@@ -58,13 +63,14 @@ the tool's `outputSchema`. Tools that take `format: "json"` put the JSON in the 
 `get_pending_tasks` print one `slug  location` line per hit (search prints `slug  name  (dir)` with a snippet line
 under it), so line-oriented scripts keep working.
 
-Errors come back with `isError: true` and one of these prefixes:
+Errors come back with `isError: true` and one of these prefixes. A call made with `format: "json"` (`read`,
+`read_path`, `bulk_read`) gets the same text as `{"error": "..."}`, in the text content and the structured content:
 
 | Text | Meaning |
 |---|---|
-| `Not found: <slug or location>` | No such live asset (archived assets are not found) |
-| `Forbidden: ...` | Not your workspace, or the token lacks the write scope |
-| `Conflict: <slug> is at version N` | `update` got an `expected_version` that is out of date |
+| `Not found: ...` | No such live asset (archived assets are not found), or `remove_tag` of a tag the asset does not have |
+| `Forbidden: ...` | Not your workspace, or the token lacks the scope the tool needs |
+| `Conflict: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, the asset is already archived or not archived, or `add_tag` of a tag it already has |
 | `Invalid: ...` | A bad argument: path, name, date, agent, cursor, content over 1 MiB, ... |
 | `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type |
 | `Missing required arguments: ...` | A required argument was left out |
@@ -89,7 +95,9 @@ description, schemas and annotations. In brief:
 - `bulk_read(slugs, locations)` reads many in one call under a `max_bytes` budget (default 100 000). A key that fails is
   reported in place.
 - `list(path)` lists a directory and its subtree, with `tags`, `sort`, `limit` and `offset`.
-- `versions(slug)` lists prior contents, newest first.
+- `versions(slug)` lists an asset's prior versions, newest first: when each was replaced, by whom, and its content type.
+  It does not return their text; read an old version on the web UI's **History** page, or find it with
+  `search(include_versions: true)`.
 - `tags(within)` counts tags over live assets.
 - `activity` is the event log, newest first. Filter by `actor` (`handle` or `handle/agent`), `tag`, `since` and
   `before` (ISO 8601). `since_id` reads forward from an event id, oldest first. A non-numeric id is `Invalid`.

@@ -9,7 +9,7 @@ In single-user mode, sign in at `/sign_in` with the email and password from `bin
 is also a developer sign-in, for existing users only.
 
 **A web session acts as the agent `web`.** Your edits, verifications, archives and restores are recorded as
-`handle/web`, and so is any task you claim from the browser. A web session has no token, so it is not scope-checked.
+`handle/web`. Tasks are read-only in the browser: claiming and finishing them is done over MCP. A web session has no token, so it is not scope-checked.
 It has no checkpoint of its own, and it cannot use the `agent` override.
 
 ## Pages

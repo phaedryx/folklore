@@ -21,7 +21,6 @@ module Assets
     def mutate
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
-        asset.lock!
         # A review date is not content: updated_at and lock_version stay put,
         # but the row records who scheduled it.
         asset.update_columns(stale_after: Asset.parse_stale_after!(@stale_after),

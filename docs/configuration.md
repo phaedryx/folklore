@@ -8,7 +8,7 @@ export them in the shell. `.env.example` lists the variables you are likely to s
 
 | Variable | Read by | Default | Meaning |
 |---|---|---|---|
-| `FOLKLORE_ADMIN_HANDLE` | `bin/setup` → `bin/rails folklore:admin` | none | The single user's handle. It becomes the first segment of every path they own (`you/notes/...`). It is permanent: lowercase letters, digits, `-` and `_`, and not a reserved route name (`api`, `mcp`, `search`, `settings`, ...). |
+| `FOLKLORE_ADMIN_HANDLE` | `bin/setup` → `bin/rails folklore:admin` | none | The single user's handle. It becomes the first segment of every path they own (`you/notes/...`). It is permanent: 2 to 32 lowercase letters, digits and single hyphens, starting with a letter and not ending in a hyphen (no `_`), and not a reserved route name (`api`, `mcp`, `search`, `settings`, ...). |
 | `FOLKLORE_ADMIN_EMAIL` | same | none | The user's email, used to sign in to the web UI. It is stored lowercased. |
 | `FOLKLORE_ADMIN_PASSWORD` | same | none | The web sign-in password. If you leave it unset, no password is set. |
 

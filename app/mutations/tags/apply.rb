@@ -18,16 +18,14 @@ module Tags
     def mutate
       raise InvalidTagError, "tag is required" if @name.empty?
 
-      asset = Asset.live.find_by(slug: @slug)
-      raise NotFoundError, @slug unless asset
-      raise ForbiddenError, "cannot write to #{asset.location}" unless @actor.user.can_write_to_workspace?(asset.workspace_handle)
-      raise AlreadyAppliedError, "tag #{@name} is already on #{@slug}" if asset.tags.exists?(name: @name)
-
       ActiveRecord::Base.transaction do
+        asset = Tags.writable!(@slug, @actor)
+        raise AlreadyAppliedError, "tag #{@name} is already on #{@slug}" if asset.tags.exists?(name: @name)
+
         AssetTag.create!(asset:, tag: Tag.find_or_create_by!(name: @name))
         Events::Record.mutate(actor: @actor, asset:, action: "tag_added", metadata: { "tag" => @name })
+        Tags.touch!(asset, @actor)
       end
-      asset
     end
   end
 end

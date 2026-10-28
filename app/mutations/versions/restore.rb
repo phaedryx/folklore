@@ -17,7 +17,6 @@ module Versions
     def mutate
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
-        asset.lock!
         version = asset.versions.find_by(id: @version_id)
         raise NotFoundError, "version #{@version_id} is not on #{@slug}" unless version
 

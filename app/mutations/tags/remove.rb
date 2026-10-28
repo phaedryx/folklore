@@ -15,18 +15,15 @@ module Tags
     end
 
     def mutate
-      asset = Asset.live.find_by(slug: @slug)
-      raise NotFoundError, @slug unless asset
-      raise ForbiddenError, "cannot write to #{asset.location}" unless @actor.user.can_write_to_workspace?(asset.workspace_handle)
-
-      asset_tag = asset.asset_tags.joins(:tag).find_by(tags: { name: @name })
-      raise NotAppliedError, "tag #{@name} is not on #{@slug}" unless asset_tag
-
       ActiveRecord::Base.transaction do
+        asset = Tags.writable!(@slug, @actor)
+        asset_tag = asset.asset_tags.joins(:tag).find_by(tags: { name: @name })
+        raise NotAppliedError, "tag #{@name} is not on #{@slug}" unless asset_tag
+
         asset_tag.destroy!
         Events::Record.mutate(actor: @actor, asset:, action: "tag_removed", metadata: { "tag" => @name })
+        Tags.touch!(asset, @actor)
       end
-      asset
     end
   end
 end

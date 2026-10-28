@@ -24,6 +24,11 @@ class Token < ApplicationRecord
     revoked_at.present?
   end
 
+  # Read-only tools and GET API calls need the read scope.
+  def readable?
+    scopes.include?("read")
+  end
+
   # Write tools and non-GET API calls need the write scope.
   def writable?
     scopes.include?("write")

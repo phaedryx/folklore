@@ -19,7 +19,7 @@ jobs:
           bundler-cache: true
 
       - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
+        run: bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error
       
       - name: Scan for known security vulnerabilities in gems used
         run: bin/bundler-audit
@@ -111,6 +111,16 @@ jobs:
         with:
           bundler-cache: true
 
+      # The fresh-install path a new user takes: prepare the database,
+      # provision the admin and print a first token.
+      - name: Setup
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+          FOLKLORE_ADMIN_HANDLE: ci
+          FOLKLORE_ADMIN_EMAIL: ci@example.com
+          FOLKLORE_ADMIN_PASSWORD: ci-password
+        run: bin/setup --skip-server
+
       - name: Run tests
         env:
           RAILS_ENV: test
@@ -118,6 +128,12 @@ jobs:
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           # REDIS_URL: redis://localhost:6379/0
         run: bin/rails db:test:prepare test
+
+      - name: Seeds
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+        run: bin/rails db:seed:replant
 
   system-test:
     runs-on: ubuntu-latest

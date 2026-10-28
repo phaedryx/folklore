@@ -67,7 +67,7 @@ module FolkloreMcp
           results = results.limit(DEFAULT_LIMIT) if limit.blank?
           entries = entries_for(results.to_a, q, include_versions)
 
-          SearchLogs::Record.mutate(actor:, query: q, filters:, result_slugs: entries.map { |e| e[:slug] })
+          telemetry { SearchLogs::Record.mutate(actor:, query: q, filters:, result_slugs: entries.map { |e| e[:slug] }) }
 
           text = entries.map { |e| line_for(e) }.join("\n")
           text_response(entries.any? ? text : "No results for #{q.inspect}",

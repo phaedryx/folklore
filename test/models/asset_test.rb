@@ -40,6 +40,14 @@ class AssetTest < ActiveSupport::TestCase
     refute_includes found, sibling
   end
 
+  test "under_dir treats a trailing slash as the same directory" do
+    exact = build(dir: "a/b", name: "x.md")
+    child = build(dir: "a/b/c", name: "x.md")
+
+    assert_equal [ exact, child ], Asset.under_dir("a/b/").order(:id).to_a
+    assert_equal [ exact, child ], Asset.under_dir("a/b//").order(:id).to_a
+  end
+
   test "under_dir escapes LIKE wildcards in the prefix" do
     literal = build(dir: "a/b_c", name: "x.md")
     other = build(dir: "a/bxc", name: "x.md")

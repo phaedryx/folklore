@@ -28,7 +28,6 @@ module Assets
 
       ActiveRecord::Base.transaction(requires_new: true) do
         asset = Assets.writable!(@slug, @actor)
-        asset.lock!
         check_version!(asset)
 
         content_changed = !@content.nil? && @content != asset.content

@@ -33,7 +33,8 @@ have no checkpoint.
 
 Because a checkpoint is a plain asset, it gets everything an asset has:
 
-- Every overwrite keeps the previous text as a version (`versions(slug)`, or **History** in the web UI).
+- Every overwrite keeps the previous text as a version. `versions(slug)` lists them; the text of an old one is on its
+  **History** page in the web UI.
 - `read_path(location: "you/state/ping/last_session.md")` reads any agent's checkpoint. Every user can read every
   checkpoint, as with any asset.
 - `list(path: "you/state")` shows every agent's checkpoint.

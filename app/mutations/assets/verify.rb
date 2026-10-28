@@ -26,7 +26,6 @@ module Assets
     def mutate
       ActiveRecord::Base.transaction do
         asset = Assets.writable!(@slug, @actor)
-        asset.lock!
         changes = { verified_at: Time.current, verified_by_token_id: @actor.token&.id, verified_by_agent: @actor.agent }
         changes[:stale_after] = Asset.parse_stale_after!(@stale_after) unless @stale_after.equal?(UNCHANGED)
         # Not an edit: neither updated_at nor lock_version moves, so a caller

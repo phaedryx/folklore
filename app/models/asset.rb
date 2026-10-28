@@ -19,10 +19,18 @@ class Asset < ApplicationRecord
   # re-verified, so it is never stale.
   scope :stale,      -> { where(stale_after: ...Date.current) }
   scope :not_stale,  -> { where(stale_after: nil).or(where(stale_after: Date.current..)) }
-  # Assets in the given directory or any directory below it.
+  # Assets in the given directory or any directory below it. A trailing slash
+  # names the same directory.
   scope :under_dir, ->(prefix) {
+    prefix = prefix.to_s.sub(%r{/+\z}, "")
     where(dir: prefix).or(where("assets.dir LIKE ?", "#{sanitize_sql_like(prefix)}/%"))
   }
+
+  # The row lock a write takes. Writers never change an asset's key, so they
+  # take FOR NO KEY UPDATE rather than FOR UPDATE: it still serialises writers
+  # of one asset, but does not block the key-share lock a foreign key check
+  # takes, so two assets written at once to link to each other cannot deadlock.
+  WRITE_LOCK = "FOR NO KEY UPDATE".freeze
 
   SLUG_CHARS = "0123456789abcdefghjkmnpqrstvwxyz".freeze
   NOTE_STATUSES = %w[open done].freeze

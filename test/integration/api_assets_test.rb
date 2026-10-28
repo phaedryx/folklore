@@ -169,4 +169,15 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     delete "/api/assets/00000000", headers: headers
     assert_equal 404, response.status
   end
+
+  test "a write-only token may write but not read" do
+    asset = create("w.md", content: "hello")
+
+    get "/api/assets/#{asset.slug}", headers: headers("flk_test_member_writeonly")
+    assert_equal 403, response.status
+    assert_equal [ "Forbidden: token lacks read scope" ], body.dig("data", "base")
+
+    patch "/api/assets/#{asset.slug}", params: { asset: { content: "changed" } }.to_json, headers: headers("flk_test_member_writeonly")
+    assert_equal 200, response.status
+  end
 end
