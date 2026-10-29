@@ -45,6 +45,14 @@ class SchemaTest < ActiveSupport::TestCase
     end
   end
 
+  test "the events action check matches Event::ACTIONS" do
+    definition = connection.select_value(<<~SQL)
+      SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'events_action_check'
+    SQL
+
+    assert_equal Event::ACTIONS.sort, definition.scan(/'([a-z_]+)'/).flatten.sort
+  end
+
   test "pg_trgm is enabled" do
     assert connection.extension_enabled?("pg_trgm")
   end

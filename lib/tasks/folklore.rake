@@ -68,3 +68,37 @@ namespace :folklore do
     SearchEval::Runner.call(args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"])
   end
 end
+
+namespace :folklore do
+  desc "Write every asset to a bundle directory (HANDLE=<handle> for one workspace); see docs/bundle.md"
+  task :export, [ :path ] => :environment do |_t, args|
+    abort "usage: bin/rails \"folklore:export[path/to/bundle]\"" if args[:path].blank?
+
+    result = Bundles::Export.query(dir: args[:path], handle: ENV["HANDLE"])
+    counts = result.counts
+    puts "Exported #{counts[:assets]} assets (#{counts[:archived]} archived, #{counts[:tasks]} tasks) " \
+         "and #{counts[:versions]} versions to #{args[:path]}"
+  rescue Bundles::Export::NotEmptyError => e
+    abort "folklore:export: #{e.message}. Export into an empty or new directory."
+  end
+end
+
+namespace :folklore do
+  desc "Import a bundle directory in one transaction (DRY_RUN=1 to check it and write nothing); see docs/bundle.md"
+  task :import, [ :path ] => :environment do |_t, args|
+    abort "usage: bin/rails \"folklore:import[path/to/bundle]\"" if args[:path].blank?
+
+    report = Bundles::Import.mutate(dir: args[:path], dry_run: ENV["DRY_RUN"].present?)
+    counts = report.counts
+    puts "#{report.dry_run ? 'Would import' : 'Imported'} #{counts[:assets]} assets (#{counts[:archived]} archived, " \
+         "#{counts[:tasks]} tasks) and #{counts[:versions]} versions from #{args[:path]}#{' (dry run)' if report.dry_run}"
+    if report.dangling_links.any?
+      puts "#{report.dangling_links.size} links name an asset in neither the bundle nor this instance:"
+      report.dangling_links.each { |link| puts "  #{link[:location]} (#{link[:slug]}) -> [[#{link[:ref]}]]" }
+    end
+  rescue Bundles::Import::RejectedError => e
+    warn "folklore:import: #{e.message}. Nothing was written."
+    e.errors.each { |error| warn "  #{error}" }
+    exit 1
+  end
+end
