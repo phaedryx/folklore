@@ -183,6 +183,19 @@ class Bundles::ImportTest < ActiveSupport::TestCase
     assert_match(/1 MiB/, rejection.errors.join)
   end
 
+  test "a tag or task note over its length limit is rejected with nothing written" do
+    @bundle.asset(name: "a.md", tags: [ "t" * (Tag::MAX_NAME_LENGTH + 1) ])
+    @bundle.asset(name: "t.md", task: { status: "done", attempts: 1, outcome_note: "n" * (Task::MAX_NOTE_LENGTH + 1),
+                                        created_at: Time.utc(2026, 1, 1), updated_at: Time.utc(2026, 1, 1) })
+    @bundle.write
+
+    before = table_counts
+    errors = rejection.errors.join("\n")
+    assert_match(/a\.md: tag is 101 characters, over the 100 character limit/, errors)
+    assert_match(/t\.md: task outcome_note is 10001 characters, over the 10000 character limit/, errors)
+    assert_equal before, table_counts
+  end
+
   test "an unknown format version is rejected" do
     @bundle.asset(name: "a.md")
     @bundle.write
