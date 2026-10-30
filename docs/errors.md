@@ -50,7 +50,7 @@ new token form re-render instead, keeping what was typed.
 | `invalid_name` | 422 | `name` | A blank name, one with `/` or whitespace, `.` or `..`, or one over 255 characters |
 | `invalid_path` | 422 | `path` | A malformed path, or one over 1024 characters |
 | `reserved_path` | 422 | `path` | A path under `<handle>/state` or `<handle>/archive` |
-| `invalid_location` | 422 | `location` | `read_path` or `bulk_read` given a location without a filename or workspace handle |
+| `invalid_location` | 422 | `location` | `read` given a location without a filename or workspace handle |
 | `content_too_large` | 422 | `content` | Content over 1 MiB |
 | `invalid_stale_after` | 422 | `stale_after` | A review date that is not `YYYY-MM-DD` |
 | `invalid_status` | 422 | `status` | A note status or task status filter that is not allowed |
@@ -60,7 +60,7 @@ new token form re-render instead, keeping what was typed.
 | `reason_required` | 422 | `reason` | `fail_task` without a reason |
 | `note_too_long` | 422 | | `complete_task`'s note or `fail_task`'s reason is over 10,000 characters |
 | `invalid_lease` | 422 | `lease_seconds` | A lease outside 1 to the maximum |
-| `invalid_argument` | 422 | | A search, `claim_task` or `get_pending_tasks` argument out of range, or a missing slug and prefix |
+| `invalid_argument` | 422 | | A search, `claim_task` or `get_pending_tasks` argument out of range, a missing slug and prefix, or a `read` of no refs or more than 50 |
 | `empty_content` | 422 | `content` | `update_last_session` with empty content |
 | `no_agent` | 422 | | A checkpoint call from a web session |
 | `no_handle` | 422 | | A checkpoint call from a user without a handle |

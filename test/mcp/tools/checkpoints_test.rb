@@ -39,9 +39,11 @@ class FolkloreMcp::Tools::CheckpointsTest < ActiveSupport::TestCase
 
     response = Get.call(server_context: ctx)
 
-    assert_equal "Checkpoint (member/state/default/last_session.md, updated #{asset.updated_at.iso8601}):\n\nmid-refactor on paths\n", text_of(response)
-    assert_equal({ agent: "member/default", location: "member/state/default/last_session.md", slug: asset.slug,
-                   updated_at: asset.updated_at.iso8601, content: "mid-refactor on paths" }, response.to_h[:structuredContent])
+    expected = { agent: "member/default", location: "member/state/default/last_session.md", slug: asset.slug,
+                 updated_at: asset.updated_at.iso8601, content: "mid-refactor on paths" }
+    assert_equal expected, response.to_h[:structuredContent]
+    # The content once: the text is the structured content as JSON, as the MCP spec recommends.
+    assert_equal expected.stringify_keys, JSON.parse(text_of(response))
   end
 
   test "update_last_session overwrites the single checkpoint asset" do

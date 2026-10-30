@@ -32,11 +32,11 @@ class SerializedListQueriesTest < ActionDispatch::IntegrationTest
     assert_equal index_queries(1), index_queries(4)
   end
 
-  test "bulk_read runs the same number of queries for one slug as for four" do
+  test "read of an array runs the same number of queries for one slug as for four" do
     counts = [ 1, 4 ].map do |count|
       slugs = seed(count).map(&:slug)
       count_queries do
-        response = FolkloreMcp::Tools::Assets::BulkRead.call(slugs:, format: "json", server_context: actor_context)
+        response = FolkloreMcp::Tools::Assets::Read.call(ref: slugs, server_context: actor_context)
         refute response.to_h[:isError]
       end
     end

@@ -18,7 +18,7 @@ class ReadAuthorizationTest < ActiveSupport::TestCase
   test "another member reads an asset by slug, by path and in bulk" do
     assert_equal @note, Assets::Read.query(slug: @note.slug, actor: @reader)
     assert_equal @note, Assets::ReadByPath.query(location: @note.location, actor: @reader)
-    assert_equal [ @note ], Assets::BulkRead.query(slugs: [ @note.slug ], actor: @reader).items.map(&:asset)
+    assert_equal [ @note ], Assets::BulkRead.query(refs: [ @note.slug ], actor: @reader).items.map(&:asset)
   end
 
   test "another member lists, browses and searches a workspace that is not theirs" do

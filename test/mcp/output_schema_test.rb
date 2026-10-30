@@ -27,7 +27,6 @@ class FolkloreMcp::OutputSchemaTest < ActiveSupport::TestCase
     "add_tag" => ->(t) { { slug: t.create("a.md").slug, tag: "ruby" } },
     "add_task" => ->(_) { { path: "member/tasks", name: "t.md", content: "do it" } },
     "append" => ->(t) { { slug: t.create("a.md").slug, text: "more" } },
-    "bulk_read" => ->(t) { { slugs: [ t.create("a.md").slug, "00000000" ], format: "json" } },
     "claim_task" => ->(t) { { slug: t.task("t.md").slug } },
     "complete_task" => ->(t) { { slug: t.claimed("t.md").slug } },
     "create" => ->(_) { { path: "member/notes", name: "new.md", content: "x" } },
@@ -36,8 +35,7 @@ class FolkloreMcp::OutputSchemaTest < ActiveSupport::TestCase
     "get_last_session" => ->(t) { ::Checkpoints::Write.mutate(actor: t.actor_for(:member_default), content: "state"); {} },
     "get_pending_tasks" => ->(t) { t.task("t.md"); { path_prefix: "member" } },
     "list" => ->(t) { t.create("a.md", tags: %w[ruby]); { path: "member" } },
-    "read" => ->(t) { { slug: t.create("a.md").slug } },
-    "read_path" => ->(t) { { location: t.create("a.md").location } },
+    "read" => ->(t) { { ref: t.create("a.md").slug } },
     "remove_tag" => ->(t) { { slug: t.create("a.md", tags: %w[ruby]).slug, tag: "ruby" } },
     "restore" => ->(t) { { slug: t.create("a.md").tap { |a| ::Assets::Delete.mutate(actor: t.actor_for(:member_default), slug: a.slug) }.slug } },
     "search" => ->(t) { t.create("a.md", content: "needle"); { q: "needle" } },
@@ -72,5 +70,14 @@ class FolkloreMcp::OutputSchemaTest < ActiveSupport::TestCase
     rescue MCP::Tool::OutputSchema::ValidationError => e
       flunk "#{tool.name_value}: #{e.message}"
     end
+  end
+
+  # read answers one asset for a ref and a list for an array; both are checked.
+  test "read's array form matches its outputSchema" do
+    tool = FolkloreMcp::Tools::Assets::Read
+    response = tool.call(ref: [ create("a.md").slug, "00000000" ], include: %w[content tags], server_context: actor_context).to_h
+
+    refute response[:isError], response[:content].inspect
+    tool.output_schema.validate_result(JSON.parse(JSON.generate(response[:structuredContent])))
   end
 end

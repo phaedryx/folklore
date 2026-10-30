@@ -37,10 +37,6 @@ module FolkloreMcp
           optional(:lease_until).maybe(:string)
         end
       end
-
-      # The read tools answer with the asset's content or chosen fields.
-      READ_FIELDS = %i[content name path content_type kind status owner tags created_at updated_at
-                       backlinks created_by updated_by verified_by version].freeze
     end
   end
 end

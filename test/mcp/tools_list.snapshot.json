@@ -297,280 +297,6 @@
     }
   },
   {
-    "name": "bulk_read",
-    "description": "Read many assets in one call by slug and/or location (full path including filename).\nProvide at least one of slugs: or locations:. Pass format: \"json\" for structured output\n(default text). Set include_content: false to return metadata only. Stops including\nbodies once max_bytes is exceeded and sets truncated: true.",
-    "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "slugs": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "locations": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "format": {
-          "type": "string",
-          "minLength": 1
-        },
-        "include_content": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "max_bytes": {
-          "type": "integer",
-          "not": {
-            "type": "null"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "assets": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "key": {
-                "type": "string",
-                "minLength": 1
-              },
-              "error": {
-                "type": "string",
-                "minLength": 1
-              },
-              "content_omitted": {
-                "type": "boolean",
-                "not": {
-                  "type": "null"
-                }
-              },
-              "slug": {
-                "type": "string",
-                "minLength": 1
-              },
-              "name": {
-                "type": "string",
-                "minLength": 1
-              },
-              "content": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "content_type": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "kind": {
-                "type": "string",
-                "minLength": 1
-              },
-              "status": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "owner_handle": {
-                "type": "string",
-                "minLength": 1
-              },
-              "owner": {
-                "type": "string",
-                "minLength": 1
-              },
-              "path": {
-                "type": "string",
-                "minLength": 1
-              },
-              "dir": {
-                "type": "string",
-                "minLength": 1
-              },
-              "location": {
-                "type": "string",
-                "minLength": 1
-              },
-              "tags": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "created_at": {
-                "type": "string",
-                "minLength": 1
-              },
-              "updated_at": {
-                "type": "string",
-                "minLength": 1
-              },
-              "version": {
-                "type": "integer",
-                "not": {
-                  "type": "null"
-                }
-              },
-              "stale_after": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "verified_at": {
-                "type": [
-                  "null",
-                  "string"
-                ]
-              },
-              "created_by": {
-                "type": [
-                  "null",
-                  "object"
-                ],
-                "properties": {
-                  "handle": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "agent": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": []
-              },
-              "updated_by": {
-                "type": [
-                  "null",
-                  "object"
-                ],
-                "properties": {
-                  "handle": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "agent": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": []
-              },
-              "verified_by": {
-                "type": [
-                  "null",
-                  "object"
-                ],
-                "properties": {
-                  "handle": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "agent": {
-                    "type": "string",
-                    "minLength": 1
-                  }
-                },
-                "required": []
-              },
-              "backlinks": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "slug": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "location": {
-                      "type": "string",
-                      "minLength": 1
-                    },
-                    "name": {
-                      "type": "string",
-                      "minLength": 1
-                    }
-                  },
-                  "required": [
-                    "slug",
-                    "location",
-                    "name"
-                  ]
-                }
-              },
-              "task": {
-                "type": [
-                  "null",
-                  "object"
-                ],
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "claimed_by": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  },
-                  "lease_until": {
-                    "type": [
-                      "null",
-                      "string"
-                    ]
-                  }
-                },
-                "required": []
-              }
-            },
-            "required": []
-          }
-        },
-        "bytes_returned": {
-          "type": "integer",
-          "not": {
-            "type": "null"
-          }
-        },
-        "truncated": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        }
-      },
-      "required": [
-        "assets",
-        "bytes_returned",
-        "truncated"
-      ]
-    },
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    }
-  },
-  {
     "name": "claim_task",
     "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, token, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
     "inputSchema": {
@@ -1164,112 +890,55 @@
   },
   {
     "name": "read",
-    "description": "Read an asset by slug. With no flags it returns the raw content (default).\nRequest metadata fields individually with boolean flags — any combination of\nname, path, content_type, kind, status, owner, tags, created_at, updated_at, backlinks,\ncreated_by, updated_by, verified_by, version — and only those fields are returned.\nAdd content: true to include the body alongside the requested metadata. Pass\nformat: \"json\" for structured output (full asset when no flags; selected fields\nwhen flags are set). Returns Not found for unknown or archived assets.",
+    "description": "Read by ref: a slug, a location (handle/dir/name), or an array of up to 50 of either.\nReturns the whole asset, or with include just the slug and those fields.\nAn array returns {assets, bytes_returned, truncated}: a ref that fails gets error and code\nin its place, and content stops after max_bytes (default 100000, at most 1000000).\nArchived assets are not found.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
-        "slug": {
-          "type": "string",
-          "minLength": 1
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          ]
         },
-        "format": {
-          "type": "string",
-          "minLength": 1
-        },
-        "content": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
+        "include": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "content",
+              "name",
+              "path",
+              "content_type",
+              "kind",
+              "status",
+              "owner",
+              "tags",
+              "created_at",
+              "updated_at",
+              "backlinks",
+              "created_by",
+              "updated_by",
+              "verified_by",
+              "version"
+            ]
           }
         },
-        "name": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "path": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "content_type": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "kind": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "status": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "owner": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "tags": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "created_at": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "updated_at": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "backlinks": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "created_by": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "updated_by": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "verified_by": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
-        },
-        "version": {
-          "type": "boolean",
-          "not": {
-            "type": "null"
-          }
+        "max_bytes": {
+          "type": "integer"
         }
       },
       "required": [
-        "slug"
+        "ref"
       ],
       "additionalProperties": false
     },
@@ -1459,191 +1128,73 @@
             }
           },
           "required": []
-        }
-      }
-    },
-    "annotations": {
-      "destructiveHint": false,
-      "idempotentHint": true,
-      "openWorldHint": false,
-      "readOnlyHint": true
-    }
-  },
-  {
-    "name": "read_path",
-    "description": "Read an asset by location instead of slug. Provide either location (full path\nincluding filename, e.g. \"member/notes/plan.md\") or path + name (directory + leaf).\nPass format: \"json\" for structured output. Optionally pass with: an array of fields\nto return (content, name, path, content_type, kind, status, owner, tags, created_at,\nupdated_at, backlinks, created_by, updated_by, verified_by, version) — omit with for\nraw content (text) or the full asset (json). Returns Not found for unknown or\narchived assets.",
-    "inputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "location": {
-          "type": "string",
-          "minLength": 1
         },
-        "path": {
-          "type": "string",
-          "minLength": 1
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "format": {
-          "type": "string",
-          "minLength": 1
-        },
-        "with": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "outputSchema": {
-      "$schema": "https://json-schema.org/draft/2020-12/schema",
-      "type": "object",
-      "properties": {
-        "slug": {
-          "type": "string",
-          "minLength": 1
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "content": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "content_type": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "kind": {
-          "type": "string",
-          "minLength": 1
-        },
-        "status": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "owner_handle": {
-          "type": "string",
-          "minLength": 1
-        },
-        "owner": {
-          "type": "string",
-          "minLength": 1
-        },
-        "path": {
-          "type": "string",
-          "minLength": 1
-        },
-        "dir": {
-          "type": "string",
-          "minLength": 1
-        },
-        "location": {
-          "type": "string",
-          "minLength": 1
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "created_at": {
-          "type": "string",
-          "minLength": 1
-        },
-        "updated_at": {
-          "type": "string",
-          "minLength": 1
-        },
-        "version": {
-          "type": "integer",
-          "not": {
-            "type": "null"
-          }
-        },
-        "stale_after": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "verified_at": {
-          "type": [
-            "null",
-            "string"
-          ]
-        },
-        "created_by": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "handle": {
-              "type": "string",
-              "minLength": 1
-            },
-            "agent": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": []
-        },
-        "updated_by": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "handle": {
-              "type": "string",
-              "minLength": 1
-            },
-            "agent": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": []
-        },
-        "verified_by": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "handle": {
-              "type": "string",
-              "minLength": 1
-            },
-            "agent": {
-              "type": "string",
-              "minLength": 1
-            }
-          },
-          "required": []
-        },
-        "backlinks": {
+        "assets": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
+              "ref": {
+                "type": "string",
+                "minLength": 1
+              },
+              "error": {
+                "type": "string",
+                "minLength": 1
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content_omitted": {
+                "type": "boolean",
+                "not": {
+                  "type": "null"
+                }
+              },
               "slug": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "content_type": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "owner_handle": {
+                "type": "string",
+                "minLength": 1
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "dir": {
                 "type": "string",
                 "minLength": 1
               },
@@ -1651,42 +1202,154 @@
                 "type": "string",
                 "minLength": 1
               },
-              "name": {
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "created_at": {
                 "type": "string",
                 "minLength": 1
+              },
+              "updated_at": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "integer",
+                "not": {
+                  "type": "null"
+                }
+              },
+              "stale_after": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "verified_at": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              },
+              "created_by": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "updated_by": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "verified_by": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "handle": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "agent": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": []
+              },
+              "backlinks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "location": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "location",
+                    "name"
+                  ]
+                }
+              },
+              "task": {
+                "type": [
+                  "null",
+                  "object"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "claimed_by": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  },
+                  "lease_until": {
+                    "type": [
+                      "null",
+                      "string"
+                    ]
+                  }
+                },
+                "required": []
               }
             },
-            "required": [
-              "slug",
-              "location",
-              "name"
-            ]
+            "required": []
           }
         },
-        "task": {
-          "type": [
-            "null",
-            "object"
-          ],
-          "properties": {
-            "status": {
-              "type": "string",
-              "minLength": 1
-            },
-            "claimed_by": {
-              "type": [
-                "null",
-                "string"
-              ]
-            },
-            "lease_until": {
-              "type": [
-                "null",
-                "string"
-              ]
-            }
-          },
-          "required": []
+        "bytes_returned": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        },
+        "truncated": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
         }
       }
     },

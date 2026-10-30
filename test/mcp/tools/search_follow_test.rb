@@ -1,7 +1,7 @@
 require "test_helper"
 
 # A read of a search result marks the search as answered, so the search log
-# can grow the eval set. Wired into read and read_path.
+# can grow the eval set. Wired into read.
 class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
   setup { ENV["FOLKLORE_SEARCH_LOG"] = "1" }
   teardown { ENV.delete("FOLKLORE_SEARCH_LOG") }
@@ -15,16 +15,16 @@ class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
   test "read of a search result follows the search" do
     asset = search_for_needle
 
-    response = FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context)
+    response = FolkloreMcp::Tools::Assets::Read.call(ref: asset.slug, server_context: actor_context)
 
     refute response.to_h[:isError]
     assert_equal asset.slug, SearchLog.sole.followed_slug
   end
 
-  test "read_path of a search result follows the search" do
+  test "read by location of a search result follows the search" do
     asset = search_for_needle
 
-    FolkloreMcp::Tools::Assets::ReadPath.call(location: asset.location, server_context: actor_context)
+    FolkloreMcp::Tools::Assets::Read.call(ref: asset.location, server_context: actor_context)
 
     assert_equal asset.slug, SearchLog.sole.followed_slug
   end
@@ -34,17 +34,17 @@ class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
     FolkloreMcp::Tools::Search::Search.call(q: "haystack", server_context: actor_context(agent: "ping"))
     assert_equal "ping", SearchLog.sole.actor_agent
 
-    FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context(agent: "pong"))
+    FolkloreMcp::Tools::Assets::Read.call(ref: asset.slug, server_context: actor_context(agent: "pong"))
     assert_nil SearchLog.sole.followed_slug
 
-    FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context(agent: "ping"))
+    FolkloreMcp::Tools::Assets::Read.call(ref: asset.slug, server_context: actor_context(agent: "ping"))
     assert_equal asset.slug, SearchLog.sole.followed_slug
   end
 
   test "a failed read follows nothing" do
     search_for_needle
 
-    FolkloreMcp::Tools::Assets::Read.call(slug: "zzzzzzzz", server_context: actor_context)
+    FolkloreMcp::Tools::Assets::Read.call(ref: "zzzzzzzz", server_context: actor_context)
 
     assert_nil SearchLog.sole.followed_slug
   end
@@ -69,10 +69,10 @@ class FolkloreMcp::Tools::SearchFollowTest < ActiveSupport::TestCase
     SearchLogs::Follow.singleton_class.alias_method(:original_mutate, :mutate)
     SearchLogs::Follow.define_singleton_method(:mutate) { |**| raise ActiveRecord::StatementInvalid, "boom" }
 
-    response = FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context)
+    response = FolkloreMcp::Tools::Assets::Read.call(ref: asset.slug, server_context: actor_context)
 
     refute response.to_h[:isError]
-    assert_equal "haystack", text_of(response)
+    assert_equal "haystack", response.to_h[:structuredContent][:content]
   ensure
     SearchLogs::Follow.singleton_class.alias_method(:mutate, :original_mutate)
   end

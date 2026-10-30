@@ -1,52 +1,30 @@
 module FolkloreMcp
-  # Shapes a `read` response: raw content by default, or the requested
-  # metadata fields in a fixed order, as text lines or a JSON object.
+  # Shapes one asset for `read`: the full serialized asset when nothing is
+  # named, otherwise its slug and the named fields in a fixed order, with
+  # content last.
   class ReadFormatter
-    METADATA_FIELDS = %i[
-      name path content_type kind status owner tags created_at updated_at
+    FIELDS = %w[
+      content name path content_type kind status owner tags created_at updated_at
       backlinks created_by updated_by verified_by version
     ].freeze
+    METADATA_FIELDS = (FIELDS - %w[content]).map(&:to_sym).freeze
 
-    Rendered = Data.define(:text, :data)
-
-    def self.call(asset, requested:, format: "text")
-      formatter = new(asset, requested:)
-      format.to_s == "json" ? formatter.json_payload : formatter.text_payload
+    def self.call(asset, include:)
+      new(asset, include:).call
     end
 
-    # Both shapes from one serialization and one backlinks query, for tools
-    # that answer with text and structured content together.
-    def self.render(asset, requested:)
-      formatter = new(asset, requested:)
-      Rendered.new(text: formatter.text_payload, data: formatter.json_payload)
-    end
-
-    def initialize(asset, requested:)
+    def initialize(asset, include:)
       @asset = asset
-      @requested = Array(requested).map(&:to_sym)
+      @include = include&.map(&:to_sym)
     end
 
-    def json_payload
-      return data if @requested.empty?
+    def call
+      return data if @include.nil?
 
       payload = { slug: data[:slug] }
-      METADATA_FIELDS.select { |field| @requested.include?(field) }.each do |field|
-        payload[field] = json_field_value(field)
-      end
-      payload[:content] = data[:content] if @requested.include?(:content)
+      METADATA_FIELDS.select { |field| @include.include?(field) }.each { |field| payload[field] = value(field) }
+      payload[:content] = data[:content] if @include.include?(:content)
       payload
-    end
-
-    def text_payload
-      return @asset.content.to_s if @requested.empty?
-
-      header = METADATA_FIELDS.select { |field| @requested.include?(field) }
-                              .map { |field| text_field_line(field) }
-
-      segments = []
-      segments << header.join("\n") if header.any?
-      segments << @asset.content.to_s if @requested.include?(:content)
-      segments.join("\n---\n")
     end
 
     private
@@ -55,34 +33,18 @@ module FolkloreMcp
       @data ||= ::Assets::Serializer.call(@asset)
     end
 
-    def backlinks
-      @backlinks ||= Links::Backlinks.query(asset: @asset).map do |source|
-        { slug: source.slug, location: source.location, name: source.name }
-      end
-    end
-
-    def json_field_value(field)
+    def value(field)
       case field
       when :owner then data[:owner_handle]
-      when :tags then Array(data[:tags])
       when :backlinks then backlinks
       else data[field]
       end
     end
 
-    def text_field_line(field)
-      case field
-      when :backlinks
-        [ "backlinks:", *backlinks.map { |link| "#{link[:slug]}  #{link[:location]}" } ].join("\n")
-      when :created_by, :updated_by, :verified_by
-        "#{field}: #{actor_text(data[field])}"
-      else
-        "#{field}: #{json_field_value(field).then { |v| v.is_a?(Array) ? v.join(', ') : v }}"
+    def backlinks
+      Links::Backlinks.query(asset: @asset).map do |source|
+        { slug: source.slug, location: source.location, name: source.name }
       end
-    end
-
-    def actor_text(actor)
-      actor ? Actor.label(actor[:handle], actor[:agent]) : ""
     end
   end
 end

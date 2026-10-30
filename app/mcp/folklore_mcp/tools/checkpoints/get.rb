@@ -32,9 +32,8 @@ module FolkloreMcp
                                  data: { agent: who, location:, content: nil })
           end
 
-          updated_at = checkpoint.updated_at.iso8601
-          text_response("Checkpoint (#{location}, updated #{updated_at}):\n\n#{checkpoint.content}\n",
-                        data: { agent: who, location:, slug: checkpoint.slug, updated_at:, content: checkpoint.content })
+          json_response(agent: who, location:, slug: checkpoint.slug, updated_at: checkpoint.updated_at.iso8601,
+                        content: checkpoint.content)
         end
       end
     end

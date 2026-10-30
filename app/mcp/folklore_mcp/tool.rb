@@ -169,7 +169,7 @@ module FolkloreMcp
     end
 
     # The search log is the only thing read-only tools write (`search` records
-    # a query, `read` and `read_path` mark one followed). It is telemetry: a
+    # a query, `read` marks one followed). It is telemetry: a
     # failure is logged and never fails the call.
     def telemetry
       yield

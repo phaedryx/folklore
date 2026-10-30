@@ -34,6 +34,7 @@ module DomainErrors
     Assets::InvalidStatusError => entry("invalid_status", :unprocessable_content, :status),
     Assets::InvalidLocationError => entry("invalid_location", :unprocessable_content, :location),
     Assets::Search::InvalidArgumentError => entry("invalid_argument", :unprocessable_content),
+    Assets::BulkRead::InvalidArgumentError => entry("invalid_argument", :unprocessable_content),
     Asset::InvalidNameError => entry("invalid_name", :unprocessable_content, :name),
     Asset::InvalidDirError => entry("invalid_path", :unprocessable_content, :path),
     Asset::ReservedDirError => entry("reserved_path", :unprocessable_content, :path),
