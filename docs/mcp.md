@@ -44,14 +44,17 @@ A token issued as **shared** (a box at **Settings → Tokens**) is for several a
 `get_last_session` take an optional `agent` argument, and on a shared token it sets the agent for that call. So two
 agents that share one token, say `ping` and `pong`, keep separate checkpoints, exclude each other on task claims, and
 are each recorded as the author of their own writes. Pass your `agent` on every call. A call without one acts as the
-token's own agent name.
+token's own agent name. Checkpoints are keyed by token as well, so whatever `agent` a shared token passes, it never
+reads or overwrites another token's checkpoint (see [checkpoints.md](checkpoints.md)).
 
 A token that is not shared acts only as its own agent: passing any other `agent` gets `Invalid: token "<name>" is not
 shared ...` and changes nothing. Passing its own name is allowed.
 
 **Upgrading.** Tokens issued before the shared flag existed are not shared. If several agents use one of them with
 `agent`, issue a shared token at **Settings → Tokens** and move them to it, or they will get `Invalid` on every call.
-A claim made through the old token stays bound to it until its lease runs out.
+A claim made through the old token stays bound to it until its lease runs out. A checkpoint an agent saved with
+`agent` before the upgrade sits at `<handle>/state/<agent>`, and the shared token looks under
+`<handle>/state/<token>/<agent>`: read the old one with `read_path` and save it again with `update_last_session`.
 
 The override is a label within the token's user and can never act as another user. A task claim also records the token,
 so another token passing the same `agent` is a different claimer (see [tasks.md](tasks.md)). Agent names are lowercase

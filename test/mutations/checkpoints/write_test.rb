@@ -59,8 +59,21 @@ class Checkpoints::WriteTest < ActiveSupport::TestCase
 
     assert_equal "ping's place", read(ping).content
     assert_equal "pong's place", read(pong).content
-    assert_equal "member/state/pong", read(pong).dir
+    assert_equal "member/state/default/pong", read(pong).dir
     assert_nil read
+  end
+
+  test "a shared token passing another token's agent name cannot read or overwrite that token's checkpoint" do
+    writer = actor_for(:member_writeonly)
+    write("writer's own place", actor: writer)
+    borrowed = actor_for(:member_default, agent: "writer")
+
+    assert_nil read(borrowed)
+    write("borrowed", actor: borrowed)
+
+    assert_equal "writer's own place", read(writer).content
+    assert_equal "member/state/writer", read(writer).dir
+    assert_equal "member/state/default/writer", read(borrowed).dir
   end
 
   test "refuses blank content rather than silently keeping or clearing the old checkpoint" do

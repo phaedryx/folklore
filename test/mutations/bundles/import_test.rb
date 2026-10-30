@@ -137,13 +137,15 @@ class Bundles::ImportTest < ActiveSupport::TestCase
     assert_match(/owner "ghost"/, rejection.errors.join)
   end
 
-  test "state dir must be <handle>/state/<agent>" do
+  test "state dir must be <handle>/state/<agent> or <handle>/state/<token>/<agent>" do
     @bundle.asset(dir: "member/state/coordinator", name: "last_session.md")
+    @bundle.asset(dir: "member/state/team/ping", name: "last_session.md")
     @bundle.write
     import
     assert Asset.live.exists?(dir: "member/state/coordinator", name: "last_session.md")
+    assert Asset.live.exists?(dir: "member/state/team/ping", name: "last_session.md")
 
-    [ "member/state", "member/state/Bad.Agent", "member/state/a/b", "other/state/x" ].each do |dir|
+    [ "member/state", "member/state/Bad.Agent", "member/state/a/B", "member/state/a/b/c", "other/state/x" ].each do |dir|
       FileUtils.rm_rf(@dir)
       @bundle = BundleWriter.new(@dir)
       @bundle.asset(dir:, name: "last_session.md")

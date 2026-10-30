@@ -133,7 +133,8 @@ Before writing anything, import collects every problem in the bundle and refuses
 - every `owner` exists as a user, and owns the workspace its `dir` starts with;
 - every file sits where its front matter says it should (`assets/<dir>/<name>`, or `archived/<slug>/<dir>/<name>`);
 - every `dir` and `name` passes folklore's usual rules. The reserved `<handle>/state` directory is allowed only as
-  `<handle>/state/<agent>`, where checkpoints live (see [checkpoints](checkpoints.md));
+  `<handle>/state/<agent>` or `<handle>/state/<token>/<agent>`, where checkpoints live (see
+  [checkpoints](checkpoints.md));
 - content, tags and task outcome notes are within their limits (1 MiB, 100 characters, 10,000 characters; see
   [errors](errors.md#length-limits));
 - no task is `in_progress`, and no task has a top-level `status`.

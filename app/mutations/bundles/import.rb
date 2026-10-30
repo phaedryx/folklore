@@ -133,10 +133,12 @@ module Bundles
     end
 
     # The reserved state segment holds checkpoints, which live exactly at
-    # <handle>/state/<agent>; nothing else may be imported under it.
+    # <handle>/state/<agent> or <handle>/state/<token>/<agent> (see
+    # Checkpoint.dir_for); nothing else may be imported under it.
     def state_dir?(dir)
       segments = dir.split("/")
-      segments.size == 3 && segments[1] == Checkpoint::SEGMENT && segments[2].match?(Actor::AGENT_REGEX)
+      segments.size.between?(3, 4) && segments[1] == Checkpoint::SEGMENT &&
+        segments.drop(2).all? { |segment| segment.match?(Actor::AGENT_REGEX) }
     end
 
     def field_problems(asset, file)
