@@ -17,17 +17,26 @@ module Settings
       @scopes = attrs.key?(:scopes) ? Array(attrs[:scopes]).compact_blank : Token::SCOPES
       @result = Tokens::Issue.mutate(user: current_user, agent_name: @agent_name, scopes: @scopes)
       render :issued
-    rescue ActiveRecord::RecordInvalid => e
-      @errors = e.record.errors.full_messages
-      render :new, status: :unprocessable_content
     end
 
     def destroy
       token = Tokens::List.query(user: current_user).find(params[:id])
       Tokens::Revoke.mutate(token:, actor: current_actor)
       redirect_to settings_tokens_path, notice: %(Token "#{token.agent_name}" revoked.)
-    rescue Tokens::Revoke::AlreadyRevokedError
-      redirect_to settings_tokens_path, alert: %(Token "#{token.agent_name}" was already revoked.)
+    end
+
+    private
+
+    # A refused new token re-renders the form with the record's errors.
+    def render_domain_error(error, entry)
+      return super unless action_name == "create" && error.is_a?(ActiveRecord::RecordInvalid)
+
+      @errors = error.record.errors.full_messages
+      render :new, status: entry.status
+    end
+
+    def error_fallback_location
+      settings_tokens_path
     end
   end
 end

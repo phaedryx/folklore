@@ -134,7 +134,8 @@ Before writing anything, import collects every problem in the bundle and refuses
 - every file sits where its front matter says it should (`assets/<dir>/<name>`, or `archived/<slug>/<dir>/<name>`);
 - every `dir` and `name` passes folklore's usual rules. The reserved `<handle>/state` directory is allowed only as
   `<handle>/state/<agent>`, where checkpoints live (see [checkpoints](checkpoints.md));
-- content is within the 1 MiB cap;
+- content, tags and task outcome notes are within their limits (1 MiB, 100 characters, 10,000 characters; see
+  [errors](errors.md#length-limits));
 - no task is `in_progress`, and no task has a top-level `status`.
 
 Then it inserts the assets with their slugs, timestamps and review dates as given, adds their tags, versions and task

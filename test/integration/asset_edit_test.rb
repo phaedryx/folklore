@@ -78,7 +78,7 @@ class AssetEditTest < ActionDispatch::IntegrationTest
 
     submit(asset, name: "taken.md", content: "v2")
 
-    assert_response :unprocessable_content
+    assert_response :conflict
     assert_select "[data-testid='error']", text: /already exists/
     assert_select "textarea[name='asset[content]']", text: "v2"
     assert_equal "v1", asset.reload.content
@@ -121,8 +121,28 @@ class AssetEditTest < ActionDispatch::IntegrationTest
 
     post files_path, params: { asset: { path: "member/notes", name: "dup.md", content: "x" } }
 
-    assert_response :unprocessable_content
+    assert_response :conflict
     assert_select "[data-testid='error']", text: /already exists/
+  end
+
+  test "a tag over the length limit re-renders the new form with the error and what was typed" do
+    post files_path, params: { asset: { path: "member/notes", name: "t.md", content: "kept", tags: "t" * (Tag::MAX_NAME_LENGTH + 1) } }
+
+    assert_response :unprocessable_content
+    assert_select "[data-testid='error']", text: /over the 100 character limit/
+    assert_select "textarea[name='asset[content]']", text: "kept"
+    assert_nil Asset.live.find_by(dir: "member/notes", name: "t.md")
+  end
+
+  test "a name over the length limit re-renders the edit form with the error" do
+    asset = create_asset(name: "a.md", content: "v1")
+
+    submit(asset, name: SecureRandom.alphanumeric(Asset::MAX_NAME_LENGTH + 1), content: "v2")
+
+    assert_response :unprocessable_content
+    assert_select "[data-testid='error']", text: /over the 255 character limit/
+    assert_select "textarea[name='asset[content]']", text: "v2"
+    assert_equal "v1", asset.reload.content
   end
 
   test "creating in a reserved or foreign dir is refused" do
@@ -163,15 +183,20 @@ class AssetEditTest < ActionDispatch::IntegrationTest
     post "/member/archive/#{asset.slug}"
 
     assert_redirected_to "/member/archive"
-    assert_match(/occupied/, flash[:alert])
+    assert_match(/taken by a live asset/, flash[:alert])
   end
 
   test "another member cannot archive or restore" do
     theirs = create_asset(path: "other/notes", name: "theirs.md", fixture: :other)
 
     delete show_path(theirs)
+    assert_response :forbidden
     assert_nil theirs.reload.deleted_at
-    assert_match(/permission/, flash[:alert])
+
+    Assets::Delete.mutate(actor: web_actor(:other), slug: theirs.slug)
+    post "/other/archive/#{theirs.slug}"
+    assert_response :forbidden
+    assert theirs.reload.deleted_at?
   end
 
   test "archiving twice explains instead of failing" do
@@ -180,7 +205,7 @@ class AssetEditTest < ActionDispatch::IntegrationTest
     delete show_path(asset)
 
     assert_response :redirect
-    assert_match(/already archived/, flash[:alert])
+    assert_equal "That file is already archived.", flash[:alert]
   end
 
   test "restoring twice explains instead of failing" do
@@ -190,7 +215,7 @@ class AssetEditTest < ActionDispatch::IntegrationTest
     post "/member/archive/#{asset.slug}"
 
     assert_redirected_to "/member/archive"
-    assert_match(/not archived/, flash[:alert])
+    assert_equal "That file is not archived.", flash[:alert]
   end
 
   test "a conflict keeps the submitted name and tags in the draft" do

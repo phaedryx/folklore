@@ -76,6 +76,14 @@ class SettingsTokensTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='flash-notice']", text: /default/
   end
 
+  test "revoking a revoked token says so" do
+    delete settings_token_path(tokens(:member_revoked))
+
+    assert_redirected_to settings_tokens_path
+    follow_redirect!
+    assert_select "[data-testid='flash-alert']", text: /already revoked/
+  end
+
   test "another member's token cannot be revoked" do
     token = tokens(:other_default)
 

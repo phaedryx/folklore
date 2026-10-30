@@ -147,8 +147,18 @@ module Bundles
         problems << "#{file}: #{e.message}"
       end
       problems << "#{file}: created_at and updated_at are required" unless asset[:created_at] && asset[:updated_at]
+      problems.concat(tag_problems(asset, file))
       problems.concat(asset[:task] ? task_problems(asset, file) : status_problems(asset, file))
       problems
+    end
+
+    def tag_problems(asset, file)
+      Array(asset[:tags]).map { |n| Tag.normalize(n) }.reject(&:empty?).filter_map do |name|
+        Tag.validate_name!(name)
+        nil
+      rescue Tag::InvalidNameError => e
+        "#{file}: #{e.message}"
+      end
     end
 
     def status_problems(asset, file)
@@ -167,6 +177,11 @@ module Bundles
         problems << "#{file}: task status must be one of #{IMPORTABLE_TASK_STATUSES.join(', ')}, got #{task[:status].inspect}"
       end
       problems << "#{file}: task created_at and updated_at are required" unless task[:created_at] && task[:updated_at]
+      begin
+        Tasks.validate_note!(task[:outcome_note], "task outcome_note")
+      rescue Tasks::InvalidNoteError => e
+        problems << "#{file}: #{e.message}"
+      end
       problems
     end
 

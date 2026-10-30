@@ -18,6 +18,15 @@ class Tasks::FailTest < ActiveSupport::TestCase
     Tasks::Fail.mutate(actor:, slug: asset.slug, reason:)
   end
 
+  test "a reason over the length limit is refused before anything changes" do
+    asset = add_claimed("long.md")
+
+    error = assert_raises(Tasks::InvalidNoteError) { fail_task(asset, reason: "r" * (Task::MAX_NOTE_LENGTH + 1)) }
+
+    assert_equal "reason is 10001 characters, over the 10000 character limit", error.message
+    assert_equal "in_progress", asset.reload.task.status
+  end
+
   test "fails a task the actor holds with a reason, clearing the claimer and lease" do
     asset = add_claimed("f1.md")
 

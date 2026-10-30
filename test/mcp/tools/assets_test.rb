@@ -135,15 +135,16 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
 
   test "read, read_path and bulk_read answer errors as json when asked for json" do
     responses = {
-      "Not found: 00000000" => Tools::Read.call(slug: "00000000", format: "json", server_context: ctx),
-      "Not found: member/notes/nope.md" => Tools::ReadPath.call(location: "member/notes/nope.md", format: "json", server_context: ctx),
-      "Provide at least one slug or location" => Tools::BulkRead.call(format: "json", server_context: ctx)
+      { error: "Not found: 00000000", code: "not_found" } => Tools::Read.call(slug: "00000000", format: "json", server_context: ctx),
+      { error: "Not found: member/notes/nope.md", code: "not_found" } =>
+        Tools::ReadPath.call(location: "member/notes/nope.md", format: "json", server_context: ctx),
+      { error: "Provide at least one slug or location" } => Tools::BulkRead.call(format: "json", server_context: ctx)
     }
 
-    responses.each do |message, response|
+    responses.each do |payload, response|
       assert response.to_h[:isError]
-      assert_equal({ "error" => message }, JSON.parse(text_of(response)))
-      assert_equal({ error: message }, structured(response))
+      assert_equal payload.stringify_keys, JSON.parse(text_of(response))
+      assert_equal payload, structured(response)
     end
   end
 
@@ -228,6 +229,21 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
       assert response.to_h[:isError], args.inspect
       assert_match pattern, text_of(response)
     end
+  end
+
+  test "an oversized name or path is Invalid, not Internal error" do
+    # Incompressible and long enough to overflow the btree entry on (dir,
+    # name), which without a cap surfaced as Internal error.
+    long_name = SecureRandom.alphanumeric(4000)
+    response = Tools::Create.call(path: "member/notes", name: long_name, server_context: ctx)
+    assert_equal "Invalid: name is 4000 characters, over the 255 character limit", text_of(response)
+
+    response = Tools::Create.call(path: "member/#{SecureRandom.alphanumeric(4000)}", name: "a.md", server_context: ctx)
+    assert_equal "Invalid: path is 4007 characters, over the 1024 character limit", text_of(response)
+
+    asset = create("u.md")
+    response = Tools::Update.call(slug: asset.slug, name: long_name, server_context: ctx)
+    assert_equal "Invalid: name is 4000 characters, over the 255 character limit", text_of(response)
   end
 
   test "update changes content, snapshots a version, and reports the new version" do

@@ -16,13 +16,13 @@ module Tags
     end
 
     def mutate
-      raise InvalidTagError, "tag is required" if @name.empty?
+      Tag.validate_name!(@name)
 
       ActiveRecord::Base.transaction do
         asset = Tags.writable!(@slug, @actor)
         raise AlreadyAppliedError, "tag #{@name} is already on #{@slug}" if asset.tags.exists?(name: @name)
 
-        AssetTag.create!(asset:, tag: Tag.find_or_create_by!(name: @name))
+        AssetTag.create!(asset:, tag: Tag.find_or_insert!(@name))
         Events::Record.mutate(actor: @actor, asset:, action: "tag_added", metadata: { "tag" => @name })
         Tags.touch!(asset, @actor)
       end

@@ -7,12 +7,11 @@ class ArchiveController < ApplicationController
   def create
     Assets::Restore.mutate(actor: current_actor, slug: params[:slug])
     redirect_to workspace_path(handle: params[:handle])
-  rescue Assets::ForbiddenError
-    redirect_to workspace_archive_path(params[:handle]), alert: "You don't have permission to restore this file."
-  rescue Assets::NotDeletedError
-    redirect_to workspace_archive_path(params[:handle]), alert: "That file is not archived any more."
-  rescue Assets::NameTakenError
-    redirect_to workspace_archive_path(params[:handle]),
-                alert: "Could not restore: the original location is now occupied by another file."
+  end
+
+  private
+
+  def error_fallback_location
+    workspace_archive_path(params[:handle])
   end
 end

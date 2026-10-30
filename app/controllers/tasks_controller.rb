@@ -10,7 +10,11 @@ class TasksController < ApplicationController
                        .limit(LIMIT + 1).to_a
     @truncated = tasks.size > LIMIT
     @tasks = tasks.first(LIMIT)
-  rescue Tasks::InvalidStatusError => e
-    redirect_to tasks_path, alert: e.message
+  end
+
+  private
+
+  def error_fallback_location
+    tasks_path
   end
 end

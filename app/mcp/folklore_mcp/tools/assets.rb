@@ -1,20 +1,8 @@
 module FolkloreMcp
   module Tools
-    # Tools over the asset domain. The domain's errors are registered here
-    # once, so each tool raises and the base class renders.
+    # Tools over the asset domain. Each tool raises the domain's errors and the
+    # base class renders them (see DomainErrors).
     module Assets
-      FolkloreMcp::Tool.user_error(::Assets::NotFoundError, "Not found")
-      FolkloreMcp::Tool.user_error(::Assets::ForbiddenError, "Forbidden")
-      FolkloreMcp::Tool.user_error(::Assets::NameTakenError, "Conflict")
-      FolkloreMcp::Tool.user_error(::Assets::ConflictError, "Conflict")
-      FolkloreMcp::Tool.user_error(::Assets::AlreadyDeletedError, "Conflict")
-      FolkloreMcp::Tool.user_error(::Assets::NotDeletedError, "Conflict")
-      FolkloreMcp::Tool.user_error(::Assets::NotANoteError, "Invalid")
-      FolkloreMcp::Tool.user_error(::Assets::InvalidStatusError, "Invalid")
-      FolkloreMcp::Tool.user_error(::Assets::InvalidLocationError, "Invalid")
-      FolkloreMcp::Tool.user_error(::Versions::NotFoundError, "Not found")
-      FolkloreMcp::Tool.user_error(::Asset::ContentTooLargeError, "Invalid")
-
       # Fields a tool may return about one asset; every one optional because
       # `read` returns only what was asked for.
       ASSET_FIELDS = proc do

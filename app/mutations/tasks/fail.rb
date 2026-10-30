@@ -5,6 +5,7 @@ module Tasks
     def self.mutate(actor:, slug:, reason:)
       reason = reason.to_s.strip
       raise ReasonRequiredError, "a reason is required to fail a task" if reason.empty?
+      Tasks.validate_note!(reason, "reason")
 
       Finish.mutate(actor:, slug:, status: "failed", action: "task_failed", note: reason,
                     metadata: { "reason" => reason })

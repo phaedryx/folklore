@@ -189,6 +189,17 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     assert_match(/\AInvalid: a reason is required/, text_of(Tools::Fail.call(slug: asset.slug, reason: "  ", server_context: ctx)))
   end
 
+  test "a note or reason over the length limit is Invalid" do
+    asset = add("task.md")
+    ::Tasks::Claim.mutate(actor: member, slug: asset.slug)
+    long = "n" * (Task::MAX_NOTE_LENGTH + 1)
+
+    assert_equal "Invalid: note is 10001 characters, over the 10000 character limit",
+                 text_of(Tools::Complete.call(slug: asset.slug, note: long, server_context: ctx))
+    assert_equal "Invalid: reason is 10001 characters, over the 10000 character limit",
+                 text_of(Tools::Fail.call(slug: asset.slug, reason: long, server_context: ctx))
+  end
+
   test "full task lifecycle through the tools records added, claimed, completed" do
     slug = slug_from(Tools::Add.call(path: "member/inbox", name: "life.md", server_context: ctx))
 

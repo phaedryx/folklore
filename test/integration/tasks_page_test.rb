@@ -59,8 +59,11 @@ class TasksPageTest < ActionDispatch::IntegrationTest
     assert_no_match(/plain\.md/, response.body)
   end
 
-  test "an unknown status redirects back with an alert" do
-    get tasks_path(status: "bogus")
+  test "an unknown status redirects to the tasks page with an alert, not to the referrer" do
+    head tasks_path(status: "bogus"), headers: { "Referer" => tasks_path(status: "bogus") }
+    assert_redirected_to tasks_path
+
+    get tasks_path(status: "bogus"), headers: { "Referer" => tasks_path(status: "bogus") }
     assert_redirected_to tasks_path
     follow_redirect!
     assert_select "[data-testid='flash-alert']", text: /status must be one of/

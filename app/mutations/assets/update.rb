@@ -79,11 +79,13 @@ module Assets
 
     # Returns whether the set changed.
     def sync_tags(asset)
-      wanted = @tags.map { |t| Tag.normalize(t) }.reject(&:empty?).uniq
+      # Sorted, so two writers inserting the same new tags lock them in one order.
+      wanted = @tags.map { |t| Tag.normalize(t) }.reject(&:empty?).uniq.sort
+      wanted.each { |name| Tag.validate_name!(name) }
       current = asset.tags.pluck(:name)
 
       (wanted - current).each do |name|
-        AssetTag.create!(asset:, tag: Tag.find_or_create_by!(name:))
+        AssetTag.create!(asset:, tag: Tag.find_or_insert!(name))
         Events::Record.mutate(actor: @actor, asset:, action: "tag_added", metadata: { "tag" => name })
       end
 

@@ -77,6 +77,26 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     end
   end
 
+  test "every registered error answers with the prefix its status maps to" do
+    expected = { not_found: "Not found", forbidden: "Forbidden", conflict: "Conflict", unprocessable_content: "Invalid" }
+    task_codes = { "not_a_task" => "Not a task", "already_claimed" => "Already claimed",
+                   "no_pending_task" => "No pending task", "wrong_claimer" => "Wrong claimer" }
+
+    DomainErrors::ENTRIES.each do |klass, entry|
+      assert_equal task_codes.fetch(entry.code) { expected.fetch(entry.status) }, FolkloreMcp::Tool.prefix_for(entry), klass.name
+    end
+  end
+
+  test "a json-format failure carries the error's code beside the text" do
+    response = Echo.call(message: "hi", format: "json", fail_with: "dir", server_context: actor_context)
+
+    assert response.to_h[:isError]
+    payload = JSON.parse(text_of(response))
+    assert_equal "invalid_path", payload["code"]
+    assert_match(/\AInvalid: path segments cannot be/, payload["error"])
+    assert_equal payload, response.to_h[:structuredContent].stringify_keys
+  end
+
   test "an unexpected exception re-raises when MCP_RAISE_ERRORS is set" do
     ENV["MCP_RAISE_ERRORS"] = "1"
     assert_raises(RuntimeError) { Echo.call(message: "hi", fail_with: "boom", server_context: actor_context) }

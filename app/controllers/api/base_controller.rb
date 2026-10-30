@@ -1,23 +1,16 @@
 module Api
   # JSON API over the same bearer tokens as MCP. No session, no CSRF: every
-  # request authenticates itself. Responses follow the {status, data} shape.
+  # request authenticates itself. Responses follow the {status, data} shape;
+  # a failure's data always carries a code and a message (see docs/errors.md).
   class BaseController < ActionController::API
     before_action :authenticate!
     before_action :require_read_scope!, if: -> { request.get? || request.head? }
     before_action :require_write_scope!, unless: -> { request.get? || request.head? }
 
-    rescue_from ::Assets::NotFoundError, with: -> { render_not_found }
-    rescue_from ::Assets::ForbiddenError, with: ->(e) { render_forbidden(e.message) }
-    rescue_from ::Assets::NameTakenError, with: -> { render_fail({ name: [ "already taken at this path" ] }) }
-    rescue_from ::Assets::ConflictError, with: ->(e) { render_fail({ code: "version_conflict", message: e.message }, status: :conflict) }
-    rescue_from ::Assets::AlreadyDeletedError, with: -> { render_fail({ code: "already_archived" }, status: :conflict) }
-    rescue_from ::Assets::NotDeletedError, with: -> { render_fail({ code: "not_archived" }, status: :conflict) }
-    rescue_from ::Asset::InvalidDirError, with: ->(e) { render_fail({ path: [ e.message ] }) }
-    rescue_from ::Asset::InvalidNameError, with: ->(e) { render_fail({ name: [ e.message ] }) }
-    rescue_from ::Asset::InvalidStaleAfterError, with: ->(e) { render_fail({ stale_after: [ e.message ] }) }
-    rescue_from ::Asset::ContentTooLargeError, with: ->(e) { render_fail({ content: [ e.message ] }) }
-    rescue_from ActiveRecord::RecordInvalid, with: ->(e) { render_fail(e.record.errors.as_json) }
-    rescue_from ActionController::ParameterMissing, with: ->(e) { render_fail({ e.param => [ "is required" ] }) }
+    rescue_from(*DomainErrors.classes) { |e| render_domain_error(e) }
+    rescue_from ActionController::ParameterMissing do |e|
+      render_fail({ code: "missing_parameter", message: "#{e.param} is required", e.param => [ "is required" ] })
+    end
 
     private
 
@@ -27,8 +20,7 @@ module Api
       @current_actor = FolkloreMcp::Authenticate.call(request.headers["Authorization"])
     rescue FolkloreMcp::Authenticate::Error => e
       response.set_header("WWW-Authenticate", "Bearer")
-      render status: :unauthorized,
-             json: { status: "fail", data: { resource: "unauthenticated", message: e.message } }
+      render_fail({ code: "unauthenticated", message: e.message }, status: :unauthorized)
     end
 
     def require_read_scope!
@@ -43,16 +35,24 @@ module Api
       render status:, json: { status: "success", data: }
     end
 
-    def render_fail(data, status: :unprocessable_entity)
+    def render_fail(data, status: :unprocessable_content)
       render status:, json: { status: "fail", data: }
     end
 
-    def render_not_found(resource = "asset")
-      render status: :not_found, json: { status: "fail", data: { resource: "#{resource}_not_found" } }
+    def render_forbidden(message)
+      render_fail({ code: "forbidden", message: }, status: :forbidden)
     end
 
-    def render_forbidden(message)
-      render status: :forbidden, json: { status: "fail", data: { base: [ message ] } }
+    # The one place the API maps a DomainErrors entry. An input error also
+    # names its field, in the {field => [messages]} shape a validation
+    # failure has; a validation failure carries every field's messages.
+    def render_domain_error(error)
+      entry = DomainErrors.for(error)
+      message = DomainErrors.message(error)
+      data = { code: entry.code, message: }
+      data.merge!(entry.field => [ message ]) if entry.field
+      data.merge!(error.record.errors.to_hash) if error.is_a?(ActiveRecord::RecordInvalid)
+      render_fail(data, status: entry.status)
     end
   end
 end
