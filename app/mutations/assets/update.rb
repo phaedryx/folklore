@@ -83,7 +83,7 @@ module Assets
       current = asset.tags.pluck(:name)
 
       (wanted - current).each do |name|
-        AssetTag.create!(asset:, tag: Tag.find_or_create_by!(name:))
+        AssetTag.create!(asset:, tag: Tag.find_or_insert!(name))
         Events::Record.mutate(actor: @actor, asset:, action: "tag_added", metadata: { "tag" => name })
       end
 
