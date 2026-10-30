@@ -45,13 +45,16 @@ reason for each choice. The numbers anyone can check come from the synthetic set
    the sweep, 0.5 rejected a filename that restated the whole query in another order, and values below 0.40 let weak
    name matches outrank real ones. The lookup uses the `<%` operator, which the trigram index on `name` can answer
    (a `word_similarity()` call cannot, and forced a read of every row). `<%` takes its cutoff from
-   `pg_trgm.word_similarity_threshold`, which `config/database.yml` sets to the same 0.45.
+   `pg_trgm.word_similarity_threshold`, which `config/database.yml` sets to the same 0.45 on every connection Rails
+   opens. Behind a pooler in transaction mode (PgBouncer, RDS Proxy), a session setting does not follow your queries:
+   set it on the database instead, `ALTER DATABASE <name> SET pg_trgm.word_similarity_threshold = 0.45`, or names
+   scoring between 0.45 and the default 0.6 silently stop matching. The same holds for a query pasted into `psql`.
 4. **The two are fused by rank, not by score.** Content relevance (`ts_rank_cd`) and name similarity are on different
    scales, and adding the two scores made the weighting an accident. Reciprocal rank fusion (k = 60) asks how near the
    top of its own list each asset came. On the private set that lifted recall@10 from 84.2% to 89.5%. Each list holds
    only the assets its own retriever matched, under the same filters as the results: an asset whose name misses the
-   threshold has no name rank at all, and a search scoped by `within`, tags, status or `stale` is ranked within that
-   scope. Assets that score the same within a list share its rank. The strict and widened queries are not fused with
+   threshold has no name rank at all, and a search narrowed by any filter is ranked among the assets the filter
+   lets through. Assets that score the same within a list share its rank. The strict and widened queries are not fused with
    each other, because the widened one is a superset and adds only noise.
 5. **Ties go to the filename.** An asset that matches only by name and one that matches only by content can fuse to the
    same score. The name wins: if you search for `rails`, you most likely meant `rails.md`.

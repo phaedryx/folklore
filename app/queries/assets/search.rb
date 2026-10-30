@@ -90,8 +90,13 @@ module Assets
     end
 
     # Everything that narrows the result set except the query itself. The fused ranking is
-    # computed over this too, so a scoped search is ranked within its scope.
+    # computed over this too, so a scoped search is ranked within its scope. Built once, so
+    # the results and both ranked lists agree on the tags and the date.
     def filters
+      @filters ||= build_filters
+    end
+
+    def build_filters
       scope = Asset.live
       scope = scope.under_dir(@path) if @path.present?
 
@@ -164,8 +169,8 @@ module Assets
     def relevance_order(scope, tsquery)
       return stale_order(scope) if @query.blank?
 
-      # A pure-name match and a pure-content match are each first in one list and second
-      # in the other, so they fuse to the same score. Break that tie toward the name: if
+      # A pure-name match and a pure-content match are each first in their own list and
+      # absent from the other, so they fuse to the same score. Break that tie toward the name: if
       # you search "rails" the file called rails.md is what you meant.
       scope.joins(fusion_join(tsquery)).reorder(Arel.sql(Asset.sanitize_sql_array([
         "fusion.score DESC, word_similarity(?, assets.name) DESC, assets.id ASC", @query
