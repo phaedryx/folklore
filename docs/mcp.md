@@ -67,14 +67,16 @@ the tool's `outputSchema`. Tools that take `format: "json"` put the JSON in the 
 under it), so line-oriented scripts keep working.
 
 Errors come back with `isError: true` and one of these prefixes. A call made with `format: "json"` (`read`,
-`read_path`, `bulk_read`) gets the same text as `{"error": "..."}`, in the text content and the structured content:
+`read_path`, `bulk_read`) gets the same text as `{"error": "...", "code": "..."}`, in the text content and the
+structured content. [errors.md](errors.md) lists every code, the prefix and HTTP status it maps to, and the length
+limits:
 
 | Text | Meaning |
 |---|---|
 | `Not found: ...` | No such live asset (archived assets are not found), or `remove_tag` of a tag the asset does not have |
 | `Forbidden: ...` | Not your workspace, or the token lacks the scope the tool needs |
 | `Conflict: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, the asset is already archived or not archived, or `add_tag` of a tag it already has |
-| `Invalid: ...` | A bad argument: path, name, date, agent, cursor, content over 1 MiB, ... |
+| `Invalid: ...` | A bad argument: path, name, tag, date, agent, cursor, a value over its length limit, ... |
 | `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type |
 | `Missing required arguments: ...` | A required argument was left out |
 | `Already claimed: ...`, `Wrong claimer: ...`, `No pending task: ...`, `Not a task: ...` | Task queue outcomes, see [tasks.md](tasks.md) |
@@ -151,5 +153,7 @@ The same tokens authenticate `/api/assets`. Responses are `{"status": "success" 
 | `PATCH /api/assets/:slug` with `{"asset": {"content", "name", "content_type", "tags", "expected_version"}}` | Update |
 | `DELETE /api/assets/:slug` | Archive |
 
-Status codes: 401 for no token or a bad or revoked one, 403 for not your workspace or a token without the write scope,
-404 for not found, 409 for a version conflict or an already archived asset, 422 for invalid input.
+A failure is `{"status": "fail", "data": {"code": ..., "message": ...}}`, and an error about one input also carries
+`{"<field>": ["<message>"]}`. Status codes: 401 for no token or a bad or revoked one, 403 for not your workspace or a
+token without the scope, 404 for not found, 409 for a version conflict, a taken name or an already archived asset, 422
+for invalid input. [errors.md](errors.md) lists every code.

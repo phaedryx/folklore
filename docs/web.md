@@ -58,4 +58,6 @@ after you issue it, and never again. Revoking takes effect on the token's next r
 ## Errors
 
 A page for something that does not exist, or is archived, is a 404. Trying to change another user's workspace is a
-403. Every user can read every workspace.
+403. Every user can read every workspace. Any other error redirects back with its message as the alert, except on the
+new and edit file forms and the new token form, which re-render with the error and what you typed. See
+[errors.md](errors.md).

@@ -7,7 +7,11 @@ class VerificationsController < ApplicationController
 
     Assets::Verify.mutate(**args)
     redirect_back fallback_location: stale_path, notice: "Verified."
-  rescue Asset::InvalidStaleAfterError => e
-    redirect_back fallback_location: stale_path, alert: e.message
+  end
+
+  private
+
+  def error_fallback_location
+    stale_path
   end
 end

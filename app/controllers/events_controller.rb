@@ -13,7 +13,12 @@ class EventsController < ApplicationController
     # since_id reads forward, oldest first; the page shows newest first either way.
     @events = @since_id ? events.reverse : events
     @full_page = events.size == PAGE_SIZE
-  rescue Events::InvalidCursorError => e
-    redirect_to activity_path(actor: @actor_filter, tag: @tag_filter), alert: e.message
+  end
+
+  private
+
+  # A bad cursor drops the cursor and keeps the filters.
+  def error_fallback_location
+    activity_path(actor: @actor_filter, tag: @tag_filter)
   end
 end

@@ -77,6 +77,7 @@ contract is pinned by `test/mcp/tools_list.snapshot.json`. The same tokens work 
 - [docs/web.md](docs/web.md): the web UI
 - [docs/bundle.md](docs/bundle.md): the bundle format, and exporting and importing an instance
 - [docs/configuration.md](docs/configuration.md): every environment variable
+- [docs/errors.md](docs/errors.md): every error code, how MCP, the JSON API and the web show it, and the length limits
 
 ## Layout
 
