@@ -166,6 +166,21 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
     assert_equal "web", claimed.task.claimed_by_agent
   end
 
+  # Stands in for a delete that commits while the claim waits on the row lock:
+  # the claim lands on the released row, then finds its asset gone.
+  test "a claim whose asset was deleted under it is undone" do
+    asset = add("task.md")
+    claimer = Tasks::Claim.new(actor: @ping, slug: asset.slug, path_prefix: nil, tags: [], lease_seconds: 60)
+    claimer.define_singleton_method(:claim_by_slug) do |now|
+      super(now).tap { asset.update_columns(deleted_at: Time.current) }
+    end
+
+    assert_raises(Assets::NotFoundError) { claimer.mutate }
+
+    assert_equal "pending", asset.task.reload.status
+    assert_equal [ "task_added" ], actions(asset)
+  end
+
   test "raises NotATaskError for a note" do
     note = Assets::Create.mutate(actor: @member, path: "member/notes", name: "n.md", content: "")
 

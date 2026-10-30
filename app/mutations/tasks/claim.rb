@@ -47,7 +47,10 @@ module Tasks
 
       ActiveRecord::Base.transaction do
         prev = @slug ? claim_by_slug(now) : claim_next(now)
-        asset = Asset.find(prev.asset_id)
+        # A delete that committed while this waited on the row lock released the
+        # task to pending, and the claim saw that row; the asset is gone, so
+        # undo the claim rather than hold an archived task.
+        asset = Asset.live.find_by(id: prev.asset_id) or raise_deleted
         record_events(asset, prev)
         asset.reload
       end
@@ -126,6 +129,12 @@ module Tasks
         })
       end
       Events::Record.mutate(actor: @actor, asset:, action: "task_claimed", metadata:)
+    end
+
+    def raise_deleted
+      raise Assets::NotFoundError, @slug if @slug
+
+      raise NoPendingTaskError, "nothing to claim under #{@path_prefix}"
     end
 
     def unavailable(asset)

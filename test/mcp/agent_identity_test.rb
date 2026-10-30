@@ -56,4 +56,21 @@ class FolkloreMcp::AgentIdentityTest < ActiveSupport::TestCase
 
     refute response.to_h[:isError], text_of(response)
   end
+
+  test "the checkpoint and task tools refuse another agent on a token that is not shared" do
+    task = ::Tasks::Add.mutate(actor: actor_for(:other_default), path: "other/inbox", name: "t.md", content: "")
+    ctx = actor_context(:other_default)
+    calls = {
+      "update_last_session" => -> { FolkloreMcp::Tools::Checkpoints::Update.call(content: "x", agent: "ping", server_context: ctx) },
+      "get_last_session" => -> { FolkloreMcp::Tools::Checkpoints::Get.call(agent: "ping", server_context: ctx) },
+      "claim_task" => -> { FolkloreMcp::Tools::Tasks::Claim.call(slug: task.slug, agent: "ping", server_context: ctx) },
+      "complete_task" => -> { FolkloreMcp::Tools::Tasks::Complete.call(slug: task.slug, agent: "ping", server_context: ctx) }
+    }
+
+    calls.each do |name, call|
+      assert_match(/\AInvalid: token "default" is not shared/, text_of(call.call), name)
+    end
+    assert_equal "pending", task.task.reload.status
+    refute Asset.live.exists?(dir: "other/state/ping")
+  end
 end

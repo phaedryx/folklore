@@ -923,7 +923,7 @@
   },
   {
     "name": "get_pending_tasks",
-    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags. Returns at most 100 tasks unless you pass limit (up to 500); page with offset.",
+    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags. Returns at most 100 tasks unless you pass limit (up to 500); truncated says more remain, and offset pages on.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1031,10 +1031,17 @@
               "created_at"
             ]
           }
+        },
+        "truncated": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
         }
       },
       "required": [
-        "tasks"
+        "tasks",
+        "truncated"
       ]
     },
     "annotations": {

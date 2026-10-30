@@ -49,6 +49,10 @@ token's own agent name.
 A token that is not shared acts only as its own agent: passing any other `agent` gets `Invalid: token "<name>" is not
 shared ...` and changes nothing. Passing its own name is allowed.
 
+**Upgrading.** Tokens issued before the shared flag existed are not shared. If several agents use one of them with
+`agent`, issue a shared token at **Settings → Tokens** and move them to it, or they will get `Invalid` on every call.
+A claim made through the old token stays bound to it until its lease runs out.
+
 The override is a label within the token's user and can never act as another user. A task claim also records the token,
 so another token passing the same `agent` is a different claimer (see [tasks.md](tasks.md)). Agent names are lowercase
 slugs (`a-z`, `0-9`, `-`, `_`). `web` is reserved for the browser. The JSON API takes no `agent`: its writes are

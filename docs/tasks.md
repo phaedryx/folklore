@@ -58,8 +58,11 @@ get_pending_tasks(path_prefix: "you/backlog", status: "in_progress")
 ```
 
 The structured content gives each task's `claimed_by` (`handle/agent`), `lease_until` and `attempts`. Re-claim your own
-to renew the lease and carry on. The listing returns 100 tasks unless you pass `limit` (1 to 500); page past them with
-`offset`. `status` also accepts `done`, `failed`, `all` and the reserved `cancelled`. An unknown status is
+to renew the lease and carry on. The listing returns 100 tasks unless you pass `limit` (1 to 500). When more
+remain, `truncated` is true and the text ends with the `offset` to pass for the next page.
+
+A claim is bound to the token that made it. If your token was revoked and you were issued a new one, you cannot renew
+or finish what the old token held: wait for its lease to run out, then claim it again. `status` also accepts `done`, `failed`, `all` and the reserved `cancelled`. An unknown status is
 `Invalid`, not an empty list.
 
 ## Example
