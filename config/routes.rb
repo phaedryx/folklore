@@ -29,7 +29,7 @@ Rails.application.routes.draw do
   get  "/files/new" => "assets#new",    as: :new_file
   post "/files"     => "assets#create", as: :files
 
-  slug = /[0-9a-hjkmnp-tv-z]{8}/
+  slug = Asset::SLUG_PATTERN
   name = %r{[^/]+}
 
   # Verify (and optionally reschedule) an asset from wherever it is on screen.

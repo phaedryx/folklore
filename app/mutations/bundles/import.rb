@@ -23,7 +23,6 @@ module Bundles
     # The agent named on every asset_imported event.
     AGENT = "import".freeze
     BATCH_SIZE = 500
-    SLUG_REGEX = /\A[0-9a-z]{1,64}\z/
     IMPORTABLE_TASK_STATUSES = (Task::STATUSES - %w[in_progress]).freeze
 
     def self.mutate(dir:, dry_run: false)
@@ -107,7 +106,7 @@ module Bundles
 
     def asset_problems(asset, entry, file)
       slug = asset[:slug]
-      return [ "#{file}: slug #{slug.inspect} is not a valid slug" ] unless slug.is_a?(String) && slug.match?(SLUG_REGEX)
+      return [ "#{file}: slug #{slug.inspect} is not a valid slug" ] unless slug.is_a?(String) && slug.match?(Asset::SLUG_REGEX)
       return [ "#{file}: slug #{slug} does not match the manifest's #{entry[:slug].inspect}" ] unless slug == entry[:slug]
 
       problems = []

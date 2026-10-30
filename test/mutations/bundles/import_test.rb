@@ -234,6 +234,17 @@ class Bundles::ImportTest < ActiveSupport::TestCase
     assert_match(%r{#{note[:slug]}.*should be at assets/#{note[:slug]}/member/notes/a.md}, rejection.errors.join)
   end
 
+  test "a slug the app could not route is rejected" do
+    %w[abc1234 abcdefghi ABCD1234 abcd123i abcd123u].each { |slug| @bundle.asset(slug:, name: "#{slug}.md") }
+    @bundle.write
+    before = table_counts
+
+    errors = rejection.errors
+    assert_equal 5, errors.size, errors.join("\n")
+    errors.each { |error| assert_match(/is not a valid slug/, error) }
+    assert_equal before, table_counts
+  end
+
   test "every problem is reported at once" do
     @bundle.asset(owner: "ghost", dir: "ghost/notes", name: "a.md")
     @bundle.asset(name: "t.md", task: { status: "in_progress", attempts: 0, created_at: Time.utc(2026, 1, 1), updated_at: Time.utc(2026, 1, 1) })
