@@ -167,13 +167,10 @@ module FolkloreMcp
         end
       end
 
-      # A registered error's code travels as structured content either way.
       def failure(text, format: nil, code: nil)
-        payload = { error: text, code: }.compact
-        unless format.to_s == "json"
-          return MCP::Tool::Response.new([ { type: "text", text: } ], structured_content: (payload if code), error: true)
-        end
+        return MCP::Tool::Response.new([ { type: "text", text: } ], error: true) unless format.to_s == "json"
 
+        payload = { error: text, code: }.compact
         MCP::Tool::Response.new([ { type: "text", text: JSON.generate(payload) } ], structured_content: payload, error: true)
       end
 

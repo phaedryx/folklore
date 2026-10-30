@@ -121,14 +121,6 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     assert_equal payload, response.to_h[:structuredContent].stringify_keys
   end
 
-  test "a text failure carries the error's code as structured content, the text unchanged" do
-    response = Echo.call(message: "hi", fail_with: "dir", server_context: actor_context)
-
-    assert_match(/\AInvalid: path segments cannot be/, text_of(response))
-    assert_equal({ error: text_of(response), code: "invalid_path" }, response.to_h[:structuredContent])
-    assert_nil Echo.call(message: "hi", fail_with: "boom", server_context: actor_context).to_h[:structuredContent]
-  end
-
   test "an unexpected exception re-raises when MCP_RAISE_ERRORS is set" do
     ENV["MCP_RAISE_ERRORS"] = "1"
     assert_raises(RuntimeError) { Echo.call(message: "hi", fail_with: "boom", server_context: actor_context) }
