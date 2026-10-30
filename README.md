@@ -47,8 +47,9 @@ Put the token in your MCP client's configuration. For a project-level `.mcp.json
 ```
 
 The token is shown once. Issue more under **Settings → Tokens** (`/settings/tokens`), one per agent: the token's agent
-name labels that agent's writes, its checkpoint and its task claims. A token can be read-only. Several agents can also
-share one token and tell themselves apart with the `agent` argument (see [docs/mcp.md](docs/mcp.md)).
+name labels that agent's writes, its checkpoint and its task claims. A token can be read-only. A token issued as shared
+can be held by several agents, which tell themselves apart with the `agent` argument; any other token acts only as its
+own agent (see [docs/mcp.md](docs/mcp.md#agent-identity)).
 
 Copy [AGENTS.md](AGENTS.md) into your projects, or merge it into your agent instructions. It tells an agent to read its
 checkpoint first, to write one before it stops, and how to record mistakes and rejected approaches so they are found

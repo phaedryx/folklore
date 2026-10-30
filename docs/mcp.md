@@ -38,12 +38,21 @@ search as followed (see [search.md](search.md)). It is telemetry, so a failure t
 
 ## Agent identity
 
-Every write records who made it as (user, token, agent). The agent defaults to the token's agent name. The checkpoint
-and task tools (`get_last_session`, `update_last_session`, `claim_task`, `complete_task`, `fail_task`) accept an
-optional `agent` argument that overrides it for that call. So two agents that share one token, say `ping` and `pong`,
-keep separate checkpoints and exclude each other on task claims. The override is a label within the token's user and
-can never act as another user. Agent names are lowercase slugs (`a-z`, `0-9`, `-`, `_`). `web` is reserved for the
-browser.
+Every write records who made it as (user, token, agent). The agent is the token's agent name.
+
+A token issued as **shared** (a box at **Settings → Tokens**) is for several agents at once. Every write tool and
+`get_last_session` take an optional `agent` argument, and on a shared token it sets the agent for that call. So two
+agents that share one token, say `ping` and `pong`, keep separate checkpoints, exclude each other on task claims, and
+are each recorded as the author of their own writes. Pass your `agent` on every call. A call without one acts as the
+token's own agent name.
+
+A token that is not shared acts only as its own agent: passing any other `agent` gets `Invalid: token "<name>" is not
+shared ...` and changes nothing. Passing its own name is allowed.
+
+The override is a label within the token's user and can never act as another user. A task claim also records the token,
+so another token passing the same `agent` is a different claimer (see [tasks.md](tasks.md)). Agent names are lowercase
+slugs (`a-z`, `0-9`, `-`, `_`). `web` is reserved for the browser. The JSON API takes no `agent`: its writes are
+always the token's agent.
 
 `activity`, `versions` and the `created_by` / `updated_by` / `verified_by` fields show actors as `handle/agent`.
 `updated_by` and `updated_at` describe the last edit (content, name, type or tags). Setting a status or a review date
@@ -76,7 +85,7 @@ limits:
 | `Not found: ...` | No such live asset (archived assets are not found), or `remove_tag` of a tag the asset does not have |
 | `Forbidden: ...` | Not your workspace, or the token lacks the scope the tool needs |
 | `Conflict: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, the asset is already archived or not archived, or `add_tag` of a tag it already has |
-| `Invalid: ...` | A bad argument: path, name, tag, date, agent, cursor, a value over its length limit, ... |
+| `Invalid: ...` | A bad argument: path, name, tag, date, agent (or any `agent` on a token that is not shared), cursor, a value over its length limit, ... |
 | `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type |
 | `Missing required arguments: ...` | A required argument was left out |
 | `Already claimed: ...`, `Wrong claimer: ...`, `No pending task: ...`, `Not a task: ...` | Task queue outcomes, see [tasks.md](tasks.md) |

@@ -17,8 +17,9 @@ Each agent has its own checkpoint, keyed by (user, agent). It is stored as an or
 <handle>/state/<agent>/last_session.md
 ```
 
-The agent is the token's agent name. When several agents share one token, each passes its own `agent` and so keeps
-its own checkpoint:
+The agent is the token's agent name. When several agents share one token, issued as shared, each passes its own
+`agent` and so keeps its own checkpoint (a token that is not shared refuses any other `agent`; see
+[mcp.md](mcp.md#agent-identity)):
 
 ```
 update_last_session(content: "...", agent: "ping")

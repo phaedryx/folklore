@@ -6,8 +6,9 @@ into a project, or merge it into your agent instructions, and replace `<handle>`
 ## Every session
 
 1. **First call: `get_last_session`.** It returns your checkpoint, which says where the last session stopped. Read it
-   before you plan anything. If several agents share one token, pass your own `agent` to the five tools that take it:
-   `get_last_session`, `update_last_session`, `claim_task`, `complete_task` and `fail_task`. Other tools refuse it.
+   before you plan anything. If several agents share one token (it must be issued as shared), pass your own `agent` to
+   `get_last_session` and to every tool that writes, so your checkpoint, claims and writes all carry your name. A token
+   that is not shared refuses any `agent` but its own.
 2. **If you work from a task queue, resume before you claim.** Call
    `get_pending_tasks(path_prefix: ..., status: "in_progress")` and pick up anything you still hold. A crashed claim
    does not show as pending.
