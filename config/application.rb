@@ -29,6 +29,10 @@ module Folklore
     config.autoload_lib(ignore: %w[assets tasks])
     config.active_record.schema_format = :sql
 
+    # The OmniAuth developer strategy signs in any existing user by email
+    # alone, so it is off unless asked for, and never on in production.
+    config.x.developer_sign_in = ENV["FOLKLORE_DEVELOPER_SIGN_IN"] == "1" && !Rails.env.production?
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

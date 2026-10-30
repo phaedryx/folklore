@@ -12,7 +12,9 @@ export them in the shell. `.env.example` lists the variables you are likely to s
 | `FOLKLORE_ADMIN_EMAIL` | same | none | The user's email, used to sign in to the web UI. It is stored lowercased. |
 | `FOLKLORE_ADMIN_PASSWORD` | same | none | The web sign-in password. If you leave it unset, no password is set and `bin/setup` says so; run it again with this set to add one (an existing password is never changed). |
 
-When any of the three is unset and stdin is a terminal (and `CI` is unset), `folklore:admin` prompts for it. With no
+| `FOLKLORE_DEVELOPER_SIGN_IN` | `config/application.rb`, `/sign_in` | off | `1` turns on the developer sign-in: a second form on `/sign_in` that signs in an existing user by email alone, with no password. It is for local development only and is never on in production, whatever this says. The committed `.env.test` sets it, because the system tests sign in that way. |
+
+When any of the three admin variables is unset and stdin is a terminal (and `CI` is unset), `folklore:admin` prompts for it. With no
 handle or email and no terminal, it prints a notice and creates nothing. Running it again is safe: it finds the user by
 email and only issues a token if the user has no active one.
 
