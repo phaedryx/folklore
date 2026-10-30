@@ -215,7 +215,7 @@ class Bundles::ImportTest < ActiveSupport::TestCase
   test "an unlisted file, a missing file and versions for an unknown slug are rejected" do
     @bundle.asset(name: "a.md")
     @bundle.versions("nosuch00", [ { content: "x", content_type: nil, created_at: Time.utc(2026, 1, 1), actor: nil } ])
-    @bundle.write { |m| m[:assets] << { slug: "missing0", file: "assets/member/notes/missing.md", sha256: nil } }
+    @bundle.write { |m| m[:assets] << { slug: "missing0", file: "assets/missing0/member/notes/missing.md", sha256: nil } }
     @bundle.put("assets/member/notes/stray.md", "---\nslug: stray000\n---\n")
 
     errors = rejection.errors.join("\n")
@@ -227,10 +227,11 @@ class Bundles::ImportTest < ActiveSupport::TestCase
   test "a file whose path does not match its front matter is rejected" do
     note = @bundle.asset(name: "a.md")
     @bundle.write
-    FileUtils.mv(File.join(@dir, "assets/member/notes/a.md"), File.join(@dir, "assets/member/notes/b.md"))
-    File.write(File.join(@dir, "manifest.json"), File.read(File.join(@dir, "manifest.json")).sub("notes/a.md", "notes/b.md"))
+    FileUtils.mkdir_p(File.join(@dir, "assets/member/notes"))
+    FileUtils.mv(File.join(@dir, "assets/#{note[:slug]}/member/notes/a.md"), File.join(@dir, "assets/member/notes/a.md"))
+    File.write(File.join(@dir, "manifest.json"), File.read(File.join(@dir, "manifest.json")).sub("#{note[:slug]}/member", "member"))
 
-    assert_match(/#{note[:slug]}.*should be at assets\/member\/notes\/a.md/, rejection.errors.join)
+    assert_match(%r{#{note[:slug]}.*should be at assets/#{note[:slug]}/member/notes/a.md}, rejection.errors.join)
   end
 
   test "every problem is reported at once" do

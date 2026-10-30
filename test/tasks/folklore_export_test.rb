@@ -18,15 +18,15 @@ class FolkloreExportTaskTest < ActiveSupport::TestCase
   end
 
   test "writes a bundle and prints its counts" do
-    Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "a.md", content: "x")
-    Assets::Create.mutate(actor: actor_for(:other_default), path: "other/notes", name: "b.md", content: "y")
+    mine = Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "a.md", content: "x")
+    theirs = Assets::Create.mutate(actor: actor_for(:other_default), path: "other/notes", name: "b.md", content: "y")
     ENV["HANDLE"] = "member"
 
     out, = run_export(File.join(@dir, "out"))
 
     assert_match(/Exported 1 assets \(0 archived, 0 tasks\) and 0 versions/, out)
-    assert File.exist?(File.join(@dir, "out/assets/member/notes/a.md"))
-    refute File.exist?(File.join(@dir, "out/assets/other/notes/b.md"))
+    assert File.exist?(File.join(@dir, "out/assets/#{mine.slug}/member/notes/a.md"))
+    refute File.exist?(File.join(@dir, "out/assets/#{theirs.slug}/other/notes/b.md"))
   end
 
   test "exits non-zero on a non-empty directory" do

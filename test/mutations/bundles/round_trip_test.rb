@@ -67,4 +67,19 @@ class Bundles::RoundTripTest < ActiveSupport::TestCase
     assert_equal [ "qqqqqqqq" ], report.dangling_links.pluck(:ref)
     assert_equal [ linker.slug ], Links::Backlinks.query(asset: Asset.find_by!(slug: target.slug)).map(&:slug)
   end
+
+  test "locations that meet on disk survive the round trip" do
+    create("a", "the file", path: "member")
+    create("b.md", "inside the directory", path: "member/a")
+    create("A.md", "upper")
+    create("a.md", "lower")
+
+    expected = snapshot
+    Bundles::Export.query(dir: @dir)
+    wipe
+
+    Bundles::Import.mutate(dir: @dir)
+
+    assert_equal expected, snapshot
+  end
 end
