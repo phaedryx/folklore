@@ -86,10 +86,14 @@ module Assets
     end
 
     def filtered(tsquery = nil)
+      @query.present? ? filters.where(match_condition(tsquery)) : filters
+    end
+
+    # Everything that narrows the result set except the query itself. The fused ranking is
+    # computed over this too, so a scoped search is ranked within its scope.
+    def filters
       scope = Asset.live
       scope = scope.under_dir(@path) if @path.present?
-
-      scope = scope.where(match_condition(tsquery)) if @query.present?
 
       scope = scope.tagged_with(@tags)
 
@@ -99,7 +103,9 @@ module Assets
         scope = scope.where(status: @status).or(scope.where(id: Task.where(status: @status).select(:asset_id)))
       end
 
-      scope = scope.joins(:task).where(tasks: { status: @task_status }) if @task_status.present?
+      # A subquery rather than a join: the fused ranking embeds this scope's SQL inside the
+      # outer query, and a join of tasks on both sides makes Rails alias the outer one.
+      scope = scope.where(id: Task.where(status: @task_status).select(:asset_id)) if @task_status.present?
 
       scope = @stale ? scope.stale : scope.not_stale unless @stale.nil?
 
@@ -117,24 +123,28 @@ module Assets
     end
 
     def match_condition(tsquery)
-      sql, binds = match_clause(tsquery)
+      "(#{content_condition(tsquery)}) OR (#{name_condition})"
+    end
+
+    # EXISTS rather than a join: an asset that displaced the same phrase a dozen times
+    # is still one result.
+    def content_condition(tsquery)
+      sql = "assets.content_tsv @@ #{tsquery}"
+      binds = [ @query ]
+      if @include_versions
+        sql += " OR EXISTS (SELECT 1 FROM versions WHERE versions.asset_id = assets.id " \
+               "AND versions.content_tsv @@ #{tsquery})"
+        binds << @query
+      end
       Asset.sanitize_sql_array([ sql, *binds ])
     end
 
-    def match_clause(tsquery)
-      # Strictly greater, as measured; a name scoring exactly the threshold is out.
-      conditions = [ "assets.content_tsv @@ #{tsquery}", "word_similarity(?, assets.name) > ?" ]
-      binds = [ @query, @query, NAME_SIMILARITY_THRESHOLD ]
-
-      # EXISTS rather than a join: an asset that displaced the same phrase a dozen times
-      # is still one result.
-      if @include_versions
-        conditions << "EXISTS (SELECT 1 FROM versions WHERE versions.asset_id = assets.id " \
-                      "AND versions.content_tsv @@ #{tsquery})"
-        binds << @query
-      end
-
-      [ conditions.join(" OR "), binds ]
+    # The trigram index answers `<%` but not a word_similarity() call, so the operator does
+    # the lookup, with the cutoff config/database.yml gives it, and the call keeps the
+    # comparison strictly greater, as measured: a name scoring exactly the threshold is out.
+    def name_condition
+      Asset.sanitize_sql_array([ "? <% assets.name AND word_similarity(?, assets.name) > ?",
+                                 @query, @query, NAME_SIMILARITY_THRESHOLD ])
     end
 
     def apply_sort(scope, tsquery)
@@ -162,23 +172,26 @@ module Assets
       ])))
     end
 
+    # Each list holds only the assets its own retriever matched, under the same filters as
+    # the results: an asset that misses the name threshold has no name rank, rather than
+    # a place at the bottom of the name list decided by its id. rank() rather than
+    # row_number(), so assets that score the same share a rank whatever their ids.
     # Grouped by id, so joining it cannot multiply rows.
     def fusion_join(tsquery)
-      match, match_binds = match_clause(tsquery)
+      by_content = filters.where(content_condition(tsquery)).select(Asset.sanitize_sql_array([
+        "assets.id, rank() OVER (ORDER BY ts_rank_cd(assets.content_tsv, #{tsquery}) DESC) AS rnk", @query
+      ]))
+      by_name = filters.where(name_condition).select(Asset.sanitize_sql_array([
+        "assets.id, rank() OVER (ORDER BY word_similarity(?, assets.name) DESC) AS rnk", @query
+      ]))
 
-      sql = <<~SQL.squish
+      <<~SQL.squish
         INNER JOIN (
           SELECT id, SUM(1.0 / (#{RRF_K} + rnk)) AS score FROM (
-            SELECT id, row_number() OVER (ORDER BY ts_rank_cd(content_tsv, #{tsquery}) DESC, id) AS rnk
-              FROM assets WHERE deleted_at IS NULL AND (#{match})
-            UNION ALL
-            SELECT id, row_number() OVER (ORDER BY word_similarity(?, assets.name) DESC, id) AS rnk
-              FROM assets WHERE deleted_at IS NULL AND (#{match})
+            #{by_content.to_sql} UNION ALL #{by_name.to_sql}
           ) ranked GROUP BY id
         ) fusion ON fusion.id = assets.id
       SQL
-
-      Asset.sanitize_sql_array([ sql, @query, *match_binds, @query, *match_binds ])
     end
 
     def apply_pagination(scope)
