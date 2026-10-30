@@ -20,15 +20,39 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     assert_includes h[:inputSchema][:required], "message"
     assert_equal "string", h.dig(:inputSchema, :properties, :message, :type)
     assert_equal %w[message actor], h[:outputSchema][:required]
-    assert_equal({ destructiveHint: false, idempotentHint: true, openWorldHint: false, readOnlyHint: true }, h[:annotations])
+    assert_equal({ openWorldHint: false, readOnlyHint: true }, h[:annotations])
   end
 
-  test "annotations default to a non-destructive, non-idempotent, closed-world write" do
+  # tools/list is read on every session, so it carries only what differs
+  # from the spec's defaults (destructive, not idempotent, open world).
+  test "annotations default to a non-destructive, non-idempotent, closed-world write, sent as hints off the spec's defaults" do
     klass = Class.new(FolkloreMcp::Tool) { tool_name "scratch" }
+    idempotent = Class.new(FolkloreMcp::Tool) { tool_name "scratch2"; annotations destructive: true, idempotent: true }
 
-    assert_equal({ destructiveHint: false, idempotentHint: false, openWorldHint: false, readOnlyHint: false }, klass.to_h[:annotations])
+    assert_equal({ destructiveHint: false, openWorldHint: false }, klass.to_h[:annotations])
+    assert_equal({ idempotentHint: true, openWorldHint: false }, idempotent.to_h[:annotations])
+    refute klass.annotations_value.read_only_hint
   ensure
+    FolkloreMcp::Tool.registered_tools.delete(idempotent)
     FolkloreMcp::Tool.registered_tools.delete(klass)
+  end
+
+  test "schemas leave out what costs tokens and says nothing: $schema, and in output schemas minLength and not-null" do
+    h = Echo.to_h
+
+    refute h[:inputSchema].key?(:"$schema")
+    refute h[:outputSchema].key?(:"$schema")
+    assert_equal({ type: "string", minLength: 1 }, h.dig(:inputSchema, :properties, :message))
+    assert_equal({ type: "string" }, h.dig(:outputSchema, :properties, :message))
+    integer = Class.new(FolkloreMcp::Tool) do
+      tool_name "scratch"
+      input_schema { required(:n).filled(:integer) }
+      output_schema { required(:n).filled(:integer) }
+    end
+    assert_equal({ type: "integer" }, integer.to_h.dig(:inputSchema, :properties, :n))
+    assert_equal({ type: "integer" }, integer.to_h.dig(:outputSchema, :properties, :n))
+  ensure
+    FolkloreMcp::Tool.registered_tools.delete(integer)
   end
 
   test "a missing actor returns Unauthenticated" do

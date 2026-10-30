@@ -21,8 +21,7 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
   test "is registered as search, read-only and idempotent" do
     assert_equal "search", Search.name_value
     assert_includes FolkloreMcp::Tool.registered_tools, Search
-    assert_equal({ destructiveHint: false, idempotentHint: true, openWorldHint: false, readOnlyHint: true },
-                 Search.to_h[:annotations])
+    assert_equal({ openWorldHint: false, readOnlyHint: true }, Search.to_h[:annotations])
     assert_equal %w[query count results], Search.to_h[:outputSchema][:required]
   end
 

@@ -23,10 +23,10 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
       assert tool.to_h[:outputSchema], "#{name} has no output schema"
       assert_kind_of Hash, tool.to_h[:annotations]
     end
-    assert tools["read"].to_h[:annotations][:readOnlyHint]
-    assert tools["delete"].to_h[:annotations][:destructiveHint]
-    assert tools["upsert"].to_h[:annotations][:idempotentHint]
-    refute tools["create"].to_h[:annotations][:readOnlyHint]
+    assert tools["read"].annotations_value.read_only_hint
+    assert tools["delete"].annotations_value.destructive_hint
+    assert tools["upsert"].annotations_value.idempotent_hint
+    refute tools["create"].annotations_value.read_only_hint
   end
 
   # read

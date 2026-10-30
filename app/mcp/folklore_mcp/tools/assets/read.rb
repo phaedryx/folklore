@@ -23,18 +23,25 @@ module FolkloreMcp
           additionalProperties: false
         )
 
-        output_schema do
-          instance_exec(&ASSET_FIELDS)
-          optional(:assets).array(:hash) do
-            optional(:ref).filled(:string)
-            optional(:error).filled(:string)
-            optional(:code).filled(:string)
-            optional(:content_omitted).filled(:bool)
-            instance_exec(&ASSET_FIELDS)
-          end
-          optional(:bytes_returned).filled(:integer)
-          optional(:truncated).filled(:bool)
-        end
+        # One asset for a ref, a list of them for an array. The asset's fields
+        # are defined once and referenced twice.
+        output_schema(
+          "$defs": {
+            asset: json_schema_from(proc do
+              instance_exec(&ASSET_FIELDS)
+              optional(:ref).filled(:string)
+              optional(:error).filled(:string)
+              optional(:code).filled(:string)
+              optional(:content_omitted).filled(:bool)
+            end)
+          },
+          "$ref": "#/$defs/asset",
+          properties: {
+            assets: { type: "array", items: { "$ref": "#/$defs/asset" } },
+            bytes_returned: { type: "integer" },
+            truncated: { type: "boolean" }
+          }
+        )
 
         def invoke(ref:, server_context:, include: nil, max_bytes: nil)
           actor = actor_from(server_context)

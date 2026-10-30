@@ -78,8 +78,16 @@ module FolkloreMcp
         @annotations_value ||= annotations(read_only: false)
       end
 
+      # tools/list is read into every session, so it leaves out what says
+      # nothing: `$schema` (MCP's default dialect is the one we emit), hints
+      # equal to the spec's defaults (destructive, not idempotent, open world;
+      # destructive and idempotent mean nothing on a read-only tool), and in
+      # output schemas the minLength and not-null that `filled` adds.
       def to_h
-        super.merge(annotations: annotations_value.to_h)
+        hash = super.merge(annotations: annotation_hints)
+        hash[:inputSchema] = trim_schema(hash[:inputSchema], output: false)
+        hash[:outputSchema] = trim_schema(hash[:outputSchema], output: true) if hash[:outputSchema]
+        hash
       end
 
       def prefix_for(entry)
@@ -134,6 +142,29 @@ module FolkloreMcp
         return [] unless properties
 
         args.keys.map(&:to_s) - properties.keys.map(&:to_s)
+      end
+
+      def annotation_hints
+        hints = annotations_value
+        return { openWorldHint: false, readOnlyHint: true } if hints.read_only_hint
+
+        { destructiveHint: (false unless hints.destructive_hint), idempotentHint: (true if hints.idempotent_hint),
+          openWorldHint: (false unless hints.open_world_hint) }.compact
+      end
+
+      def trim_schema(node, output:)
+        case node
+        when Hash
+          node.each_with_object({}) do |(key, value), trimmed|
+            next if key == :"$schema"
+            next if key == :not && value == { type: "null" } && node[:type].is_a?(String)
+            next if output && key == :minLength && value == 1
+
+            trimmed[key] = trim_schema(value, output:)
+          end
+        when Array then node.map { |child| trim_schema(child, output:) }
+        else node
+        end
       end
 
       def failure(text, format: nil, code: nil)
