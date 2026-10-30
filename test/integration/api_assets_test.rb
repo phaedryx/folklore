@@ -21,7 +21,7 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     get "/api/assets", params: { path: "member/notes" }, headers: JSON_HEADERS
     assert_equal 401, response.status
     assert_equal "Bearer", response.headers["WWW-Authenticate"]
-    assert_equal "unauthenticated", body.dig("data", "resource")
+    assert_equal "unauthenticated", body.dig("data", "code")
 
     get "/api/assets", params: { path: "member/notes" }, headers: headers("flk_nope")
     assert_equal 401, response.status
@@ -41,7 +41,7 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
                           headers: headers("flk_test_member_readonly")
     end
     assert_equal 403, response.status
-    assert_equal [ "Forbidden: token lacks write scope" ], body.dig("data", "base")
+    assert_equal({ "code" => "forbidden", "message" => "Forbidden: token lacks write scope" }, body["data"])
 
     patch "/api/assets/#{asset.slug}", params: { asset: { content: "changed" } }.to_json, headers: headers("flk_test_member_readonly")
     assert_equal 403, response.status
@@ -56,7 +56,7 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
   test "index requires path and returns the serialized assets under it" do
     get "/api/assets", headers: headers
     assert_equal 422, response.status
-    assert_includes body.dig("data", "path"), "is required"
+    assert_equal({ "code" => "missing_parameter", "message" => "path is required", "path" => [ "is required" ] }, body["data"])
 
     create("a.md", content: "hello", tags: [ "x" ])
     create("b.md", path: "member/scripts")
@@ -86,7 +86,7 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
 
     get "/api/assets/00000000", headers: headers
     assert_equal 404, response.status
-    assert_equal "asset_not_found", body.dig("data", "resource")
+    assert_equal({ "code" => "not_found", "message" => "00000000" }, body["data"])
   end
 
   # Create
@@ -99,19 +99,31 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     assert_equal({ "handle" => "member", "agent" => "default" }, body.dig("data", "asset", "created_by"))
   end
 
-  test "create maps forbidden, taken, reserved and invalid to 403 and 422" do
+  test "create maps forbidden to 403, taken to 409 and invalid input to 422, with the code and field" do
     create("dup.md")
 
     post "/api/assets", params: { asset: { path: "other/notes", name: "x.md" } }.to_json, headers: headers
     assert_equal 403, response.status
+    assert_equal({ "code" => "forbidden", "message" => "cannot write to other/notes" }, body["data"])
 
     post "/api/assets", params: { asset: { path: "member/notes", name: "dup.md" } }.to_json, headers: headers
-    assert_equal 422, response.status
-    assert_includes body.dig("data", "name"), "already taken at this path"
+    assert_equal 409, response.status
+    assert_equal({ "code" => "name_taken", "message" => "member/notes/dup.md already exists",
+                   "name" => [ "member/notes/dup.md already exists" ] }, body["data"])
 
     post "/api/assets", params: { asset: { path: "member/archive", name: "x.md" } }.to_json, headers: headers
     assert_equal 422, response.status
+    assert_equal "reserved_path", body.dig("data", "code")
     assert_match(/reserved/, body.dig("data", "path").first)
+
+    post "/api/assets", params: { asset: { path: "member/notes", name: "t.md", tags: [ "t" * (Tag::MAX_NAME_LENGTH + 1) ] } }.to_json, headers: headers
+    assert_equal 422, response.status
+    assert_equal "invalid_tag", body.dig("data", "code")
+    assert_equal [ "tag is 101 characters, over the 100 character limit" ], body.dig("data", "tags")
+
+    post "/api/assets", params: { asset: { path: "member/notes", name: SecureRandom.alphanumeric(4000) } }.to_json, headers: headers
+    assert_equal 422, response.status
+    assert_equal "invalid_name", body.dig("data", "code")
 
     post "/api/assets", params: { asset: { path: "member/notes", name: "a b.md" } }.to_json, headers: headers
     assert_equal 422, response.status
@@ -175,7 +187,7 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
 
     get "/api/assets/#{asset.slug}", headers: headers("flk_test_member_writeonly")
     assert_equal 403, response.status
-    assert_equal [ "Forbidden: token lacks read scope" ], body.dig("data", "base")
+    assert_equal({ "code" => "forbidden", "message" => "Forbidden: token lacks read scope" }, body["data"])
 
     patch "/api/assets/#{asset.slug}", params: { asset: { content: "changed" } }.to_json, headers: headers("flk_test_member_writeonly")
     assert_equal 200, response.status
