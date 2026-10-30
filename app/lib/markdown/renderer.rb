@@ -11,7 +11,7 @@ module Markdown
     Rendered = Data.define(:html, :mode)
 
     WIKILINK = Markdown::Wikilinks::PATTERN
-    ENCODED_WIKILINK = /%5B%5B([0-9a-hjkmnp-tv-z]{8})(?:%7C([^\]\n|]+))?%5D%5D/i
+    ENCODED_WIKILINK = /%5B%5B(#{Asset::SLUG_PATTERN})(?:%7C([^\]\n|]+))?%5D%5D/i
 
     ALLOWED_TAGS = %w[h1 h2 h3 h4 h5 h6 p br hr strong em del s ul ol li a code pre blockquote
                       table thead tbody tr th td img input span div sup sub].freeze

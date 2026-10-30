@@ -33,8 +33,8 @@ class Asset < ApplicationRecord
   WRITE_LOCK = "FOR NO KEY UPDATE".freeze
 
   SLUG_CHARS = "0123456789abcdefghjkmnpqrstvwxyz".freeze
-  # What generate_slug makes and the routes accept. Unanchored for route
-  # constraints; SLUG_REGEX checks a whole string.
+  # What generate_slug makes, and what the routes and wikilinks accept.
+  # Unanchored for routes and larger patterns; SLUG_REGEX checks a whole string.
   SLUG_PATTERN = /[#{SLUG_CHARS}]{8}/
   SLUG_REGEX = /\A#{SLUG_PATTERN}\z/
   NOTE_STATUSES = %w[open done].freeze

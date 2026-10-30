@@ -73,6 +73,13 @@ class Markdown::RendererTest < ActiveSupport::TestCase
     assert_includes rendered.html, %(<img src="/member/notes/#{target.slug}/diagram.png" alt="arch">)
   end
 
+  test "a percent-encoded wikilink in a link href resolves" do
+    target = create("gamma.md", "x")
+    rendered = render("[spec](%5B%5B#{target.slug}%5D%5D)", name: "src.md")
+
+    assert_includes rendered.html, %(<a href="/member/notes/#{target.slug}/gamma.md">spec</a>)
+  end
+
   test "a wikilink to a missing slug stays literal" do
     rendered = render("Missing: [[zzzzzzzz]] and [[yyyyyyyy|custom]].", name: "src.md")
 

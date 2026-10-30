@@ -11,6 +11,10 @@ class Markdown::WikilinksTest < ActiveSupport::TestCase
     assert_empty Markdown::Wikilinks.refs("[[not-a-slug]] [[abcdefg]] [[ABCDEFGH]] [[abcdefghi]] [[]]")
   end
 
+  test "ignores slugs with letters generate_slug never uses" do
+    assert_empty Markdown::Wikilinks.refs("[[abcdefgi]] [[abcdefgl]] [[abcdefgo]] [[abcdefgu]]")
+  end
+
   test "nil and empty text have no refs" do
     assert_empty Markdown::Wikilinks.refs(nil)
     assert_empty Markdown::Wikilinks.refs("")
