@@ -87,6 +87,24 @@ class Tasks::CompleteTest < ActiveSupport::TestCase
     assert_raises(Tasks::WrongClaimerError) { complete(asset, actor: @pong) }
   end
 
+  test "another token acting as the holder's agent is a wrong claimer" do
+    asset = add_claimed("c-token.md", actor: actor_for(:member_writeonly))
+    impostor = actor_for(:member_default, agent: "writer")
+
+    error = assert_raises(Tasks::WrongClaimerError) { complete(asset, actor: impostor) }
+
+    assert_match(%r{claimed by member/writer on another token, not member/writer}, error.message)
+    assert_equal "in_progress", asset.task.reload.status
+  end
+
+  test "another token acting as the finisher's agent is not answered as the finisher" do
+    asset = add_claimed("c-token-2.md", actor: actor_for(:member_writeonly))
+    complete(asset, actor: actor_for(:member_writeonly))
+    impostor = actor_for(:member_default, agent: "writer")
+
+    assert_raises(Tasks::WrongClaimerError) { complete(asset, actor: impostor) }
+  end
+
   test "a pending task has no claimer to complete it" do
     asset = Tasks::Add.mutate(actor: @member, path: "member/inbox", name: "c7.md", content: "")
 

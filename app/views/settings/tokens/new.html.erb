@@ -35,6 +35,17 @@
     <% end %>
   </fieldset>
 
+  <div class="flex flex-col gap-1">
+    <label class="flex items-center gap-2 text-sm text-surface-900">
+      <%= f.check_box :shared, { checked: @shared, data: { testid: "token-shared" } }, "1", "0" %>
+      <span class="font-bold">Shared</span>
+    </label>
+    <p class="text-sm text-surface-700">
+      For several agents on one token. Each passes its own <code>agent</code> name on every call, which labels its
+      writes, checkpoint and task claims. A token that is not shared always acts as its agent name.
+    </p>
+  </div>
+
   <div class="flex items-center gap-3">
     <%= f.submit "Issue token", data: { testid: "issue-token" }, class: "inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-button border-2 border-primary bg-primary px-4 text-sm font-bold text-white no-underline hover:border-primary-hover hover:bg-primary-hover hover:text-white" %>
     <%= link_to "Cancel", settings_tokens_path, class: "text-sm font-bold" %>

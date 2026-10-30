@@ -1,6 +1,7 @@
 # An opaque bearer token. The plaintext ("flk_...") is shown once at issue
 # time; only its SHA-256 digest is stored. Each token names the agent that
-# holds it, which becomes the default actor identity for its writes.
+# holds it, which becomes the default actor identity for its writes. Only a
+# shared token may act as another agent (see Actor.for_token).
 class Token < ApplicationRecord
   belongs_to :user
 

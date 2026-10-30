@@ -748,7 +748,8 @@ CREATE TABLE public.tokens (
     last_used_at timestamp(6) without time zone,
     revoked_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    shared boolean DEFAULT false NOT NULL
 );
 
 
@@ -1880,6 +1881,7 @@ ALTER TABLE ONLY public.assets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261030150101'),
 ('20261030000001'),
 ('20261028000003'),
 ('20261028000002'),

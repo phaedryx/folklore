@@ -42,6 +42,29 @@ class SettingsTokensTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='token-#{users(:member).tokens.find_by!(agent_name: "reader2").id}']", text: /read\b(?!, write)/
   end
 
+  test "a new token is not shared unless the box is checked, and the list says which are" do
+    get new_settings_token_path
+    assert_select "input[type=checkbox][name='token[shared]']:not([checked])"
+
+    post settings_tokens_path, params: { token: { agent_name: "solo", shared: "0" } }
+    refute_predicate users(:member).tokens.find_by!(agent_name: "solo"), :shared?
+
+    post settings_tokens_path, params: { token: { agent_name: "team", shared: "1" } }
+    team = users(:member).tokens.find_by!(agent_name: "team")
+    assert_predicate team, :shared?
+
+    get settings_tokens_path
+    assert_select "[data-testid='token-#{team.id}'] [data-testid='token-shared']", text: /shared/
+    assert_select "[data-testid='token-#{users(:member).tokens.find_by!(agent_name: "solo").id}'] [data-testid='token-shared']", false
+  end
+
+  test "a shared box left checked survives a re-rendered form" do
+    post settings_tokens_path, params: { token: { agent_name: "Not A Slug", shared: "1" } }
+
+    assert_response :unprocessable_content
+    assert_select "input[type=checkbox][name='token[shared]'][checked]"
+  end
+
   test "no scopes re-renders the form with the error" do
     post settings_tokens_path, params: { token: { agent_name: "none", scopes: [ "" ] } }
 

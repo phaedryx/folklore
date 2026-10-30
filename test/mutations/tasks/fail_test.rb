@@ -80,6 +80,23 @@ class Tasks::FailTest < ActiveSupport::TestCase
     assert_raises(Tasks::WrongClaimerError) { fail_task(asset, actor: @pong) }
   end
 
+  test "another token acting as the holder's agent is a wrong claimer" do
+    asset = add_claimed("f-token.md", actor: actor_for(:member_writeonly))
+    impostor = actor_for(:member_default, agent: "writer")
+
+    assert_raises(Tasks::WrongClaimerError) { fail_task(asset, actor: impostor) }
+
+    assert_equal "in_progress", asset.task.reload.status
+  end
+
+  test "another token acting as the finisher's agent is not answered as the finisher" do
+    asset = add_claimed("f-token-2.md", actor: actor_for(:member_writeonly))
+    fail_task(asset, actor: actor_for(:member_writeonly))
+    impostor = actor_for(:member_default, agent: "writer")
+
+    assert_raises(Tasks::WrongClaimerError) { fail_task(asset, actor: impostor) }
+  end
+
   test "a failed task can be claimed again? no: it is finished" do
     asset = add_claimed("f6.md")
     fail_task(asset)

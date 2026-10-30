@@ -81,6 +81,33 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
     assert_equal [ "task_added", "task_claimed" ], actions(asset)
   end
 
+  # The label is not the claim: another token acting as the same agent is a
+  # different claimer, so it cannot renew, and takes over only an expired lease.
+  test "another token acting as the holder's agent cannot renew its claim" do
+    asset = add("task.md")
+    writer = actor_for(:member_writeonly)
+    claim(asset, actor: writer)
+    impostor = actor_for(:member_default, agent: "writer")
+
+    error = assert_raises(Tasks::AlreadyClaimedError) { claim(asset, actor: impostor) }
+
+    assert_match(%r{claimed by member/writer on another token until}, error.message)
+    assert_equal tokens(:member_writeonly).id, asset.task.reload.claimed_by_token_id
+    assert_equal [ "task_added", "task_claimed" ], actions(asset)
+  end
+
+  test "another token acting as the holder's agent takes an expired lease over as a new attempt" do
+    asset = add("task.md")
+    claim(asset, actor: actor_for(:member_writeonly), lease_seconds: 1)
+
+    travel(2.seconds) { claim(asset, actor: actor_for(:member_default, agent: "writer")) }
+
+    task = asset.task.reload
+    assert_equal tokens(:member_default).id, task.claimed_by_token_id
+    assert_equal 2, task.attempts
+    assert_equal [ "task_added", "task_claimed", "task_lease_expired", "task_claimed" ], actions(asset)
+  end
+
   test "another member cannot claim a held task" do
     asset = add("task.md")
     claim(asset)

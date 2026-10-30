@@ -7,15 +7,17 @@ module Settings
     def new
       @agent_name = ""
       @scopes = Token::SCOPES
+      @shared = false
     end
 
     def create
-      attrs = params.require(:token).permit(:agent_name, scopes: [])
+      attrs = params.require(:token).permit(:agent_name, :shared, scopes: [])
       @agent_name = attrs[:agent_name].to_s
+      @shared = ActiveModel::Type::Boolean.new.cast(attrs[:shared]) || false
       # The form always submits scopes (a blank hidden field when every box is
       # unchecked); a request without the key gets both.
       @scopes = attrs.key?(:scopes) ? Array(attrs[:scopes]).compact_blank : Token::SCOPES
-      @result = Tokens::Issue.mutate(user: current_user, agent_name: @agent_name, scopes: @scopes)
+      @result = Tokens::Issue.mutate(user: current_user, agent_name: @agent_name, scopes: @scopes, shared: @shared)
       render :issued
     end
 

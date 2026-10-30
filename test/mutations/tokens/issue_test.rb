@@ -18,6 +18,11 @@ class Tokens::IssueTest < ActiveSupport::TestCase
     assert_equal result.token, Token.find_by(token_digest: Token.digest(result.plaintext))
   end
 
+  test "a token is not shared unless asked" do
+    refute_predicate Tokens::Issue.mutate(user: users(:member), agent_name: "solo").token.reload, :shared?
+    assert_predicate Tokens::Issue.mutate(user: users(:member), agent_name: "team", shared: true).token.reload, :shared?
+  end
+
   test "requires an agent name" do
     assert_raises(ActiveRecord::RecordInvalid) { Tokens::Issue.mutate(user: users(:member), agent_name: " ") }
   end
