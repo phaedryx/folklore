@@ -19,6 +19,37 @@ class VersionsTest < ActionDispatch::IntegrationTest
     assert_select "[data-testid='version-diff-#{version.id}'] [data-diff-side='old'] .diff-removed", text: "v1"
   end
 
+  test "shows a page of versions at a time, newest first, with links between pages" do
+    asset = create_asset(name: "h.md", content: "v0")
+    actor = actor_for(:member_default)
+    (VersionsController::PAGE_SIZE + 2).times { |i| Assets::Update.mutate(actor:, slug: asset.slug, content: "v#{i + 1}") }
+    newest_first = asset.versions.order(created_at: :desc, id: :desc).to_a
+
+    get versions_path_for(asset)
+    assert_select "[data-testid^='version-diff-']", count: VersionsController::PAGE_SIZE
+    assert_select "[data-testid='version-#{newest_first.first.id}']"
+    assert_select "[data-testid='versions-newer']", false
+    assert_select "[data-testid='versions-older'][href=?]", "#{versions_path_for(asset)}?page=2"
+
+    get versions_path_for(asset), params: { page: 2 }
+    assert_select "[data-testid^='version-diff-']", count: 2
+    assert_select "[data-testid='version-#{newest_first.last.id}']"
+    assert_select "[data-testid='version-head']", false
+    assert_select "[data-testid='versions-older']", false
+    assert_select "[data-testid='versions-newer'][href=?]", versions_path_for(asset)
+  end
+
+  test "a page past the end says there is nothing there and links back" do
+    asset = create_asset(name: "h.md", content: "v1")
+    Assets::Update.mutate(actor: web_actor, slug: asset.slug, content: "v2")
+
+    get versions_path_for(asset), params: { page: 5 }
+    assert_response :success
+    assert_select "[data-testid='versions-empty']", false
+    assert_select "[data-testid='versions-page-empty']"
+    assert_select "[data-testid='versions-newer']"
+  end
+
   test "an asset with no history says so" do
     asset = create_asset(name: "h.md", content: "v1")
 
