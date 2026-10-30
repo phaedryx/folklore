@@ -80,6 +80,7 @@ module Assets
     # Returns whether the set changed.
     def sync_tags(asset)
       wanted = @tags.map { |t| Tag.normalize(t) }.reject(&:empty?).uniq
+      wanted.each { |name| Tag.validate_name!(name) }
       current = asset.tags.pluck(:name)
 
       (wanted - current).each do |name|

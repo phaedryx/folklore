@@ -16,7 +16,7 @@ module Tags
     end
 
     def mutate
-      raise InvalidTagError, "tag is required" if @name.empty?
+      Tag.validate_name!(@name)
 
       ActiveRecord::Base.transaction do
         asset = Tags.writable!(@slug, @actor)

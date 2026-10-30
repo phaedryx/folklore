@@ -100,7 +100,9 @@ CREATE TABLE public.assets (
     updated_at timestamp(6) without time zone NOT NULL,
     content_tsv tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, COALESCE(content, ''::text))) STORED,
     CONSTRAINT assets_content_size_check CHECK ((octet_length(content) <= 1048576)),
-    CONSTRAINT assets_status_check CHECK (((status IS NULL) OR ((status)::text = ANY ((ARRAY['open'::character varying, 'done'::character varying])::text[]))))
+    CONSTRAINT assets_dir_length_check CHECK ((char_length(dir) <= 1024)),
+    CONSTRAINT assets_name_length_check CHECK ((char_length((name)::text) <= 255)),
+    CONSTRAINT assets_status_check CHECK (((status IS NULL) OR ((status)::text = ANY (ARRAY[('open'::character varying)::text, ('done'::character varying)::text]))))
 );
 
 
@@ -136,7 +138,7 @@ CREATE TABLE public.events (
     action character varying NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT events_action_check CHECK (((action)::text = ANY ((ARRAY['asset_created'::character varying, 'asset_updated'::character varying, 'asset_deleted'::character varying, 'asset_restored'::character varying, 'tag_added'::character varying, 'tag_removed'::character varying, 'task_added'::character varying, 'task_claimed'::character varying, 'task_completed'::character varying, 'task_failed'::character varying, 'task_cancelled'::character varying, 'task_lease_expired'::character varying, 'version_restored'::character varying, 'asset_verified'::character varying, 'asset_review_scheduled'::character varying, 'asset_status_set'::character varying, 'asset_imported'::character varying])::text[])))
+    CONSTRAINT events_action_check CHECK (((action)::text = ANY (ARRAY[('asset_created'::character varying)::text, ('asset_updated'::character varying)::text, ('asset_deleted'::character varying)::text, ('asset_restored'::character varying)::text, ('tag_added'::character varying)::text, ('tag_removed'::character varying)::text, ('task_added'::character varying)::text, ('task_claimed'::character varying)::text, ('task_completed'::character varying)::text, ('task_failed'::character varying)::text, ('task_cancelled'::character varying)::text, ('task_lease_expired'::character varying)::text, ('version_restored'::character varying)::text, ('asset_verified'::character varying)::text, ('asset_review_scheduled'::character varying)::text, ('asset_status_set'::character varying)::text, ('asset_imported'::character varying)::text])))
 );
 
 
@@ -688,7 +690,8 @@ CREATE TABLE public.tags (
     id bigint NOT NULL,
     name character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT tags_name_length_check CHECK ((char_length((name)::text) <= 100))
 );
 
 
@@ -727,7 +730,8 @@ CREATE TABLE public.tasks (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT tasks_claim_check CHECK (((((status)::text = 'in_progress'::text) AND (claimed_by_user_id IS NOT NULL) AND (claimed_by_agent IS NOT NULL) AND (lease_until IS NOT NULL)) OR (((status)::text <> 'in_progress'::text) AND (claimed_by_user_id IS NULL) AND (claimed_by_token_id IS NULL) AND (claimed_by_agent IS NULL) AND (lease_until IS NULL)))),
-    CONSTRAINT tasks_status_check CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'in_progress'::character varying, 'done'::character varying, 'failed'::character varying, 'cancelled'::character varying])::text[])))
+    CONSTRAINT tasks_outcome_note_length_check CHECK ((char_length(outcome_note) <= 10000)),
+    CONSTRAINT tasks_status_check CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('in_progress'::character varying)::text, ('done'::character varying)::text, ('failed'::character varying)::text, ('cancelled'::character varying)::text])))
 );
 
 
@@ -1876,6 +1880,7 @@ ALTER TABLE ONLY public.assets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261030000001'),
 ('20261028000003'),
 ('20261028000002'),
 ('20261028000001'),

@@ -126,6 +126,22 @@ class AssetTest < ActiveSupport::TestCase
     end
   end
 
+  test "validate_name! and validate_dir! reject lengths over the limits, naming them" do
+    assert_nothing_raised { Asset.validate_name!("n" * Asset::MAX_NAME_LENGTH) }
+    error = assert_raises(Asset::InvalidNameError) { Asset.validate_name!("n" * (Asset::MAX_NAME_LENGTH + 1)) }
+    assert_equal "name is 256 characters, over the 255 character limit", error.message
+
+    dir = "member/#{'d' * (Asset::MAX_DIR_LENGTH - 7)}"
+    assert_nothing_raised { Asset.validate_dir!(dir) }
+    error = assert_raises(Asset::InvalidDirError) { Asset.validate_dir!("#{dir}x") }
+    assert_equal "path is 1025 characters, over the 1024 character limit", error.message
+  end
+
+  test "names and dirs over the limits are rejected by the database" do
+    assert_raises(ActiveRecord::StatementInvalid) { build(dir: "member/notes", name: "n" * (Asset::MAX_NAME_LENGTH + 1)) }
+    assert_raises(ActiveRecord::StatementInvalid) { build(dir: "member/#{'d' * Asset::MAX_DIR_LENGTH}", name: "a.md") }
+  end
+
   test "validate_dir! accepts ordinary directories" do
     assert_nothing_raised { Asset.validate_dir!("member") }
     assert_nothing_raised { Asset.validate_dir!("member/notes/sub") }

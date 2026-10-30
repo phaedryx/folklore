@@ -9,6 +9,8 @@ class Task < ApplicationRecord
   belongs_to :claimed_by_user, class_name: "User", optional: true
 
   STATUSES = %w[pending in_progress done failed cancelled].freeze
+  # Mirrors the CHECK constraint on tasks.outcome_note.
+  MAX_NOTE_LENGTH = 10_000
 
   validates :status, inclusion: { in: STATUSES }
 

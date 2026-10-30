@@ -51,9 +51,11 @@ class Asset < ApplicationRecord
   InvalidStaleAfterError = Class.new(StandardError)
   ContentTooLargeError = Class.new(StandardError)
 
-  # Mirrors the CHECK constraint on assets.content, so a caller gets a readable
-  # error instead of a statement failure.
+  # Mirror the CHECK constraints on assets, so a caller gets a readable error
+  # instead of a statement failure.
   MAX_CONTENT_BYTES = 1_048_576
+  MAX_NAME_LENGTH = 255
+  MAX_DIR_LENGTH = 1024
 
   validates :slug, :dir, :name, presence: true
   validates :status, inclusion: { in: NOTE_STATUSES }, allow_nil: true
@@ -96,6 +98,9 @@ class Asset < ApplicationRecord
 
   def self.validate_name!(name)
     raise InvalidNameError, "name is required" if name.to_s.empty?
+    if name.length > MAX_NAME_LENGTH
+      raise InvalidNameError, "name is #{name.length} characters, over the #{MAX_NAME_LENGTH} character limit"
+    end
     raise InvalidNameError, "name cannot contain '/'" if name.include?("/")
     raise InvalidNameError, "name cannot contain whitespace" if name.match?(/\s/)
     raise InvalidNameError, "name cannot be '.' or '..'" if name == "." || name == ".."
@@ -105,6 +110,9 @@ class Asset < ApplicationRecord
   # are refused unless the caller owns them (checkpoints pass allow_reserved).
   def self.validate_dir!(dir, allow_reserved: false)
     raise InvalidDirError, "path is required" if dir.to_s.empty?
+    if dir.length > MAX_DIR_LENGTH
+      raise InvalidDirError, "path is #{dir.length} characters, over the #{MAX_DIR_LENGTH} character limit"
+    end
     raise InvalidDirError, "path cannot start or end with '/'" if dir.start_with?("/") || dir.end_with?("/")
 
     segments = dir.split("/")

@@ -230,6 +230,21 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     end
   end
 
+  test "an oversized name or path is Invalid, not Internal error" do
+    # Incompressible and long enough to overflow the btree entry on (dir,
+    # name), which without a cap surfaced as Internal error.
+    long_name = SecureRandom.alphanumeric(4000)
+    response = Tools::Create.call(path: "member/notes", name: long_name, server_context: ctx)
+    assert_equal "Invalid: name is 4000 characters, over the 255 character limit", text_of(response)
+
+    response = Tools::Create.call(path: "member/#{SecureRandom.alphanumeric(4000)}", name: "a.md", server_context: ctx)
+    assert_equal "Invalid: path is 4007 characters, over the 1024 character limit", text_of(response)
+
+    asset = create("u.md")
+    response = Tools::Update.call(slug: asset.slug, name: long_name, server_context: ctx)
+    assert_equal "Invalid: name is 4000 characters, over the 255 character limit", text_of(response)
+  end
+
   test "update changes content, snapshots a version, and reports the new version" do
     asset = create("u.md", content: "v1")
 
