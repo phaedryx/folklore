@@ -11,7 +11,7 @@ module Assets
     # while an unrelated query scores 0.
     #
     # 0.5 was too strict: a filename restating the whole query in a different order
-    # scored 0.475. Swept against the eval set: 0.45 and 0.47 tie for best (recall@10
+    # scored 0.475. Swept against the original, private eval set (docs/search.md): 0.45 and 0.47 tie for best (recall@10
     # 94.7%, top-1 84.2%), 0.55 and above lose recall, and below 0.40 top-1 decays as
     # weak name matches start outranking real ones. 0.45 sits at the wide end of that
     # plateau. Note the gain rests on one query, so trust the direction more than the
@@ -24,7 +24,7 @@ module Assets
     ANY_TERM  = "replace(#{ALL_TERMS}::text, '&', '|')::tsquery".freeze
 
     # Reciprocal rank fusion constant. Results are insensitive to it (10 and 60 score
-    # identically on the eval set) because it only damps how steeply the top of each
+    # identically on the private eval set) because it only damps how steeply the top of each
     # list is favoured, and both lists are short.
     RRF_K = 60
 
@@ -156,7 +156,7 @@ module Assets
     # Content relevance and name similarity are not on the same scale, so adding them
     # made the weighting an accident of how ts_rank_cd happens to be distributed. Fusing
     # them by rank instead asks the only question that transfers between the two: how
-    # near the top of its own list did this asset come? Measured on the eval set, this
+    # near the top of its own list did this asset come? Measured on the private eval set, this
     # lifts recall@10 from 84.2% to 89.5% and MRR from 0.797 to 0.829.
     #
     # Fusing all-terms with any-term was also tried and is markedly worse: any-term is

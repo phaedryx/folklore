@@ -1,0 +1,59 @@
+# Queries with known answers in corpus.yml. Kept to the kinds of question people ask a
+# team wiki: a topic in a few words, a question in a sentence, a filename (typos too), and a
+# negated term. `expect` lists every slug that counts as a right answer.
+- query: how do we roll back a deploy
+  expect: [ev000002]
+- query: postgres connection limits
+  expect: [ev000003]
+- query: deploy
+  expect: [ev000001]
+- query: deploymnet
+  expect: [ev000001]
+- query: restore a database from backup
+  expect: [ev000005]
+- query: what dog breed did we pick
+  expect: [ev000028]
+- query: rotate an api token
+  expect: [ev000009]
+- query: why not kubernetes
+  expect: [ev000037]
+- query: stripe webhook retries
+  expect: [ev000013]
+- query: upgrading rails
+  expect: [ev000014]
+- query: flaky tests
+  expect: [ev000017]
+- query: who is on call this week
+  expect: [ev000019]
+- query: renew tls certificate
+  expect: [ev000039]
+- query: vacuum
+  expect: [ev000004]
+- query: saml single sign-on
+  expect: [ev000010]
+- query: time off
+  expect: [ev000031]
+- query: expenses
+  expect: [ev000030]
+- query: rate limiting
+  expect: [ev000036]
+- query: api outage february
+  expect: [ev000018]
+- query: first week as a new hire
+  expect: [ev000007]
+- query: interview process
+  expect: [ev000032]
+- query: caching -redis
+  expect: [ev000022]
+- query: accesibility
+  expect: [ev000034]
+- query: dns records
+  expect: [ev000038]
+- query: feature flag
+  expect: [ev000025]
+- query: guest wifi password
+  expect: [ev000029]
+- query: design tokens
+  expect: [ev000033]
+- query: local setup
+  expect: [ev000008]

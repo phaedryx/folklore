@@ -63,9 +63,12 @@ module FolkloreAdminPrompt
 end
 
 namespace :folklore do
-  desc "Run the search eval against a queries YAML (argument or FOLKLORE_EVAL_QUERIES)"
+  desc "Run the search eval: the committed synthetic set, or a queries YAML (argument or FOLKLORE_EVAL_QUERIES)"
   task :search_eval, [ :queries_path ] => :environment do |_t, args|
-    SearchEval::Runner.call(args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"])
+    queries_path = args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"].presence
+    queries_path ? SearchEval::Runner.call(queries_path) : SearchEval::Synthetic.call
+  rescue SearchEval::Runner::MissingQueriesError, SearchEval::Runner::UnknownSlugError => e
+    abort "folklore:search_eval: #{e.message}"
   end
 end
 
