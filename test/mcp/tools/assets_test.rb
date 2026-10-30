@@ -175,6 +175,23 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal "No assets under member/empty", text_of(Tools::List.call(path: "member/empty", server_context: ctx))
   end
 
+  test "list returns #{::Assets::List::DEFAULT_LIMIT} by default and the offset of the next page when there is one" do
+    3.times { |i| create("p#{i}.md") }
+
+    first = Tools::List.call(path: "member/notes", limit: 2, server_context: ctx)
+    assert_equal 2, structured(first)[:assets].size
+    assert_equal 2, structured(first)[:next_offset]
+    assert_match(/\(more: offset 2\)\z/, text_of(first))
+
+    last = Tools::List.call(path: "member/notes", limit: 2, offset: 2, server_context: ctx)
+    assert_equal 1, structured(last)[:assets].size
+    refute structured(last).key?(:next_offset)
+
+    stub_const(::Assets::List, :DEFAULT_LIMIT, 2) do
+      assert_equal 2, structured(Tools::List.call(path: "member/notes", server_context: ctx))[:assets].size
+    end
+  end
+
   # create / update / upsert / append
 
   test "create then read round-trip, stamping the agent" do

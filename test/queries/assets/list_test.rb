@@ -50,4 +50,10 @@ class Assets::ListTest < ActiveSupport::TestCase
   test "a dir with no assets yields an empty relation" do
     assert_empty names(path: "member/empty")
   end
+
+  test "limit is capped" do
+    create("a.md")
+
+    assert_equal Assets::List::MAX_LIMIT, Assets::List.query(path: "member", limit: 10_000, actor: @actor).limit_value
+  end
 end

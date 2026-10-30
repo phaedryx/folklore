@@ -786,7 +786,7 @@
   },
   {
     "name": "list",
-    "description": "List live assets under a path (the directory and its whole subtree), one `slug  location` line each. Optionally filter to assets having ALL of the given tags; sort by name (default), created_at or updated_at; page with limit and offset.",
+    "description": "List live assets under a path (the directory and its whole subtree), one `slug  location` line each. Optionally filter to assets having ALL of the given tags; sort by name (default), created_at or updated_at. Returns 100 (at most 500) from offset, and next_offset when there are more.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -874,6 +874,12 @@
               "status",
               "updated_at"
             ]
+          }
+        },
+        "next_offset": {
+          "type": "integer",
+          "not": {
+            "type": "null"
           }
         }
       },
