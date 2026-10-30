@@ -427,10 +427,10 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
 
     %w[read verify].each do |name|
       tool = FolkloreMcp.tool_classes.find { |klass| klass.name_value == name }
-      response = tool.call(slug: asset.slug, agent: "ping", server_context: ctx)
+      response = tool.call(slug: asset.slug, bogus: "ping", server_context: ctx)
 
       assert response.to_h[:isError], "#{name} accepted an unknown argument"
-      assert_equal "Invalid: unknown argument agent", text_of(response)
+      assert_equal "Invalid: unknown argument bogus", text_of(response)
     end
     assert_nil asset.reload.verified_at
   end

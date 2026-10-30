@@ -123,6 +123,10 @@
         "tag": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -190,6 +194,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -240,6 +248,10 @@
           "minLength": 1
         },
         "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent": {
           "type": "string",
           "minLength": 1
         }
@@ -553,7 +565,7 @@
   },
   {
     "name": "claim_task",
-    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
+    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, token, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -629,7 +641,7 @@
   },
   {
     "name": "complete_task",
-    "description": "Mark a task you hold done, with an optional outcome note. Only the (you, agent) that claimed it can complete it; pass the same agent you claimed with. Anyone else gets Wrong claimer.",
+    "description": "Mark a task you hold done, with an optional outcome note. Only the (you, token, agent) that claimed it can complete it; use the same token and agent you claimed with. Anyone else gets Wrong claimer.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -710,6 +722,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -760,6 +776,10 @@
         "slug": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -794,7 +814,7 @@
   },
   {
     "name": "fail_task",
-    "description": "Mark a task you hold failed, with a required reason; the reason is kept on the task and in the activity log. Only the (you, agent) that claimed it can fail it; pass the same agent you claimed with. Anyone else gets Wrong claimer.",
+    "description": "Mark a task you hold failed, with a required reason; the reason is kept on the task and in the activity log. Only the (you, token, agent) that claimed it can fail it; use the same token and agent you claimed with. Anyone else gets Wrong claimer.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1665,6 +1685,10 @@
         "tag": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1713,6 +1737,10 @@
       "type": "object",
       "properties": {
         "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent": {
           "type": "string",
           "minLength": 1
         }
@@ -1897,6 +1925,10 @@
         },
         "stale_after": {
           "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1945,6 +1977,10 @@
         },
         "status": {
           "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -2064,6 +2100,10 @@
           "not": {
             "type": "null"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -2182,6 +2222,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -2242,6 +2286,10 @@
         },
         "stale_after": {
           "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

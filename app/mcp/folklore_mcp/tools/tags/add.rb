@@ -8,6 +8,7 @@ module FolkloreMcp
         input_schema do
           required(:slug).filled(:string)
           required(:tag).filled(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -16,8 +17,8 @@ module FolkloreMcp
           required(:tags).array(:string)
         end
 
-        def invoke(slug:, tag:, server_context:)
-          actor = actor_from(server_context)
+        def invoke(slug:, tag:, server_context:, agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Tags::Apply.mutate(actor:, slug:, tag:)
           name = Tag.normalize(tag)
 

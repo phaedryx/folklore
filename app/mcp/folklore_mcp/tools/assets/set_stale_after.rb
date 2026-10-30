@@ -12,6 +12,7 @@ module FolkloreMcp
         input_schema do
           required(:slug).filled(:string)
           required(:stale_after).value(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -19,8 +20,8 @@ module FolkloreMcp
           required(:stale_after).maybe(:string)
         end
 
-        def invoke(slug:, stale_after:, server_context:)
-          actor = actor_from(server_context)
+        def invoke(slug:, stale_after:, server_context:, agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Assets::SetStaleAfter.mutate(actor:, slug:, stale_after:)
 
           text = asset.stale_after ? "#{asset.slug} due for re-check after #{asset.stale_after.iso8601}"

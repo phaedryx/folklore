@@ -10,6 +10,7 @@ module FolkloreMcp
         input_schema do
           required(:slug).filled(:string)
           optional(:status).value(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -17,8 +18,8 @@ module FolkloreMcp
           required(:status).maybe(:string)
         end
 
-        def invoke(slug:, server_context:, status: nil)
-          actor = actor_from(server_context)
+        def invoke(slug:, server_context:, status: nil, agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Assets::SetStatus.mutate(actor:, slug:, status:)
 
           text_response("Set status of #{asset.slug} to #{asset.status || 'none'}", data: { slug: asset.slug, status: asset.status })
