@@ -112,4 +112,42 @@ class Checkpoints::WriteTest < ActiveSupport::TestCase
     assert Checkpoints::Write.mutate(actor: @actor, content: "second").changed
     refute Checkpoints::Write.mutate(actor: @actor, content: "second").changed
   end
+
+  test "keeps only the newest checkpoint versions, FOLKLORE_CHECKPOINT_VERSIONS of them" do
+    with_env("FOLKLORE_CHECKPOINT_VERSIONS" => "2") do
+      asset = nil
+      %w[one two three four].each { |content| asset = write(content) }
+
+      assert_equal %w[two three], Version.where(asset_id: asset.id).order(:created_at, :id).pluck(:content)
+    end
+  end
+
+  test "keeps DEFAULT_VERSIONS_KEPT checkpoint versions when the variable is unset" do
+    with_env("FOLKLORE_CHECKPOINT_VERSIONS" => nil) do
+      asset = nil
+      (Checkpoint::DEFAULT_VERSIONS_KEPT + 2).times { |i| asset = write("save #{i}") }
+
+      assert_equal Checkpoint::DEFAULT_VERSIONS_KEPT, Version.where(asset_id: asset.id).count
+    end
+  end
+
+  test "leaves the versions of other assets alone" do
+    note = Assets::Create.mutate(actor: @actor, path: "member/notes", name: "n.md", content: "a")
+    Assets::Update.mutate(actor: @actor, slug: note.slug, content: "b")
+
+    with_env("FOLKLORE_CHECKPOINT_VERSIONS" => "0") do
+      write("one")
+      write("two")
+    end
+
+    assert_equal 1, note.versions.count
+  end
+
+  def with_env(values)
+    saved = values.keys.to_h { |k| [ k, ENV[k] ] }
+    values.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+    yield
+  ensure
+    saved.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+  end
 end
