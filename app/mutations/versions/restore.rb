@@ -24,8 +24,7 @@ module Versions
         return asset if version.content == asset.content && version.content_type == asset.content_type
 
         if version.content != asset.content
-          Version.create!(asset:, content: asset.content, content_type: asset.content_type,
-                          actor_user: @actor.user, actor_token: @actor.token, actor_agent: @actor.agent)
+          Versions::Snapshot.mutate(actor: @actor, asset:)
           asset.update!(content: version.content, content_type: version.content_type,
                         updated_by_token: @actor.token, updated_by_agent: @actor.agent)
           Links::Sync.mutate(asset:)
