@@ -50,4 +50,11 @@ class Events::EntryComponentTest < ViewComponent::TestCase
     render_inline Events::EntryComponent.new(event: expired)
     assert_selector "[data-testid='activity-detail-#{expired.id}']", text: "member/ping's lease ended"
   end
+
+  test "a deleted task names the claim it released" do
+    asset = create_asset(name: "t.md")
+    deleted = Events::Record.mutate(actor: web_actor, asset:, action: "asset_deleted", metadata: { "released_claim" => "member/ping" })
+
+    assert_equal "released member/ping's claim", Events::Detail.call(deleted)
+  end
 end

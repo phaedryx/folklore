@@ -1,6 +1,6 @@
 module Assets
   # Soft-deletes: the row stays for restore and for versions, and the
-  # partial unique index frees its name.
+  # partial unique index frees its name. A deleted task's claim is released.
   class Delete
     NotFoundError = Assets::NotFoundError
     ForbiddenError = Assets::ForbiddenError
@@ -27,7 +27,9 @@ module Assets
 
         asset.update!(deleted_at: Time.current, updated_by_token: @actor.token, updated_by_agent: @actor.agent)
         Links::Sync.mutate(asset:)
-        Events::Record.mutate(actor: @actor, asset:, action: "asset_deleted")
+        released = Tasks::Release.mutate(asset:)
+        Events::Record.mutate(actor: @actor, asset:, action: "asset_deleted",
+                              metadata: released ? { "released_claim" => released } : {})
       end
       asset
     end
