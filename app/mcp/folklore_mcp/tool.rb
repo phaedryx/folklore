@@ -18,16 +18,20 @@ module FolkloreMcp
     SCOPE_ERROR = "Forbidden: token lacks write scope".freeze
     READ_SCOPE_ERROR = "Forbidden: token lacks read scope".freeze
 
-    # Errors a caller can act on, with the prefix their message gets. Domain
-    # modules add their own with `FolkloreMcp::Tool.user_error(klass, prefix)`.
-    USER_ERRORS = {
-      Asset::InvalidNameError => "Invalid",
-      Asset::InvalidDirError => "Invalid",
-      Asset::InvalidStaleAfterError => "Invalid",
-      Actor::InvalidAgentError => "Invalid",
-      Checkpoint::NoHandleError => "Invalid",
-      ActiveRecord::StaleObjectError => "Conflict"
-    }
+    # How MCP shows a DomainErrors entry: "<prefix>: <message>", the prefix
+    # chosen by status. The task-queue outcomes are named for themselves.
+    STATUS_PREFIXES = {
+      not_found: "Not found",
+      forbidden: "Forbidden",
+      conflict: "Conflict",
+      unprocessable_content: "Invalid"
+    }.freeze
+    CODE_PREFIXES = {
+      "not_a_task" => "Not a task",
+      "already_claimed" => "Already claimed",
+      "no_pending_task" => "No pending task",
+      "wrong_claimer" => "Wrong claimer"
+    }.freeze
 
     class << self
       def inherited(subclass)
@@ -78,12 +82,14 @@ module FolkloreMcp
         super.merge(annotations: annotations_value.to_h)
       end
 
-      def user_error(klass, prefix)
-        USER_ERRORS[klass] = prefix
+      def prefix_for(entry)
+        CODE_PREFIXES.fetch(entry.code) { STATUS_PREFIXES.fetch(entry.status) }
       end
 
       # Failures answer in the format the caller asked for: a tool that takes
-      # `format: "json"` gets `{"error": "..."}` back, as its successes are JSON.
+      # `format: "json"` gets `{"error": "...", "code": "..."}` back, as its
+      # successes are JSON. A registered error (DomainErrors) is mapped here
+      # and nowhere else; anything else is "Internal error".
       def call(server_context: nil, **args)
         format = args[:format]
         scope_error = scope_error(server_context)
@@ -95,13 +101,9 @@ module FolkloreMcp
         new.invoke(**args, server_context:)
       rescue MissingActorError
         failure("Unauthenticated: no actor on request", format:)
-      rescue ActiveRecord::RecordInvalid => e
-        failure("Invalid: #{e.record.errors.full_messages.join(', ')}", format:)
-      rescue ActiveRecord::RecordNotFound => e
-        # Rails' own wording names tables and columns; say what was missing.
-        failure("Not found: #{e.model&.underscore&.humanize&.downcase || 'record'}", format:)
-      rescue *USER_ERRORS.keys => e
-        failure("#{USER_ERRORS.fetch(e.class) { USER_ERRORS.find { |k, _| e.is_a?(k) }.last }}: #{e.message}", format:)
+      rescue *DomainErrors.classes => e
+        entry = DomainErrors.for(e)
+        failure("#{prefix_for(entry)}: #{DomainErrors.message(e)}", format:, code: entry.code)
       rescue => e
         raise if Rails.env.test? && ENV["MCP_RAISE_ERRORS"] == "1"
         Rails.logger.error("[MCP] #{name_value} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
@@ -134,10 +136,10 @@ module FolkloreMcp
         args.keys.map(&:to_s) - properties.keys.map(&:to_s)
       end
 
-      def failure(text, format: nil)
+      def failure(text, format: nil, code: nil)
         return MCP::Tool::Response.new([ { type: "text", text: } ], error: true) unless format.to_s == "json"
 
-        payload = { error: text }
+        payload = { error: text, code: }.compact
         MCP::Tool::Response.new([ { type: "text", text: JSON.generate(payload) } ], structured_content: payload, error: true)
       end
 

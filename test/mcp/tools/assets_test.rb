@@ -135,15 +135,16 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
 
   test "read, read_path and bulk_read answer errors as json when asked for json" do
     responses = {
-      "Not found: 00000000" => Tools::Read.call(slug: "00000000", format: "json", server_context: ctx),
-      "Not found: member/notes/nope.md" => Tools::ReadPath.call(location: "member/notes/nope.md", format: "json", server_context: ctx),
-      "Provide at least one slug or location" => Tools::BulkRead.call(format: "json", server_context: ctx)
+      { error: "Not found: 00000000", code: "not_found" } => Tools::Read.call(slug: "00000000", format: "json", server_context: ctx),
+      { error: "Not found: member/notes/nope.md", code: "not_found" } =>
+        Tools::ReadPath.call(location: "member/notes/nope.md", format: "json", server_context: ctx),
+      { error: "Provide at least one slug or location" } => Tools::BulkRead.call(format: "json", server_context: ctx)
     }
 
-    responses.each do |message, response|
+    responses.each do |payload, response|
       assert response.to_h[:isError]
-      assert_equal({ "error" => message }, JSON.parse(text_of(response)))
-      assert_equal({ error: message }, structured(response))
+      assert_equal payload.stringify_keys, JSON.parse(text_of(response))
+      assert_equal payload, structured(response)
     end
   end
 
