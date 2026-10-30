@@ -62,11 +62,11 @@ new token form re-render instead, keeping what was typed.
 | `reason_required` | 422 | `reason` | `fail_task` without a reason |
 | `note_too_long` | 422 | | `complete_task`'s note or `fail_task`'s reason is over 10,000 characters |
 | `invalid_lease` | 422 | `lease_seconds` | A lease outside 1 to the maximum |
-| `invalid_argument` | 422 | | A search or `claim_task` argument out of range, or a missing slug and prefix |
+| `invalid_argument` | 422 | | A search, `claim_task` or `get_pending_tasks` argument out of range, or a missing slug and prefix |
 | `empty_content` | 422 | `content` | `update_last_session` with empty content |
 | `no_agent` | 422 | | A checkpoint call from a web session |
 | `no_handle` | 422 | | A checkpoint call from a user without a handle |
-| `invalid_agent` | 422 | `agent` | An `agent` override that is malformed or reserved, or one without a token |
+| `invalid_agent` | 422 | `agent` | An `agent` override that is malformed or reserved, one without a token, or one from a token that is not shared |
 | `invalid_timestamp` | 422 | | `activity` given a `since` or `before` that is not ISO 8601 |
 | `invalid_cursor` | 422 | | `activity` given a `since_id` or `before_id` that is not a whole number |
 
