@@ -72,12 +72,22 @@ class FolkloreMcp::OutputSchemaTest < ActiveSupport::TestCase
     end
   end
 
-  # read answers one asset for a ref and a list for an array; both are checked.
-  test "read's array form matches its outputSchema" do
-    tool = FolkloreMcp::Tools::Assets::Read
-    response = tool.call(ref: [ create("a.md").slug, "00000000" ], include: %w[content tags], server_context: actor_context).to_h
+  # Tools whose arguments change the shape of the answer, in their other form.
+  OTHER_FORMS = {
+    "read" => ->(t) { { ref: [ t.create("a.md").slug, "00000000" ], include: %w[content tags] } },
+    "versions" => ->(t) { t.edited("a.md").then { |a| { slug: a.slug, id: a.versions.sole.id } } },
+    "restore" => ->(t) { t.edited("a.md").then { |a| { slug: a.slug, version: a.versions.sole.id } } }
+  }.freeze
 
-    refute response[:isError], response[:content].inspect
-    tool.output_schema.validate_result(JSON.parse(JSON.generate(response[:structuredContent])))
+  test "the other forms match their outputSchema too" do
+    OTHER_FORMS.each do |name, args|
+      tool = domain_tools.find { |klass| klass.name_value == name }
+      response = tool.call(**args.call(self), server_context: actor_context).to_h
+
+      refute response[:isError], "#{name}: #{response[:content].inspect}"
+      tool.output_schema.validate_result(JSON.parse(JSON.generate(response[:structuredContent])))
+    rescue MCP::Tool::OutputSchema::ValidationError => e
+      flunk "#{name}: #{e.message}"
+    end
   end
 end

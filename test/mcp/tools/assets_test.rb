@@ -330,13 +330,48 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     response = Tools::Versions.call(slug: asset.slug, server_context: ctx)
 
     refute response.to_h[:isError]
-    assert_match(/\A- \d{4}-\d{2}-\d{2}T\S+  by member\/ping  \(text\/markdown\)\z/, text_of(response))
+    assert_match(/\A- #{asset.versions.sole.id}  \d{4}-\d{2}-\d{2}T\S+  by member\/ping  \(text\/markdown\)\z/, text_of(response))
     version = structured(response)[:versions].first
     assert_equal asset.versions.first.id, version[:id]
     assert_equal({ handle: "member", agent: "ping" }, version[:actor])
 
     assert_equal "No prior versions", text_of(Tools::Versions.call(slug: create("n.md").slug, server_context: ctx))
     assert_equal "Not found: 00000000", text_of(Tools::Versions.call(slug: "00000000", server_context: ctx))
+  end
+
+  test "versions with an id returns that version's content, once" do
+    asset = create("v.md", content: "v1")
+    ::Assets::Update.mutate(actor: actor_for(:member_default, agent: "ping"), slug: asset.slug, content: "v2")
+    old = asset.versions.sole
+
+    response = Tools::Versions.call(slug: asset.slug, id: old.id, server_context: ctx)
+
+    refute response.to_h[:isError], text_of(response)
+    version = structured(response)[:versions].sole
+    assert_equal({ id: old.id, content: "v1", content_type: "text/markdown", actor: { handle: "member", agent: "ping" } },
+                 version.slice(:id, :content, :content_type, :actor))
+    assert_equal JSON.parse(JSON.generate(structured(response))), JSON.parse(text_of(response))
+
+    other = create("other.md", content: "a")
+    ::Assets::Update.mutate(actor: actor_for(:member_default), slug: other.slug, content: "b")
+    assert_equal "Not found: version #{other.versions.sole.id} is not on #{asset.slug}",
+                 text_of(Tools::Versions.call(slug: asset.slug, id: other.versions.sole.id, server_context: ctx))
+  end
+
+  test "restore with a version puts that content back, keeping the overwritten text as a version" do
+    asset = create("r.md", content: "mine")
+    ::Assets::Update.mutate(actor: actor_for(:member_default), slug: asset.slug, content: "clobbered")
+    mine = asset.versions.sole
+
+    response = Tools::Restore.call(slug: asset.slug, version: mine.id, server_context: ctx)
+
+    refute response.to_h[:isError], text_of(response)
+    assert_equal "Restored #{asset.slug} to version #{mine.id}", text_of(response)
+    assert_equal "mine", asset.reload.content
+    assert_equal %w[mine clobbered], asset.versions.order(:id).pluck(:content)
+    assert_equal({ slug: asset.slug, location: asset.location, version: asset.lock_version }, structured(response))
+    assert_match(/\ANot found: version 0 /, text_of(Tools::Restore.call(slug: asset.slug, version: 0, server_context: ctx)))
+    assert_match(/\AForbidden/, text_of(Tools::Restore.call(slug: asset.slug, version: mine.id, server_context: ctx(:other_default))))
   end
 
   # verify / set_stale_after / set_status
