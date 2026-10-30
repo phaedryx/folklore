@@ -2,7 +2,6 @@ module Tags
   class Apply
     NotFoundError = Tags::NotFoundError
     ForbiddenError = Tags::ForbiddenError
-    AlreadyAppliedError = Tags::AlreadyAppliedError
     InvalidTagError = Tags::InvalidTagError
 
     def self.mutate(actor:, slug:, tag:)
@@ -20,10 +19,10 @@ module Tags
 
       ActiveRecord::Base.transaction do
         asset = Tags.writable!(@slug, @actor)
-        raise AlreadyAppliedError, "tag #{@name} is already on #{@slug}" if asset.tags.exists?(name: @name)
+        next Result.new(asset:, changed: false) if asset.tags.exists?(name: @name)
 
         Tags::Change.mutate(actor: @actor, asset:, add: [ @name ])
-        Tags.touch!(asset, @actor)
+        Result.new(asset: Tags.touch!(asset, @actor), changed: true)
       end
     end
   end

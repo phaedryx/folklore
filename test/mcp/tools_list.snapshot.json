@@ -111,7 +111,7 @@
   },
   {
     "name": "add_tag",
-    "description": "Attach a tag to an asset by slug. Creates the tag if it doesn't exist. Normalizes the name to lowercase.",
+    "description": "Attach a tag to an asset by slug, creating the tag if needed. Names are lowercased. A tag already there is not an error: changed is false.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -152,12 +152,19 @@
           "items": {
             "type": "string"
           }
+        },
+        "changed": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
         }
       },
       "required": [
         "slug",
         "tag",
-        "tags"
+        "tags",
+        "changed"
       ]
     },
     "annotations": {
@@ -1692,7 +1699,7 @@
   },
   {
     "name": "remove_tag",
-    "description": "Detach a tag from an asset by slug. The tag itself is not deleted even if it becomes orphaned.",
+    "description": "Detach a tag from an asset by slug. A tag not there is not an error: changed is false.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1733,12 +1740,19 @@
           "items": {
             "type": "string"
           }
+        },
+        "changed": {
+          "type": "boolean",
+          "not": {
+            "type": "null"
+          }
         }
       },
       "required": [
         "slug",
         "tag",
-        "tags"
+        "tags",
+        "changed"
       ]
     },
     "annotations": {

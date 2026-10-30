@@ -2,10 +2,12 @@ module Tags
   Error = Class.new(StandardError)
   NotFoundError = Class.new(Error)
   ForbiddenError = Class.new(Error)
-  AlreadyAppliedError = Class.new(Error)
-  NotAppliedError = Class.new(Error)
   # Raised by Tag.validate_name!, which Assets::Create and Update also reach.
   InvalidTagError = Tag::InvalidNameError
+
+  # What Apply and Remove answer: the asset, and whether the call changed it.
+  # Adding a tag that is there, or removing one that is not, writes nothing.
+  Result = Data.define(:asset, :changed)
 
   # Finds a live asset the actor may tag and row-locks it, or raises; the
   # same checks as Assets.writable!, with this domain's errors.

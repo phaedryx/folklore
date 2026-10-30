@@ -21,8 +21,17 @@ class Tags::RemoveTest < ActiveSupport::TestCase
     assert_equal({ "tag" => "ruby" }, event.metadata)
   end
 
-  test "raises NotAppliedError when the tag is not on the asset" do
-    assert_raises(Tags::Remove::NotAppliedError) { Tags::Remove.mutate(actor: @actor, slug: @asset.slug, tag: "python") }
+  test "reports whether anything changed, and a tag not on the asset writes nothing" do
+    version = @asset.reload.lock_version
+    events = Event.count
+
+    result = Tags::Remove.mutate(actor: @actor, slug: @asset.slug, tag: "python")
+
+    refute result.changed
+    assert_equal @asset, result.asset
+    assert_equal version, @asset.reload.lock_version
+    assert_equal events, Event.count
+    assert Tags::Remove.mutate(actor: @actor, slug: @asset.slug, tag: "ruby").changed
   end
 
   test "raises NotFoundError for an unknown slug" do

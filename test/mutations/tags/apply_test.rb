@@ -40,10 +40,17 @@ class Tags::ApplyTest < ActiveSupport::TestCase
     end
   end
 
-  test "raises AlreadyAppliedError when the tag is already on the asset" do
-    Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "ruby")
+  test "reports whether anything changed, and a tag already on the asset writes nothing" do
+    assert Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "ruby").changed
+    version = @asset.reload.lock_version
+    events = Event.count
 
-    assert_raises(Tags::Apply::AlreadyAppliedError) { Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "RUBY") }
+    result = Tags::Apply.mutate(actor: @actor, slug: @asset.slug, tag: "RUBY")
+
+    refute result.changed
+    assert_equal @asset, result.asset
+    assert_equal version, @asset.reload.lock_version
+    assert_equal events, Event.count
   end
 
   test "raises NotFoundError for an unknown or deleted slug" do

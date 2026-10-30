@@ -44,8 +44,6 @@ module DomainErrors
     # Tags. Tags::InvalidTagError is Tag::InvalidNameError.
     Tags::NotFoundError => entry("not_found", :not_found),
     Tags::ForbiddenError => entry("forbidden", :forbidden),
-    Tags::AlreadyAppliedError => entry("tag_already_applied", :conflict),
-    Tags::NotAppliedError => entry("tag_not_applied", :not_found),
     Tag::InvalidNameError => entry("invalid_tag", :unprocessable_content, :tags),
 
     # Tasks

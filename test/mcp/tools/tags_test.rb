@@ -24,18 +24,30 @@ class FolkloreMcp::Tools::TagsTest < ActiveSupport::TestCase
     add = Tools::Add.call(slug: asset.slug, tag: " Important ", server_context: ctx)
     refute add.to_h[:isError], text_of(add)
     assert_equal "Tagged #{asset.slug} with important", text_of(add)
-    assert_equal({ slug: asset.slug, tag: "important", tags: [ "important" ] }, add.to_h[:structuredContent])
+    assert_equal({ slug: asset.slug, tag: "important", tags: [ "important" ], changed: true }, add.to_h[:structuredContent])
 
     remove = Tools::Remove.call(slug: asset.slug, tag: "important", server_context: ctx)
     assert_equal "Removed tag important from #{asset.slug}", text_of(remove)
     assert_equal [], remove.to_h[:structuredContent][:tags]
   end
 
-  test "add_tag and remove_tag report conflicts, not found and forbidden" do
+  test "add_tag of a tag already there and remove_tag of one not there succeed, reporting no change" do
     asset = create("t.md", tags: %w[ruby])
 
-    assert_equal "Conflict: tag ruby is already on #{asset.slug}", text_of(Tools::Add.call(slug: asset.slug, tag: "ruby", server_context: ctx))
-    assert_equal "Not found: tag python is not on #{asset.slug}", text_of(Tools::Remove.call(slug: asset.slug, tag: "python", server_context: ctx))
+    add = Tools::Add.call(slug: asset.slug, tag: "ruby", server_context: ctx)
+    refute add.to_h[:isError]
+    assert_equal "#{asset.slug} already has tag ruby", text_of(add)
+    assert_equal false, add.to_h[:structuredContent][:changed]
+
+    remove = Tools::Remove.call(slug: asset.slug, tag: "python", server_context: ctx)
+    refute remove.to_h[:isError]
+    assert_equal "#{asset.slug} does not have tag python", text_of(remove)
+    assert_equal({ slug: asset.slug, tag: "python", tags: [ "ruby" ], changed: false }, remove.to_h[:structuredContent])
+  end
+
+  test "add_tag and remove_tag report not found and forbidden" do
+    asset = create("t.md", tags: %w[ruby])
+
     assert_equal "Not found: 00000000", text_of(Tools::Add.call(slug: "00000000", tag: "x", server_context: ctx))
     assert_match(/\AForbidden/, text_of(Tools::Add.call(slug: asset.slug, tag: "x", server_context: ctx(:other_default))))
     assert_match(/\AInvalid: tag is required/, text_of(Tools::Add.call(slug: asset.slug, tag: " ", server_context: ctx)))

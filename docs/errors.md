@@ -37,14 +37,12 @@ new token form re-render instead, keeping what was typed.
 |---|---|---|---|
 | `not_found` | 404 | | No such live asset (archived assets are not found), or another record is missing |
 | `version_not_found` | 404 | | Restoring a version (web) that is not on the asset |
-| `tag_not_applied` | 404 | | `remove_tag` of a tag the asset does not have |
 | `no_pending_task` | 404 | | `claim_task` with a `path_prefix` found nothing to claim |
 | `forbidden` | 403 | | Writing to another user's workspace, or revoking another user's token |
 | `version_conflict` | 409 | | `expected_version` is out of date (`<slug> is at version N`) |
 | `name_taken` | 409 | `name` | A live asset already has that path and name |
 | `already_archived` | 409 | | Archiving an archived asset |
 | `not_archived` | 409 | | Restoring an asset that is not archived |
-| `tag_already_applied` | 409 | | `add_tag` of a tag the asset already has |
 | `already_claimed` | 409 | | `claim_task` of a task someone else holds |
 | `wrong_claimer` | 409 | | Completing or failing a task you do not hold |
 | `already_revoked` | 409 | | Revoking a revoked token |
