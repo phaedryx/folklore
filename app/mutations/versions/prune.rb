@@ -12,7 +12,7 @@ module Versions
     end
 
     def initialize(keep:, assets:)
-      @keep = Integer(keep, exception: false)
+      @keep = Integer(keep.to_s, 10, exception: false)
       raise InvalidKeepError, "keep must be a whole number, 0 or more, got #{keep.inspect}" if @keep.nil? || @keep.negative?
 
       @assets = assets

@@ -7,7 +7,7 @@ module Api
 
     # `next_offset` is where the next page starts, or nil on the last one.
     def index
-      limit = params.fetch(:limit, DEFAULT_LIMIT).to_i.clamp(1, MAX_LIMIT)
+      limit = (params[:limit].presence || DEFAULT_LIMIT).to_i.clamp(1, MAX_LIMIT)
       offset = [ params[:offset].to_i, 0 ].max
       assets = ::Assets::List.query(path: params.require(:path), tags: Array(params[:tags]), limit: limit + 1, offset:,
                                     actor: current_actor)

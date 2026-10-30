@@ -99,6 +99,9 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
         assert_equal 3, body.dig("data", "assets").size
         assert_equal 3, body.dig("data", "next_offset")
 
+        get "/api/assets", params: { path: "member/notes", limit: "" }, headers: headers
+        assert_equal 2, body.dig("data", "assets").size
+
         get "/api/assets", params: { path: "member/notes", limit: 0, offset: -5 }, headers: headers
         assert_equal %w[a.md], body.dig("data", "assets").map { |a| a["name"] }
       end

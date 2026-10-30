@@ -53,6 +53,14 @@ class Versions::PruneTest < ActiveSupport::TestCase
     assert_empty contents(asset)
   end
 
+  test "reads keep as decimal, so a leading zero is not octal" do
+    asset = asset_with_versions("a.md", 9)
+
+    Versions::Prune.mutate(keep: "08")
+
+    assert_equal 8, asset.versions.count
+  end
+
   test "refuses a negative or non-integer keep" do
     [ -1, "lots", nil ].each do |keep|
       assert_raises(Versions::InvalidKeepError) { Versions::Prune.mutate(keep:) }
