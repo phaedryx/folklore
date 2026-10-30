@@ -23,7 +23,7 @@ It has no checkpoint of its own, and it cannot use the `agent` override.
 | Raw | the asset address + `?raw=true` | The stored bytes |
 | Edit | the asset address + `/edit` | Content, name and tags in a plain form |
 | New file | `/files/new` | Creates a file in your workspace |
-| History | the asset address + `/versions` | Every version with a line diff against the one before, and restore |
+| History | the asset address + `/versions` | The versions, newest first and ten to a page, each with a line diff against the current content, and restore |
 | Archive | `/<handle>/archive` | Your archived files, with restore |
 | Search | `/search?q=...&tags=...` | The same search as the MCP tool |
 | Review | `/stale` | Your files whose review date has passed. Verify one and set its next review date. |
