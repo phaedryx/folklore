@@ -59,8 +59,8 @@ again.
 
 | Area | Tools |
 |---|---|
-| Read | `read`, `read_path`, `bulk_read`, `list`, `versions`, `tags`, `activity` |
-| Write | `create`, `update`, `upsert`, `append`, `delete`, `restore`, `add_tag`, `remove_tag` |
+| Read | `read`, `list`, `versions`, `tags`, `activity` |
+| Write | `create`, `update`, `upsert`, `append`, `move`, `delete`, `restore`, `add_tag`, `remove_tag` |
 | Review | `verify`, `set_stale_after`, `set_status` |
 | Search | `search` |
 | Tasks | `add_task`, `claim_task`, `complete_task`, `fail_task`, `get_pending_tasks` |

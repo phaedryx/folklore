@@ -24,8 +24,8 @@ case-insensitive.
 
 Each token has scopes:
 
-- `read` lets it call the read-only tools: `read`, `read_path`, `bulk_read`, `list`, `search`, `tags`, `versions`,
-  `activity`, `get_pending_tasks` and `get_last_session`.
+- `read` lets it call the read-only tools: `read`, `list`, `search`, `tags`, `versions`, `activity`,
+  `get_pending_tasks` and `get_last_session`.
 - `write` lets it call everything else.
 
 A token without `write` gets `Forbidden: token lacks write scope` from any other tool, and a token without `read` gets
@@ -33,8 +33,8 @@ A token without `write` gets `Forbidden: token lacks write scope` from any other
 with a 403: GET needs `read`, every other method `write`. New tokens get both scopes unless you untick one. Each
 tool's `readOnlyHint` annotation is what decides which scope it needs.
 
-The read-only tools write one thing: the search log. `search` records the query and `read`/`read_path` mark a recent
-search as followed (see [search.md](search.md)). It is telemetry, so a failure to log never fails the call.
+The read-only tools write one thing: the search log. `search` records the query and `read` marks a recent search as
+followed (see [search.md](search.md)). It is telemetry, so a failure to log never fails the call.
 
 ## Agent identity
 
@@ -77,21 +77,25 @@ them. Tools that address an existing asset by slug (`update`, `append`, `delete`
 
 ## Responses
 
-Every tool answers with text content. A tool that has data to return also sends it as structured content that matches
-the tool's `outputSchema`. Tools that take `format: "json"` put the JSON in the text as well. `list`, `search` and
-`get_pending_tasks` print one `slug  location` line per hit (search prints `slug  name  (dir)` with a snippet line
-under it), so line-oriented scripts keep working.
+Every tool answers with structured content that matches its `outputSchema`, and with text. Tools that return an
+asset's content (`read`, `get_last_session`, `versions` with an `id`) send it once: the text is the structured content
+as JSON, as the MCP spec recommends for a tool with an output schema. The others send a short summary as text. `list`,
+`search` and `get_pending_tasks` print one `slug  location` line per hit (search prints `slug  name  (dir)` with a
+snippet line under it), so line-oriented scripts keep working.
 
-Errors come back with `isError: true` and one of these prefixes. A call made with `format: "json"` (`read`,
-`read_path`, `bulk_read`) gets the same text as `{"error": "...", "code": "..."}`, in the text content and the
-structured content. [errors.md](errors.md) lists every code, the prefix and HTTP status it maps to, and the length
-limits:
+`tools/list` leaves out what a client does not need: no `$schema` (MCP's default dialect is the one used), and
+annotation hints only where they differ from the spec's defaults. A tool without `destructiveHint` is destructive, one
+without `idempotentHint` is not idempotent, and a read-only tool carries only `readOnlyHint`.
+
+Errors come back with `isError: true` and one of these prefixes. An error registered in `DomainErrors` also carries
+`{"error": "...", "code": "..."}` as structured content. [errors.md](errors.md) lists every code, the prefix and HTTP
+status it maps to, and the length limits:
 
 | Text | Meaning |
 |---|---|
-| `Not found: ...` | No such live asset (archived assets are not found), or `remove_tag` of a tag the asset does not have |
+| `Not found: ...` | No such live asset (archived assets are not found), or no such version of it |
 | `Forbidden: ...` | Not your workspace, or the token lacks the scope the tool needs |
-| `Conflict: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, the asset is already archived or not archived, or `add_tag` of a tag it already has |
+| `Conflict: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, or the asset is already archived or not archived |
 | `Invalid: ...` | A bad argument: path, name, tag, date, agent (or any `agent` on a token that is not shared), cursor, a value over its length limit, ... |
 | `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type |
 | `Missing required arguments: ...` | A required argument was left out |
@@ -106,19 +110,22 @@ description, schemas and annotations. In brief:
 
 **Reading**
 
-- `read(slug)` returns the raw content. Boolean flags (`name`, `path`, `content_type`, `kind`, `status`, `owner`,
-  `tags`, `created_at`, `updated_at`, `backlinks`, `created_by`, `updated_by`, `verified_by`, `version`) return just
-  those fields; add `content: true` for the body as well. `backlinks` lists the live assets that link here with
-  `[[slug]]`. `kind` is `task` or `note`. `status` is a task's state (`pending`, `in_progress`, ...) for a task and the
-  note status otherwise; the same holds for `kind` and `status` in `bulk_read` and the JSON API.
-  `version` is the counter that `update(expected_version:)` checks.
-- `read_path(location)` or `read_path(path, name)` does the same by address, with `with: [...]` in place of the flags.
-- `bulk_read(slugs, locations)` reads many in one call under a `max_bytes` budget (default 100 000). A key that fails is
-  reported in place.
-- `list(path)` lists a directory and its subtree, with `tags`, `sort`, `limit` and `offset`.
-- `versions(slug)` lists an asset's prior versions, newest first: when each was replaced, by whom, and its content type.
-  It does not return their text; read an old version on the web UI's **History** page, or find it with
-  `search(include_versions: true)`.
+- `read(ref)` returns the whole asset. `ref` is a slug or a location (`you/notes/plan.md`); a location always has a
+  `/` and a slug never does. `include: [...]` returns the slug and just the fields you name: `content`, `name`,
+  `path`, `content_type`, `kind`, `status`, `owner`, `tags`, `created_at`, `updated_at`, `backlinks`, `created_by`,
+  `updated_by`, `verified_by`, `version`. `backlinks` lists the live assets that link here with `[[slug]]`, and is
+  only returned when named. `kind` is `task` or `note`. `status` is a task's state (`pending`, `in_progress`, ...) for
+  a task and the note status otherwise; the same holds in the JSON API. `version` is the counter that
+  `update(expected_version:)` checks.
+- `read([ref, ...])` reads up to 50 refs, slugs and locations mixed, and returns
+  `{assets, bytes_returned, truncated}` in request order. A ref that fails is reported in place as
+  `{ref, error, code}`. Content counts against `max_bytes` (default 100 000, at most 1 000 000); once it is spent the
+  rest come back with `content_omitted: true` and `truncated` is true. An empty array or more than 50 is `Invalid`.
+- `list(path)` lists a directory and its subtree, with `tags` and `sort`. It returns 100 assets from `offset` unless you
+  pass `limit` (at most 500), and `next_offset` when there are more.
+- `versions(slug)` lists an asset's prior versions, newest first: each one's id, when it was replaced, by whom, and its
+  content type. `versions(slug, id)` returns that version's text. An archived asset's versions are not found until it
+  is restored.
 - `tags(within)` counts tags over live assets.
 - `activity` is the event log, newest first, 50 events unless you pass `limit` (at most 200). Filter by `actor`
   (`handle`, `handle/agent` or an email), `tag`, `since` and `before` (ISO 8601, or a plain `2026-10-01 10:00:00`).
@@ -131,11 +138,16 @@ description, schemas and annotations. In brief:
 - `create(path, name, content, content_type, tags)`: `path` is the directory and must start with your handle.
 - `update(slug, content, name, content_type, tags, expected_version)` changes only the fields you pass. An empty
   `content` clears it. A content change keeps the old text as a version. A call that changes nothing records nothing.
-  Pass `expected_version` (from `read(version: true)`) to refuse to overwrite an edit you have not seen.
+  Pass `expected_version` (from `read(ref, include: ["version"])`) to refuse to overwrite an edit you have not seen.
 - `upsert(path, name, ...)` updates the asset at that address, or creates it.
 - `append(slug, text)` adds a line to the end.
+- `move(slug, path, name)` gives an asset a new directory in your workspace, and a new name if you pass one. The slug
+  stays, so links keep working. It records `asset_moved` with both locations.
 - `delete(slug)` archives the asset (it can be restored); `restore(slug)` brings it back.
-- `add_tag(slug, tag)` and `remove_tag(slug, tag)`. Tags are flat and lowercased.
+- `restore(slug, version)` puts a past version's text back on a live asset, so an agent can undo an overwrite. The
+  text it replaces is kept as a version, as with any edit.
+- `add_tag(slug, tag)` and `remove_tag(slug, tag)`. Tags are flat and lowercased. Adding a tag that is there, or
+  removing one that is not, succeeds with `changed: false` and records nothing.
 
 **Review**
 
@@ -154,7 +166,7 @@ description, schemas and annotations. In brief:
 
 `[[slug]]` or `[[slug|label]]` in content links to another asset. Links are stored when the content is written. A link
 to a slug that does not exist yet is kept, and starts resolving once that asset exists. A link to an archived asset
-stops resolving until the asset is restored. `read(backlinks: true)` shows what links to an asset. The web UI renders
+stops resolving until the asset is restored. `read(ref, include: ["backlinks"])` shows what links to an asset. The web UI renders
 the links.
 
 ## JSON API

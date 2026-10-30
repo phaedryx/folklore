@@ -17,8 +17,9 @@ web UI each map an entry in one place. A new error class is not handled by any t
 | 422 | `Invalid` |
 
 Four task-queue codes keep a prefix of their own: `not_a_task` (`Not a task`), `already_claimed` (`Already claimed`),
-`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). A call made with `format: "json"` gets
-`{"error": "<prefix>: <message>", "code": "<code>"}`. Anything unregistered is `Internal error`, with the details in
+`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). The response also carries
+`{"error": "<prefix>: <message>", "code": "<code>"}` as structured content, and a `read` of several refs reports each
+failed ref that way in place. Anything unregistered is `Internal error`, with the details in
 the server log. See [mcp.md](mcp.md#responses) for the errors the transport itself raises.
 
 **JSON API** answers with the status and `{"status": "fail", "data": {"code": ..., "message": ...}}`. An error with a
@@ -36,7 +37,7 @@ new token form re-render instead, keeping what was typed.
 | Code | Status | Field | Raised when |
 |---|---|---|---|
 | `not_found` | 404 | | No such live asset (archived assets are not found), or another record is missing |
-| `version_not_found` | 404 | | Restoring a version (web) that is not on the asset |
+| `version_not_found` | 404 | | Reading or restoring a version that is not on the asset |
 | `no_pending_task` | 404 | | `claim_task` with a `path_prefix` found nothing to claim |
 | `forbidden` | 403 | | Writing to another user's workspace, or revoking another user's token |
 | `version_conflict` | 409 | | `expected_version` is out of date (`<slug> is at version N`) |
