@@ -33,6 +33,10 @@ class FolkloreMcp::ToolsListSnapshotTest < ActionDispatch::IntegrationTest
     assert_equal WIRE_NAMES, domain_tools.map(&:name_value).sort
   end
 
+  test "only domain tools are registered outside a test that registers its own" do
+    assert_equal domain_tools, FolkloreMcp.tool_classes
+  end
+
   test "tools/list matches the committed snapshot" do
     if ENV["UPDATE_SNAPSHOT"] == "1"
       SNAPSHOT.write(rendered)
