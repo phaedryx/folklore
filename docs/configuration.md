@@ -17,14 +17,13 @@ When any of the three admin variables is unset and stdin is a terminal (and `CI`
 it. With no handle or email and no terminal, it prints a notice and creates nothing. Running it again is safe: it finds
 the user by email and only issues a token if the user has no active one.
 
-## Web server and jobs
+## Web server
 
 | Variable | Read by | Default | Meaning |
 |---|---|---|---|
 | `PORT` | `config/puma.rb`, `folklore:admin` | `3000` | The port Puma listens on. `folklore:admin` uses it in the `.mcp.json` snippet it prints. |
 | `RAILS_MAX_THREADS` | `config/puma.rb`, `config/database.yml` | `3` (Puma), `5` (database pool) | Puma threads per process, and the Active Record connection pool size. |
 | `PIDFILE` | `config/puma.rb` | none | Where Puma writes its pid, if set. |
-| `JOB_CONCURRENCY` | `config/queue.yml` | `1` | Solid Queue worker processes. Jobs share the primary database. |
 | `RAILS_LOG_LEVEL` | `config/environments/production.rb` | `info` | The production log level. Logs are one line per request (lograge). |
 
 ## Database
