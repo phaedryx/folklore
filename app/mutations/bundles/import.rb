@@ -270,7 +270,7 @@ module Bundles
       rows = assets.map do |a|
         {
           owner_id: users.fetch(a[:owner]).id, slug: a[:slug], dir: a[:dir], name: a[:name],
-          content: a[:content], content_type: a[:content_type], content_sha256: Asset.sha256(a[:content]),
+          content: a[:content], content_type: a[:content_type],
           lock_version: 0, status: a[:status], stale_after: a[:stale_after], verified_at: a[:verified_at],
           deleted_at: a[:deleted_at], created_at: a[:created_at], updated_at: a[:updated_at]
         }

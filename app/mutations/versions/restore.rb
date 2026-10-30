@@ -27,7 +27,6 @@ module Versions
           Version.create!(asset:, content: asset.content, content_type: asset.content_type,
                           actor_user: @actor.user, actor_token: @actor.token, actor_agent: @actor.agent)
           asset.update!(content: version.content, content_type: version.content_type,
-                        content_sha256: Asset.sha256(version.content),
                         updated_by_token: @actor.token, updated_by_agent: @actor.agent)
           Links::Sync.mutate(asset:)
         end

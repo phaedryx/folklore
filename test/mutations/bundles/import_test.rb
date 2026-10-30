@@ -38,7 +38,6 @@ class Bundles::ImportTest < ActiveSupport::TestCase
     asset = Asset.find_by!(slug: note[:slug])
     assert_equal [ "member/notes", "note.md", "see [[nnnnnnnn]]" ], [ asset.dir, asset.name, asset.content ]
     assert_equal users(:member), asset.owner
-    assert_equal Asset.sha256("see [[nnnnnnnn]]"), asset.content_sha256
     assert_equal %w[search why-not], asset.tags.map(&:name).sort
     assert_equal "open", asset.status
     assert_equal Date.new(2026, 12, 1), asset.stale_after

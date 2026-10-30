@@ -15,7 +15,6 @@ class Assets::UpdateTest < ActiveSupport::TestCase
 
     @asset.reload
     assert_equal "updated", @asset.content
-    assert_equal Digest::SHA256.hexdigest("updated"), @asset.content_sha256
     assert_equal 1, @asset.versions.count
     version = @asset.versions.first
     assert_equal "original", version.content

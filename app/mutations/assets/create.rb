@@ -43,7 +43,6 @@ module Assets
           name: @name,
           content: @content,
           content_type: resolve_content_type,
-          content_sha256: Asset.sha256(@content),
           created_by_token: @actor.token,
           created_by_agent: @actor.agent
         )

@@ -32,10 +32,7 @@ module Assets
 
         content_changed = !@content.nil? && @content != asset.content
         snapshot(asset) if content_changed
-        if content_changed
-          asset.content = @content
-          asset.content_sha256 = Asset.sha256(@content)
-        end
+        asset.content = @content if content_changed
         asset.content_type = @content_type if @content_type.present?
         asset.name = @name if @name.present?
         tags_changed = @tags.nil? ? false : sync_tags(asset)

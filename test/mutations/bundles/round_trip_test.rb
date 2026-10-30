@@ -19,7 +19,7 @@ class Bundles::RoundTripTest < ActiveSupport::TestCase
     Asset.preload(:tags, :task, versions: :actor_user).order(:slug).map do |asset|
       {
         slug: asset.slug, owner: asset.owner_id, dir: asset.dir, name: asset.name,
-        content: asset.content&.b, content_type: asset.content_type, sha: asset.content_sha256,
+        content: asset.content&.b, content_type: asset.content_type,
         tags: asset.tags.map(&:name).sort, status: asset.status, stale_after: asset.stale_after,
         verified_at: asset.verified_at, created_at: asset.created_at, updated_at: asset.updated_at,
         deleted_at: asset.deleted_at,

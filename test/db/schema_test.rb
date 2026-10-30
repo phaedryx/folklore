@@ -56,6 +56,16 @@ class SchemaTest < ActiveSupport::TestCase
   test "pg_trgm is enabled" do
     assert connection.extension_enabled?("pg_trgm")
   end
+
+  test "assets have no stored content hash; bundles hash content when they need one" do
+    assert_not connection.column_exists?(:assets, :content_sha256)
+  end
+
+  test "links are indexed by dst_ref, so resolving inbound links does not scan the table" do
+    index = connection.indexes(:links).find { |i| i.columns.first == "dst_ref" }
+
+    assert index, "expected an index leading with links.dst_ref"
+  end
 end
 
 class ModelCallbackTest < ActiveSupport::TestCase
