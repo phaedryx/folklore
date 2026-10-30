@@ -3,10 +3,9 @@ module FolkloreMcp
     module Assets
       class Create < FolkloreMcp::Tool
         tool_name "create"
-        description "Create a new asset at the given path. Use 'update' to modify an existing asset " \
-                    "by slug. 'path' is the DIRECTORY only (no trailing filename or known file " \
-                    "extension — those are rejected); 'name' is the leaf (no whitespace, no '/', " \
-                    "not '.' or '..'). Fails with Conflict if a live asset already has that name there."
+        description "Create an asset. 'path' is the directory, starting with your handle (a trailing " \
+                    "filename is rejected); 'name' is the leaf (no '/' or whitespace, not '.' or '..'). " \
+                    "Conflict if the name is taken there; update an existing asset by slug with update."
 
         input_schema do
           required(:path).filled(:string)

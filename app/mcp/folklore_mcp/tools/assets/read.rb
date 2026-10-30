@@ -3,13 +3,11 @@ module FolkloreMcp
     module Assets
       class Read < FolkloreMcp::Tool
         tool_name "read"
-        description <<~DESC.strip
-          Read by ref: a slug, a location (handle/dir/name), or an array of up to 50 of either.
-          Returns the whole asset, or with include just the slug and those fields.
-          An array returns {assets, bytes_returned, truncated}: a ref that fails gets error and code
-          in its place, and content stops after max_bytes (default 100000, at most 1000000).
-          Archived assets are not found.
-        DESC
+        description "Read by ref: a slug, a location (handle/dir/name), or an array of up to 50 of either. " \
+                    "Returns the whole asset, or with include just the slug and those fields. An array " \
+                    "returns {assets, bytes_returned, truncated}: a ref that fails gets error and code in " \
+                    "its place, and content stops after max_bytes (default 100000, at most 1000000). " \
+                    "Archived assets are not found."
         annotations read_only: true, idempotent: true
 
         input_schema(
