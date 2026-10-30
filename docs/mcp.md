@@ -85,10 +85,11 @@ snippet line under it), so line-oriented scripts keep working.
 
 `tools/list` leaves out what a client does not need: no `$schema` (MCP's default dialect is the one used), and
 annotation hints only where they differ from the spec's defaults. A tool without `destructiveHint` is destructive, one
-without `idempotentHint` is not idempotent, and a read-only tool carries only `readOnlyHint`.
+without `idempotentHint` is not idempotent, and a read-only tool carries only `readOnlyHint` and `openWorldHint`.
 
-Errors come back with `isError: true` and one of these prefixes. An error registered in `DomainErrors` also carries
-`{"error": "...", "code": "..."}` as structured content. [errors.md](errors.md) lists every code, the prefix and HTTP
+Errors come back with `isError: true` and one of these prefixes, as text only: some clients check any structured
+content against the tool's `outputSchema`, error or not. A `read` of several refs reports each failed ref in place as
+`{ref, error, code}`. [errors.md](errors.md) lists every code, the prefix and HTTP
 status it maps to, and the length limits:
 
 | Text | Meaning |

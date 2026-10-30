@@ -33,6 +33,7 @@ module FolkloreMcp
         def invoke(path:, server_context:, tags: [], sort: nil, limit: nil, offset: 0)
           actor = actor_from(server_context)
           limit = (limit || ::Assets::List::DEFAULT_LIMIT).to_i.clamp(1, ::Assets::List::MAX_LIMIT)
+          offset = [ offset.to_i, 0 ].max
           # One row past the page says whether there is another.
           assets = ::Assets::List.query(path:, tags:, sort:, offset:, actor:).limit(limit + 1).to_a
           more = assets.size > limit

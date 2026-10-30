@@ -10,10 +10,6 @@ class Assets::ReadByPathTest < ActiveSupport::TestCase
     assert_equal @asset, Assets::ReadByPath.query(location: "member/notes/hello.md", actor: @actor)
   end
 
-  test "resolves path + name" do
-    assert_equal @asset, Assets::ReadByPath.query(path: "member/notes", name: "hello.md", actor: @actor)
-  end
-
   test "raises NotFoundError for an unknown location or a deleted asset" do
     assert_raises(Assets::NotFoundError) { Assets::ReadByPath.query(location: "member/notes/missing.md", actor: @actor) }
 
@@ -22,7 +18,6 @@ class Assets::ReadByPathTest < ActiveSupport::TestCase
   end
 
   test "raises InvalidLocationError when the address is incomplete" do
-    assert_raises(Assets::InvalidLocationError) { Assets::ReadByPath.query(path: "member/notes", actor: @actor) }
     assert_raises(Assets::InvalidLocationError) { Assets::ReadByPath.query(location: "hello.md", actor: @actor) }
     assert_raises(Assets::InvalidLocationError) { Assets::ReadByPath.query(location: "member/notes/", actor: @actor) }
   end

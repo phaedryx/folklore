@@ -127,6 +127,18 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     refute structured(response)[:assets][1].key?(:content)
   end
 
+  test "read of one ref refuses max_bytes, which only budgets an array" do
+    response = Tools::Read.call(ref: create("one.md").slug, max_bytes: 10, server_context: ctx)
+
+    assert_equal "Invalid: max_bytes applies only to an array of refs", text_of(response)
+  end
+
+  test "list treats a negative offset as zero" do
+    2.times { |i| create("n#{i}.md") }
+
+    assert_equal 1, structured(Tools::List.call(path: "member/notes", limit: 1, offset: -5, server_context: ctx))[:next_offset]
+  end
+
   test "read of an array caps max_bytes and refuses an empty array or too many refs" do
     big = create("big.md", content: "x" * 600_000)
     also = create("also.md", content: "y" * 600_000)

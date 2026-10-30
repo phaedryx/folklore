@@ -58,6 +58,22 @@ class FolkloreMcp::OutputSchemaTest < ActiveSupport::TestCase
     assert_equal domain_tools.map(&:name_value).sort, CASES.keys.sort
   end
 
+  # MCP clients (the TypeScript SDK among them) refuse a tools/list whose
+  # outputSchema is not an object schema at its root.
+  test "every advertised outputSchema is an object schema" do
+    domain_tools.each { |tool| assert_equal "object", tool.to_h.dig(:outputSchema, :type), tool.name_value }
+  end
+
+  # The same clients check structured content against the outputSchema even
+  # on an error, so a failure must not send any.
+  test "a failure carries no structured content" do
+    domain_tools.each do |tool|
+      response = tool.call(server_context: nil).to_h
+      assert response[:isError], tool.name_value
+      assert_nil response[:structuredContent], tool.name_value
+    end
+  end
+
   test "every tool's structured content matches its outputSchema" do
     domain_tools.each do |tool|
       args = CASES.fetch(tool.name_value).call(self)

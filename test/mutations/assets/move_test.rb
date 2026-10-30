@@ -30,6 +30,13 @@ class Assets::MoveTest < ActiveSupport::TestCase
     assert_empty Event.where(action: "asset_moved")
   end
 
+  test "refuses to move a checkpoint out of its reserved directory, where get_last_session looks for it" do
+    checkpoint = Checkpoints::Write.mutate(actor: @actor, content: "state").asset
+
+    assert_raises(Asset::ReservedDirError) { Assets::Move.mutate(actor: @actor, slug: checkpoint.slug, path: "member/notes") }
+    assert_equal "member/state/ping", checkpoint.reload.dir
+  end
+
   test "keeps links to the asset, which are by slug" do
     source = Assets::Create.mutate(actor: @actor, path: "member/notes", name: "src.md", content: "see [[#{@asset.slug}]]")
 

@@ -24,6 +24,7 @@ module FolkloreMcp
         # One asset for a ref, a list of them for an array. The asset's fields
         # are defined once and referenced twice.
         output_schema(
+          type: "object",
           "$defs": {
             asset: json_schema_from(proc do
               instance_exec(&ASSET_FIELDS)
@@ -45,6 +46,7 @@ module FolkloreMcp
           actor = actor_from(server_context)
           validate_include!(include)
           return read_many(ref, include:, max_bytes:, actor:) if ref.is_a?(Array)
+          raise ::Assets::BulkRead::InvalidArgumentError, "max_bytes applies only to an array of refs" if max_bytes
 
           asset = ::Assets::BulkRead.read_one(ref, actor:)
           follow_search(actor, asset)

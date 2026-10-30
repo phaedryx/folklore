@@ -838,6 +838,7 @@
       "additionalProperties": false
     },
     "outputSchema": {
+      "type": "object",
       "$defs": {
         "asset": {
           "type": "object",

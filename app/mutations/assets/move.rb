@@ -25,6 +25,8 @@ module Assets
 
       ActiveRecord::Base.transaction(requires_new: true) do
         asset = Assets.writable!(@slug, @actor)
+        # A checkpoint is found by its place under <handle>/state; moved, it is lost.
+        Asset.validate_dir!(asset.dir)
         from = asset.location
         asset.dir = @path
         asset.name = @name unless @name.nil?
