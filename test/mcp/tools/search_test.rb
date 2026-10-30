@@ -126,6 +126,36 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
     refute_match(/fresh\.md/, text_of(response))
   end
 
+  test "stale: true without q lists every overdue asset, most overdue first" do
+    build("recent.md", content: "one", stale_after: Date.current - 1)
+    build("oldest.md", content: "two", stale_after: Date.current - 30)
+    build("fresh.md", content: "three")
+
+    response = Search.call(stale: true, server_context: actor_context)
+
+    refute response.to_h[:isError], text_of(response)
+    structured = response.to_h[:structuredContent]
+    assert_nil structured[:query]
+    assert_equal %w[oldest.md recent.md], structured[:results].map { |r| r[:name] }
+  end
+
+  test "stale: true without q says so when nothing is overdue" do
+    response = Search.call(stale: true, server_context: actor_context)
+
+    refute response.to_h[:isError]
+    assert_equal "No overdue assets", text_of(response)
+  end
+
+  # Without a query or the review queue to list, a search would return the whole store.
+  test "q is required unless stale is true" do
+    [ {}, { stale: false } ].each do |args|
+      response = Search.call(**args, server_context: actor_context)
+
+      assert response.to_h[:isError]
+      assert_equal "Invalid: q is required unless stale is true", text_of(response)
+    end
+  end
+
   test "include_versions finds an asset by content it used to have, snippeted from the version" do
     note = build("db.md", content: "we chose postgres for durability")
     rewrite(note, "we chose sqlite")

@@ -162,7 +162,7 @@ module Assets
     # Fusing all-terms with any-term was also tried and is markedly worse: any-term is
     # a superset of all-terms, so it contributes no independent evidence, only noise.
     def relevance_order(scope, tsquery)
-      return scope if @query.blank?
+      return stale_order(scope) if @query.blank?
 
       # A pure-name match and a pure-content match are each first in one list and second
       # in the other, so they fuse to the same score. Break that tie toward the name: if
@@ -170,6 +170,12 @@ module Assets
       scope.joins(fusion_join(tsquery)).reorder(Arel.sql(Asset.sanitize_sql_array([
         "fusion.score DESC, word_similarity(?, assets.name) DESC, assets.id ASC", @query
       ])))
+    end
+
+    # With no query there is no relevance. The overdue list is a review queue, so it comes
+    # most overdue first, as Assets::Stale orders it.
+    def stale_order(scope)
+      @stale ? scope.reorder(:stale_after, :dir, :name) : scope
     end
 
     # Each list holds only the assets its own retriever matched, under the same filters as

@@ -11,7 +11,7 @@ search(q: "deploy rollback", within: "you/notes", tags: ["runbook"], limit: 10)
 
 | Argument | Meaning |
 |---|---|
-| `q` | The query, in web-search syntax: words, `"quoted phrases"`, `-excluded` |
+| `q` | The query, in web-search syntax: words, `"quoted phrases"`, `-excluded`. Optional only with `stale: true` |
 | `within` | A directory prefix; matches it and everything below it |
 | `tags` | Only assets with every one of these tags |
 | `exclude_tags` | Leave out assets with any of these tags |
@@ -22,7 +22,8 @@ search(q: "deploy rollback", within: "you/notes", tags: ["runbook"], limit: 10)
 | `limit`, `offset` | Paging. The default limit is 50 and the maximum 500. |
 | `include_versions` | Also match text an asset used to contain. Such hits are snippeted from the old version and marked `(edited <date>)`. |
 
-`stale: true` with a query finds overdue assets about one topic. For the whole review queue, open `/stale` in the web UI.
+`q` is required, except with `stale: true`. There, a query finds overdue assets about one topic, and leaving it out
+lists every overdue asset, most overdue first: the same review queue as `/stale` in the web UI.
 
 ## How it ranks, and why
 

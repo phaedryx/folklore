@@ -255,6 +255,18 @@ class Assets::SearchTest < ActiveSupport::TestCase
     assert_equal %w[here.md], results.map(&:name)
   end
 
+  # The review queue: what `search(stale: true)` with no topic is for.
+  test "stale: true without a query returns every overdue asset, most overdue first" do
+    build("recent.md", stale_after: Date.current - 1)
+    build("oldest.md", stale_after: Date.current - 30)
+    build("fresh.md", stale_after: Date.current + 1)
+    build("middle.md", stale_after: Date.current - 7)
+
+    results = Assets::Search.query(query: nil, stale: true)
+
+    assert_equal %w[oldest.md middle.md recent.md], results.map(&:name)
+  end
+
   test "omitting stale leaves the result set unfiltered" do
     build("overdue.md", content: "rails", stale_after: Date.current - 1)
     build("undated.md", content: "rails")
