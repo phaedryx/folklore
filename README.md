@@ -75,7 +75,7 @@ contract is pinned by `test/mcp/tools_list.snapshot.json`. The same tokens work 
 - [docs/checkpoints.md](docs/checkpoints.md): per-agent session checkpoints
 - [docs/search.md](docs/search.md): how search ranks, and how to measure it
 - [docs/web.md](docs/web.md): the web UI
-- [docs/bundle.md](docs/bundle.md): the bundle format, and exporting and importing an instance
+- [docs/bundle.md](docs/bundle.md): the bundle format, for moving assets between instances (not a backup; use `pg_dump`)
 - [docs/configuration.md](docs/configuration.md): every environment variable
 - [docs/errors.md](docs/errors.md): every error code, how MCP, the JSON API and the web show it, and the length limits
 
