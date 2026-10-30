@@ -63,7 +63,10 @@ class Tags::ApplyConcurrencyTest < ActiveSupport::TestCase
     end
     inserted.wait(5)
 
-    ActiveSupport::Notifications.subscribed(CommitAt.new(Thread.current, commit, other), "sql.active_record") { yield }
+    hook = CommitAt.new(Thread.current, commit, other)
+    result = ActiveSupport::Notifications.subscribed(hook, "sql.active_record") { yield }
+    assert hook.released?, "the block never looked up or inserted the tag, so the race was not set up"
+    result
   ensure
     commit&.set
     other&.join
@@ -76,7 +79,10 @@ class Tags::ApplyConcurrencyTest < ActiveSupport::TestCase
       @writer = writer
       @commit = commit
       @other = other
+      @released = false
     end
+
+    def released? = @released
 
     def start(_name, _id, payload)
       release if payload[:sql].start_with?('INSERT INTO "tags"')
@@ -91,6 +97,7 @@ class Tags::ApplyConcurrencyTest < ActiveSupport::TestCase
     def release
       return unless Thread.current == @writer && !@commit.set?
 
+      @released = true
       @commit.set
       @other.join
     end

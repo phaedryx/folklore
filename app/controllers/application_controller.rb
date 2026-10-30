@@ -11,6 +11,12 @@ class ApplicationController < ActionController::Base
 
   rescue_from(*DomainErrors.classes) { |e| render_domain_error(e, DomainErrors.for(e)) }
 
+  # The web says "archive" where the domain says "delete".
+  WEB_MESSAGES = {
+    "already_archived" => "That file is already archived.",
+    "not_archived" => "That file is not archived."
+  }.freeze
+
   private
 
   # The one place the web maps a DomainErrors entry: the 404 or 403 page, or
@@ -23,7 +29,7 @@ class ApplicationController < ActionController::Base
     when :not_found then not_found
     when :forbidden then forbidden
     else
-      alert = DomainErrors.message(error)
+      alert = WEB_MESSAGES.fetch(entry.code) { DomainErrors.message(error) }
       if request.get? || request.head?
         redirect_to error_fallback_location, alert:
       else

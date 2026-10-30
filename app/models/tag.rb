@@ -24,7 +24,8 @@ class Tag < ApplicationRecord
   # Attaches the named tags to an asset, creating any that do not exist.
   # Blank and duplicate names are dropped.
   def self.attach(asset, names)
-    names.map { |n| normalize(n) }.reject(&:empty?).uniq.each do |name|
+    # Sorted, so two writers inserting the same new tags lock them in one order.
+    names.map { |n| normalize(n) }.reject(&:empty?).uniq.sort.each do |name|
       validate_name!(name)
       AssetTag.find_or_create_by!(asset:, tag: find_or_insert!(name))
     end

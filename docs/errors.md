@@ -27,7 +27,8 @@ field's messages that way. A missing parameter is `422` with code `missing_param
 `401` with code `unauthenticated`.
 
 **Web** shows the 404 or 403 page for those statuses. Anything else redirects with the message as the alert: back to
-the referring page after a form post, or to the page's own default after a GET. The new and edit asset forms and the
+the referring page after a form post, or to the page's own default after a GET. `already_archived` and
+`not_archived` say "archived", as the web does, where the message says "deleted". The new and edit asset forms and the
 new token form re-render instead, keeping what was typed.
 
 ## Codes

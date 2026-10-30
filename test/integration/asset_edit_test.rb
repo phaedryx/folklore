@@ -205,7 +205,7 @@ class AssetEditTest < ActionDispatch::IntegrationTest
     delete show_path(asset)
 
     assert_response :redirect
-    assert_match(/already deleted/, flash[:alert])
+    assert_equal "That file is already archived.", flash[:alert]
   end
 
   test "restoring twice explains instead of failing" do
@@ -215,7 +215,7 @@ class AssetEditTest < ActionDispatch::IntegrationTest
     post "/member/archive/#{asset.slug}"
 
     assert_redirected_to "/member/archive"
-    assert_match(/is not deleted/, flash[:alert])
+    assert_equal "That file is not archived.", flash[:alert]
   end
 
   test "a conflict keeps the submitted name and tags in the draft" do
