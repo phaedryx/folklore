@@ -58,7 +58,8 @@ new token form re-render instead, keeping what was typed.
 | `invalid_tag` | 422 | `tags` | A blank tag, or one over 100 characters |
 | `not_a_task` | 422 | | A task tool given an asset that is not a task |
 | `reason_required` | 422 | `reason` | `fail_task` without a reason |
-| `note_too_long` | 422 | | `complete_task`'s note or `fail_task`'s reason is over 10,000 characters |
+| `note_too_long` | 422 | `note` | `complete_task`'s note is over 10,000 characters |
+| `reason_too_long` | 422 | `reason` | `fail_task`'s reason is over 10,000 characters |
 | `invalid_lease` | 422 | `lease_seconds` | A lease outside 1 to the maximum |
 | `invalid_argument` | 422 | | A search, `claim_task` or `get_pending_tasks` argument out of range, a missing slug and prefix, or a `read` of no refs or more than 50 |
 | `empty_content` | 422 | `content` | `update_last_session` with empty content |
@@ -78,5 +79,5 @@ was exceeded rather than a statement failure.
 | Asset name | 255 characters | `invalid_name` |
 | Asset path | 1024 characters | `invalid_path` |
 | Tag | 100 characters | `invalid_tag` |
-| Task outcome note (`note`, `reason`) | 10,000 characters | `note_too_long` |
+| Task outcome note (`note`, `reason`) | 10,000 characters | `note_too_long`, `reason_too_long` |
 | Asset content | 1 MiB | `content_too_large` |

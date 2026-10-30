@@ -56,7 +56,8 @@ module DomainErrors
     Tasks::InvalidStatusError => entry("invalid_status", :unprocessable_content, :status),
     Tasks::InvalidLeaseError => entry("invalid_lease", :unprocessable_content, :lease_seconds),
     Tasks::InvalidArgumentError => entry("invalid_argument", :unprocessable_content),
-    Tasks::InvalidNoteError => entry("note_too_long", :unprocessable_content),
+    Tasks::NoteTooLongError => entry("note_too_long", :unprocessable_content, :note),
+    Tasks::ReasonTooLongError => entry("reason_too_long", :unprocessable_content, :reason),
 
     # Checkpoints and identity
     Checkpoints::EmptyContentError => entry("empty_content", :unprocessable_content, :content),
