@@ -14,7 +14,7 @@ class ApplicationController < ActionController::Base
   private
 
   # The one place the web maps a DomainErrors entry: the 404 or 403 page, or
-  # back with the message as the alert. A GET goes to the page's own default
+  # back with the message as the alert. A read goes to the page's own default
   # rather than the referrer, so a bad filter cannot redirect to itself.
   # Controllers with a form override this to re-render it, keeping what was
   # typed, and call super for everything else.
@@ -24,7 +24,7 @@ class ApplicationController < ActionController::Base
     when :forbidden then forbidden
     else
       alert = DomainErrors.message(error)
-      if request.get?
+      if request.get? || request.head?
         redirect_to error_fallback_location, alert:
       else
         redirect_back_or_to error_fallback_location, alert:
@@ -33,7 +33,7 @@ class ApplicationController < ActionController::Base
   end
 
   # Where an error redirects when there is no referrer, or the request was a
-  # GET.
+  # read.
   def error_fallback_location
     root_path
   end
