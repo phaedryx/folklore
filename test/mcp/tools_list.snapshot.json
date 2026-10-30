@@ -856,6 +856,64 @@
     }
   },
   {
+    "name": "move",
+    "description": "Move an asset by slug to another directory in your workspace, renaming it if name is given. The slug stays, so [[slug]] links keep working. 'path' is the directory only.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "slug",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "integer",
+          "not": {
+            "type": "null"
+          }
+        }
+      },
+      "required": [
+        "slug",
+        "location",
+        "version"
+      ]
+    },
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false,
+      "readOnlyHint": false
+    }
+  },
+  {
     "name": "read",
     "description": "Read by ref: a slug, a location (handle/dir/name), or an array of up to 50 of either.\nReturns the whole asset, or with include just the slug and those fields.\nAn array returns {assets, bytes_returned, truncated}: a ref that fails gets error and code\nin its place, and content stops after max_bytes (default 100000, at most 1000000).\nArchived assets are not found.",
     "inputSchema": {

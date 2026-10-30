@@ -12,7 +12,7 @@ class FolkloreMcp::ToolsListSnapshotTest < ActionDispatch::IntegrationTest
 
   WIRE_NAMES = %w[
     activity add_tag add_task append claim_task complete_task create delete fail_task
-    get_last_session get_pending_tasks list read remove_tag restore search set_stale_after
+    get_last_session get_pending_tasks list move read remove_tag restore search set_stale_after
     set_status tags update update_last_session upsert verify versions
   ].freeze
 

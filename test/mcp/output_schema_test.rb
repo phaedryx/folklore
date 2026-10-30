@@ -34,6 +34,7 @@ class FolkloreMcp::OutputSchemaTest < ActiveSupport::TestCase
     "fail_task" => ->(t) { { slug: t.claimed("t.md").slug, reason: "blocked" } },
     "get_last_session" => ->(t) { ::Checkpoints::Write.mutate(actor: t.actor_for(:member_default), content: "state"); {} },
     "get_pending_tasks" => ->(t) { t.task("t.md"); { path_prefix: "member" } },
+    "move" => ->(t) { { slug: t.create("a.md").slug, path: "member/moved" } },
     "list" => ->(t) { t.create("a.md", tags: %w[ruby]); { path: "member" } },
     "read" => ->(t) { { ref: t.create("a.md").slug } },
     "remove_tag" => ->(t) { { slug: t.create("a.md", tags: %w[ruby]).slug, tag: "ruby" } },

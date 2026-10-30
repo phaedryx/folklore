@@ -301,6 +301,19 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal "Not found: 00000000", text_of(Tools::Append.call(slug: "00000000", text: "x", server_context: ctx))
   end
 
+  # move
+
+  test "move changes the location and keeps the slug" do
+    asset = create("m.md")
+
+    response = Tools::Move.call(slug: asset.slug, path: "member/done", server_context: ctx)
+
+    refute response.to_h[:isError], text_of(response)
+    assert_equal "Moved #{asset.slug} to member/done/m.md", text_of(response)
+    assert_equal({ slug: asset.slug, location: "member/done/m.md", version: 1 }, structured(response))
+    assert_match(/\AConflict/, text_of(Tools::Move.call(slug: create("m.md").slug, path: "member/done", server_context: ctx)))
+  end
+
   # delete / restore
 
   test "delete then restore round-trip, with the conflicts in between" do
