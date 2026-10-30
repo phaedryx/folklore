@@ -20,7 +20,7 @@ class FolklorePruneSearchLogsTaskTest < ActiveSupport::TestCase
   end
 
   test "exits non-zero on a retention that is not a positive number of days" do
-    error = assert_raises(SystemExit) { capture_io { run_prune("zero") } }
+    error = assert_raises(SystemExit) { run_prune("zero") }
     refute error.success?
   end
 end
