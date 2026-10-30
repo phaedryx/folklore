@@ -102,3 +102,14 @@ namespace :folklore do
     exit 1
   end
 end
+
+namespace :folklore do
+  desc "Delete search logs older than DAYS (default 180); see docs/search.md"
+  task :prune_search_logs, [ :days ] => :environment do |_t, args|
+    days = args[:days].presence || SearchLogs::Prune::DEFAULT_RETENTION.in_days.to_i
+    abort "folklore:prune_search_logs: days must be a positive whole number, got #{days.inspect}" unless days.to_s.match?(/\A[1-9]\d*\z/)
+
+    deleted = SearchLogs::Prune.mutate(older_than: days.to_i.days)
+    puts "Deleted #{deleted} search #{'log'.pluralize(deleted)} older than #{days} days"
+  end
+end

@@ -86,3 +86,13 @@ the token and agent that ran it (the web search page is not logged). When the sa
 those results with `read` or `read_path` within five minutes, the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
 opened, which is the raw material for a bigger eval set. It is a plain table (`search_logs`) and nothing in the app
 reads it back.
+
+Nothing prunes it on its own. Delete old rows with
+
+```sh
+bin/rails folklore:prune_search_logs        # keeps the last 180 days
+bin/rails "folklore:prune_search_logs[30]"  # keeps the last 30
+```
+
+and run that from cron if the table grows faster than you mine it. Export the rows you want for an eval set first:
+pruning deletes them.
