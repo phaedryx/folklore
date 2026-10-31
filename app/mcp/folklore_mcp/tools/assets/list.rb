@@ -35,7 +35,7 @@ module FolkloreMcp
           limit = (limit || ::Assets::List::DEFAULT_LIMIT).to_i.clamp(1, ::Assets::List::MAX_LIMIT)
           offset = [ offset.to_i, 0 ].max
           # One row past the page says whether there is another.
-          assets = ::Assets::List.query(path:, tags:, sort:, offset:, actor:).limit(limit + 1).to_a
+          assets = ::Assets::List.query(path:, tags:, sort:, limit: limit + 1, offset:, actor:).to_a
           more = assets.size > limit
           rows = assets.first(limit).map do |asset|
             { slug: asset.slug, location: asset.location, name: asset.name, dir: asset.dir,

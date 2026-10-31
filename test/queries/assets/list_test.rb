@@ -58,9 +58,7 @@ class Assets::ListTest < ActiveSupport::TestCase
     assert_equal assets.sort_by(&:id).map(&:name), names(sort: "created_at")
   end
 
-  test "limit is capped" do
-    create("a.md")
-
-    assert_equal Assets::List::MAX_LIMIT, Assets::List.query(path: "member", limit: 10_000, actor: @actor).limit_value
+  test "limit is applied as given; callers clamp it" do
+    assert_equal 501, Assets::List.query(path: "member", limit: 501, actor: @actor).limit_value
   end
 end

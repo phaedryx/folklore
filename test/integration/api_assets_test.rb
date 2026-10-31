@@ -108,6 +108,18 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "a full page at the maximum still reports the next page, whatever the list query allows" do
+    stub_const(Api::AssetsController, :MAX_LIMIT, 3) do
+      stub_const(Assets::List, :MAX_LIMIT, 3) do
+        %w[a b c d].each { |n| create("#{n}.md") }
+
+        get "/api/assets", params: { path: "member/notes", limit: 3 }, headers: headers
+        assert_equal 3, body.dig("data", "assets").size
+        assert_equal 3, body.dig("data", "next_offset")
+      end
+    end
+  end
+
   def stub_const(mod, name, value)
     original = mod.const_get(name)
     mod.send(:remove_const, name)
