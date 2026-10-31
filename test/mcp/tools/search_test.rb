@@ -107,6 +107,27 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
     assert_equal [ "both.md" ], response.to_h[:structuredContent][:results].map { |r| r[:name] }
   end
 
+  # AGENTS.md tells agents to review why-nots and mistakes this way, so that one call
+  # finds entries whoever wrote them.
+  test "tags without within reaches every owner's entries" do
+    build("mine.md", content: "postgres advisory locks", dir: "member/why-nots", tags: %w[why-not])
+    theirs = build("theirs.md", content: "postgres listen/notify", dir: "other/why-nots", tags: %w[why-not])
+    theirs.update!(owner: users(:other))
+    build("note.md", content: "postgres tuning", dir: "member/notes")
+
+    response = Search.call(q: "postgres", tags: %w[why-not], server_context: actor_context)
+
+    assert_equal %w[mine.md theirs.md], response.to_h[:structuredContent][:results].map { |r| r[:name] }.sort
+  end
+
+  test "q matches content and names, not tags" do
+    build("locks.md", content: "advisory locks", tags: %w[postgres])
+
+    response = Search.call(q: "postgres", server_context: actor_context)
+
+    assert_equal "No results for \"postgres\"", text_of(response)
+  end
+
   test "stale: false returns only assets not past their review date" do
     build("overdue.md", content: "haystack", stale_after: Date.current - 1)
     build("fresh.md", content: "haystack")
