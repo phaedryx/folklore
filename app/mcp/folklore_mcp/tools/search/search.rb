@@ -18,7 +18,8 @@ module FolkloreMcp
                     "task_status (tasks only), or exclude " \
                     "assets having ANY of exclude_tags (e.g. tagged X but not done). " \
                     "Pass stale: true for assets whose stale_after review date has passed (false for the rest; " \
-                    "assets with no review date are never stale). " \
+                    "assets with no review date are never stale). q is required except with stale: true, where " \
+                    "leaving it out lists every overdue asset, most overdue first. " \
                     "Optionally sort (name|created_at|updated_at) and paginate (limit/offset). " \
                     "Each result is a `slug  name  (dir)` line with a short content snippet around the first match " \
                     "beneath it. Pass include_versions: true to also match content an asset used to have but no " \
@@ -28,7 +29,7 @@ module FolkloreMcp
         annotations read_only: true, idempotent: true
 
         input_schema do
-          required(:q).filled(:string)
+          optional(:q).filled(:string)
           optional(:within).filled(:string)
           optional(:tags).array(:string)
           optional(:status).filled(:string)
@@ -42,7 +43,7 @@ module FolkloreMcp
         end
 
         output_schema do
-          required(:query).filled(:string)
+          required(:query).maybe(:string)
           required(:count).filled(:integer)
           required(:results).array(:hash) do
             required(:slug).filled(:string)
@@ -54,9 +55,13 @@ module FolkloreMcp
           end
         end
 
-        def invoke(q:, within: nil, tags: [], status: nil, task_status: nil, stale: nil, exclude_tags: [], sort: nil,
+        def invoke(q: nil, within: nil, tags: [], status: nil, task_status: nil, stale: nil, exclude_tags: [], sort: nil,
                    limit: nil, offset: 0, include_versions: false, server_context:)
           actor = actor_from(server_context)
+          if q.blank? && stale != true
+            raise ::Assets::Search::InvalidArgumentError, "q is required unless stale is true"
+          end
+
           filters = { within:, tags:, status:, task_status:, stale:, exclude_tags:, sort:, limit:, offset:,
                       include_versions: }.reject { |key, value| value == FILTER_DEFAULTS[key] || (value.blank? && value != false) }
           results = ::Assets::Search.query(
@@ -69,7 +74,8 @@ module FolkloreMcp
           telemetry { SearchLogs::Record.mutate(actor:, query: q, filters:, result_slugs: entries.map { |e| e[:slug] }) }
 
           text = entries.map { |e| line_for(e) }.join("\n")
-          text_response(entries.any? ? text : "No results for #{q.inspect}",
+          empty = q.blank? ? "No overdue assets" : "No results for #{q.inspect}"
+          text_response(entries.any? ? text : empty,
                         data: { query: q, count: entries.size, results: entries })
         end
 

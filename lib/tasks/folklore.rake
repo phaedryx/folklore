@@ -63,9 +63,12 @@ module FolkloreAdminPrompt
 end
 
 namespace :folklore do
-  desc "Run the search eval against a queries YAML (argument or FOLKLORE_EVAL_QUERIES)"
+  desc "Run the search eval: the committed synthetic set, or a queries YAML (argument or FOLKLORE_EVAL_QUERIES)"
   task :search_eval, [ :queries_path ] => :environment do |_t, args|
-    SearchEval::Runner.call(args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"])
+    queries_path = args[:queries_path].presence || ENV["FOLKLORE_EVAL_QUERIES"].presence
+    queries_path ? SearchEval::Runner.call(queries_path) : SearchEval::Synthetic.call
+  rescue SearchEval::Runner::MissingQueriesError, SearchEval::Runner::UnknownSlugError => e
+    abort "folklore:search_eval: #{e.message}"
   end
 end
 
@@ -100,5 +103,16 @@ namespace :folklore do
     warn "folklore:import: #{e.message}. Nothing was written."
     e.errors.each { |error| warn "  #{error}" }
     exit 1
+  end
+end
+
+namespace :folklore do
+  desc "Delete search logs older than DAYS (default 180); see docs/search.md"
+  task :prune_search_logs, [ :days ] => :environment do |_t, args|
+    days = args[:days].presence || SearchLogs::Prune::DEFAULT_RETENTION.in_days.to_i
+    abort "folklore:prune_search_logs: days must be a positive whole number, got #{days.inspect}" unless days.to_s.match?(/\A[1-9]\d*\z/)
+
+    deleted = SearchLogs::Prune.mutate(older_than: days.to_i.days)
+    puts "Deleted #{deleted} search #{'log'.pluralize(deleted)} older than #{days} days"
   end
 end

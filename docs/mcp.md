@@ -12,8 +12,8 @@ curl -s -X POST http://localhost:3000/mcp \
 
 On `initialize`, the server sends instructions that tell the agent three things: read its checkpoint first and write
 one before it stops, verify a fact that still holds instead of editing it, and use `search` with `stale: true` to find
-what is due for review. `search` needs a query, so this finds overdue notes on a topic; the whole review queue is the
-web UI's `/stale` page. Clients on protocol `2024-11-05` do not receive these instructions, which is why the
+what is due for review. Without a query, that lists every overdue asset, most overdue first; with one, the overdue
+assets on that topic. Clients on protocol `2024-11-05` do not receive these instructions, which is why the
 checkpoint tools repeat them in their own descriptions.
 
 ## Tokens and scopes

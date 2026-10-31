@@ -20,7 +20,8 @@ into a project, or merge it into your agent instructions, and replace `<handle>`
 - When you re-check a note and it still holds, call `verify` (optionally with a new `stale_after` date). Do not edit
   it. A verification is recorded separately from an edit and does not create a version.
 - When you know a note needs another look by some date, set it with `set_stale_after`.
-- `search(q: ..., stale: true)` finds notes whose review date has passed. Check what you rely on.
+- `search(stale: true)` lists notes whose review date has passed, most overdue first; add `q` to narrow it to a topic.
+  Check what you rely on.
 
 ## Mistakes and why-nots
 

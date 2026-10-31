@@ -1,0 +1,331 @@
+# A small, invented team wiki for the search eval. Every asset is fictional, so the corpus
+# and its queries (queries.yml) can be committed and anyone can reproduce the numbers in
+# docs/search.md. Several notes mention another note's topic in passing, on purpose: a
+# search that only counts words should be tempted by them.
+#
+# Slugs are fixed so queries.yml can name its answers. `dir` is below the eval workspace.
+- slug: ev000001
+  dir: runbooks
+  name: deployment-guide.md
+  content: |
+    # Deployment guide
+    We ship with Kamal from the main branch. Merge the pull request, wait for CI to go green,
+    then run `bin/kamal deploy` from a clean checkout. The deploy builds the image, pushes it to
+    the registry, boots the new containers and swaps traffic once the health check passes.
+    Watch the logs for five minutes afterwards. Never ship on a Friday afternoon.
+- slug: ev000002
+  dir: runbooks
+  name: rollback.md
+  content: |
+    # Rolling back
+    If a release misbehaves, go back to the previous image first and investigate second.
+    `bin/kamal rollback <version>` boots the last good version; `bin/kamal app versions` lists them.
+    A migration that dropped a column cannot be undone this way, so destructive migrations ship
+    a release after the code that stopped using the column.
+- slug: ev000003
+  dir: databases
+  name: postgres-connection-limits.md
+  content: |
+    # Postgres connection limits
+    The primary allows 200 connections. Each Puma worker holds a pool of five, and each job
+    worker another five, so the fleet tops out near 150 before anyone opens a console.
+    PgBouncer in transaction mode sits in front of the primary; prepared statements are off
+    because of it. If you add workers, do the arithmetic before you deploy.
+- slug: ev000004
+  dir: databases
+  name: postgres-vacuum.md
+  content: |
+    # Vacuum tuning
+    Autovacuum fell behind on the events table, which takes a million inserts a day. We lowered
+    autovacuum_vacuum_scale_factor to 0.02 for that table only and raised the cost limit.
+    Bloat is checked monthly with pgstattuple. Do not run VACUUM FULL in production; it locks.
+- slug: ev000005
+  dir: databases
+  name: backups.md
+  content: |
+    # Backups
+    pg_dump runs nightly at 02:00 UTC and the dump is copied to object storage with 30 days of
+    retention. WAL archiving gives point-in-time recovery for the last seven days.
+    To restore: fetch the dump, create an empty database, run pg_restore with --jobs 4, then
+    point a staging app at it and check the row counts before you trust it.
+- slug: ev000006
+  dir: incidents
+  name: restore-drill-2026-03.md
+  content: |
+    # Restore drill, March 2026
+    We timed a full restore from last night's dump into a fresh database: 41 minutes. The step
+    that surprised us was rebuilding indexes, which took longer than the data load. Action item:
+    document the restore order in the backups note.
+- slug: ev000007
+  dir: people
+  name: onboarding.md
+  content: |
+    # Onboarding
+    Your first week: get a laptop from IT, join the chat channels, pair with your buddy on a
+    small ticket, and ship something to production by Friday. Read the deployment guide and the
+    on-call note before your first rotation. Ask questions early; nobody minds.
+- slug: ev000008
+  dir: people
+  name: dev-setup.md
+  content: |
+    # Local development setup
+    Install Homebrew, then run `bin/setup`. It installs Ruby through mise, starts Postgres,
+    creates the databases and loads the seeds. `bin/dev` runs the app and the asset watcher.
+    If setup fails on the native gems, install the Xcode command line tools and try again.
+- slug: ev000009
+  dir: security
+  name: auth-tokens.md
+  content: |
+    # API tokens
+    Tokens are random, shown once, and stored only as a SHA-256 digest. Rotate a token by
+    issuing a new one, moving the client over, then revoking the old one: there is no in-place
+    rotation. Tokens carry read and write scopes. A leaked token should be revoked immediately.
+- slug: ev000010
+  dir: security
+  name: sso.md
+  content: |
+    # Single sign-on
+    Enterprise customers asked for SAML. We support it per organisation through the identity
+    provider's metadata URL. Just-in-time provisioning creates the account on first login;
+    deprovisioning happens through SCIM, not SAML, which has no logout signal we can rely on.
+- slug: ev000011
+  dir: security
+  name: password-reset.md
+  content: |
+    # Password reset
+    A reset link is valid for 20 minutes and only once. The email never says whether the address
+    has an account, so it cannot be used to find out who is a customer. Resetting signs out every
+    other session.
+- slug: ev000012
+  dir: billing
+  name: invoices.md
+  content: |
+    # Invoices
+    Invoices are generated on the first of the month for the previous month's usage. Proration
+    applies when a plan changes mid-cycle. Credit notes, never edits, correct a sent invoice.
+- slug: ev000013
+  dir: billing
+  name: stripe-webhooks.md
+  content: |
+    # Stripe webhooks
+    Stripe retries a failed webhook for up to three days with exponential backoff, so every
+    handler must be idempotent: we key on the event id and ignore one we have already processed.
+    Verify the signature before parsing the body. A 500 from us means Stripe will try again.
+- slug: ev000014
+  dir: engineering
+  name: rails-upgrade-8.md
+  content: |
+    # Upgrading to Rails 8
+    We upgraded one minor version at a time and fixed deprecations at each step. The asset
+    pipeline moved to Propshaft. Solid Cache replaced Memcached. The upgrade took three weeks,
+    most of it in the test suite rather than the app.
+- slug: ev000015
+  dir: engineering
+  name: ruby-version.md
+  content: |
+    # Ruby version
+    The app pins its Ruby in .ruby-version and the Dockerfile reads the same file. Bump both in
+    one pull request, run the full suite, and deploy to staging for a day before production.
+- slug: ev000016
+  dir: engineering
+  name: ci-pipeline.md
+  content: |
+    # CI pipeline
+    GitHub Actions runs lint, security scans and the test suite in parallel on every push.
+    System tests run in a separate job with Chrome. Merging needs a green run. The whole
+    pipeline takes about nine minutes; if it gets slower than twelve, someone should look.
+- slug: ev000017
+  dir: engineering
+  name: flaky-tests.md
+  content: |
+    # Flaky tests
+    A test that fails intermittently gets quarantined with a skip and a ticket, never retried
+    until it passes. The usual causes here: time zones, ordering assumptions in queries without
+    ORDER BY, and system tests that do not wait for the page.
+- slug: ev000018
+  dir: incidents
+  name: api-outage-2026-02.md
+  content: |
+    # API outage, February 2026
+    For 38 minutes the API returned 500s. A new worker pool exhausted the Postgres connection
+    limit, so web requests could not get a connection. We rolled back the deploy and lowered the
+    pool size. Follow-up: alert on connection count, not just on error rate.
+- slug: ev000019
+  dir: people
+  name: on-call.md
+  content: |
+    # On-call
+    One engineer is on call each week, Monday to Monday, with a secondary as backup. Pages go
+    through the paging app; acknowledge within 15 minutes. Hand over in the Monday standup and
+    write down anything still burning.
+- slug: ev000020
+  dir: runbooks
+  name: alerts.md
+  content: |
+    # Alerts
+    Page on: error rate above 2% for five minutes, p95 latency above 1.5 seconds, database
+    connections above 80% of the limit, and a failed backup. Everything else goes to the
+    channel, not the pager.
+- slug: ev000021
+  dir: engineering
+  name: logging.md
+  content: |
+    # Logging
+    Logs are structured JSON with a request id on every line. Do not log tokens, passwords or
+    full request bodies. Logs are kept for 14 days; anything you need longer belongs in a metric.
+- slug: ev000022
+  dir: engineering
+  name: caching.md
+  content: |
+    # Caching
+    We cache rendered fragments keyed on the record's cache key, and API responses for public
+    data for 60 seconds. The cache lives in the database since the Redis removal. Expire by
+    changing the key, never by deleting entries.
+- slug: ev000023
+  dir: decisions
+  name: redis-removal.md
+  content: |
+    # Removing Redis
+    Redis held our cache, the job queue and rate-limit counters. All three moved into Postgres
+    (Solid Cache, Solid Queue and a counters table), which took one moving part out of the
+    deploy. Latency rose by a millisecond at the 95th percentile; nobody noticed.
+- slug: ev000024
+  dir: engineering
+  name: background-jobs.md
+  content: |
+    # Background jobs
+    Jobs run on Solid Queue with three queues: default, mailers and low. A job must be safe to
+    run twice. Long work is split into batches of a thousand rows so a deploy never kills an
+    hour of progress.
+- slug: ev000025
+  dir: engineering
+  name: feature-flags.md
+  content: |
+    # Feature flags
+    New features ship dark behind a flag and are turned on per account, then for everyone.
+    A flag that has been fully on for a month is deleted along with the dead branch of code.
+- slug: ev000026
+  dir: engineering
+  name: code-review.md
+  content: |
+    # Code review
+    Every change gets one approving review. Review for correctness first, then naming, then style
+    the linter missed. Say what you would do instead, not just what is wrong. Approve with
+    comments when the remaining points are small.
+- slug: ev000027
+  dir: engineering
+  name: release-notes.md
+  content: |
+    # Release notes
+    Customer-facing changes get a line in the changelog when they ship, written for a customer,
+    not for us. Fixes for things nobody noticed do not need a line.
+- slug: ev000028
+  dir: office
+  name: office-dog.md
+  content: |
+    # The office dog
+    After a long vote we chose a cavoodle: small, does not shed much, and friendly with
+    visitors. She is in on Tuesdays and Thursdays. Please do not feed her from your lunch.
+- slug: ev000029
+  dir: office
+  name: office-wifi.md
+  content: |
+    # Office wifi
+    The guest network is for visitors and has no access to the printers. Staff use the main
+    network with their own login. The password for the guest network is on the kitchen wall.
+- slug: ev000030
+  dir: policies
+  name: expense-policy.md
+  content: |
+    # Expense policy
+    Expenses under 100 dollars need no approval: submit the receipt within 30 days. Anything
+    larger needs your manager first. Travel is booked through the travel tool, not on your card.
+- slug: ev000031
+  dir: policies
+  name: vacation-policy.md
+  content: |
+    # Vacation and time off
+    Take at least 20 days off a year; we check. Book leave in the HR tool two weeks ahead for
+    anything longer than three days, and tell the on-call rota if you are on it.
+- slug: ev000032
+  dir: people
+  name: hiring-loop.md
+  content: |
+    # Hiring loop
+    Our interview process is a 30 minute screen, a paired coding session on a real bug, a system
+    design conversation and a values chat. Interviewers write feedback before talking to each
+    other, so the first opinion does not anchor the rest.
+- slug: ev000033
+  dir: design
+  name: design-system.md
+  content: |
+    # Design system
+    Colors, spacing and type sizes are design tokens defined once and used everywhere. The
+    palette has one accent color. Components live in one library; a one-off component needs a
+    reason in the pull request.
+- slug: ev000034
+  dir: design
+  name: accessibility.md
+  content: |
+    # Accessibility
+    Every page must work with a keyboard alone, have visible focus states, and meet WCAG AA
+    contrast. Images need alt text unless they are decorative. Test with a screen reader before
+    shipping a new flow.
+- slug: ev000035
+  dir: engineering
+  name: api-versioning.md
+  content: |
+    # API versioning
+    The public API is versioned in the path, /v1. Additive changes ship without a new version;
+    removing or renaming a field needs one and six months of overlap.
+- slug: ev000036
+  dir: engineering
+  name: rate-limits.md
+  content: |
+    # Rate limits
+    The API allows 600 requests a minute per token and answers 429 with a Retry-After header
+    beyond that. Limits are counted in Postgres since the Redis removal.
+- slug: ev000037
+  dir: decisions
+  name: kubernetes-evaluation.md
+  content: |
+    # Why we did not adopt Kubernetes
+    We evaluated a managed cluster for two weeks. It would have given us autoscaling we do not
+    need yet at the cost of a platform we would have to staff. Kamal on plain VMs covers our
+    scale. Revisit if we pass twenty services.
+- slug: ev000038
+  dir: runbooks
+  name: dns.md
+  content: |
+    # DNS
+    DNS records live with the registrar's DNS service and are managed in Terraform, never in the
+    web console. Lower the TTL a day before you move a record.
+- slug: ev000039
+  dir: runbooks
+  name: tls-certificates.md
+  content: |
+    # TLS certificates
+    Certificates are issued by Let's Encrypt and renewed automatically 30 days before expiry by
+    the proxy. If renewal fails, the alert fires 14 days out; renew by hand with the proxy's
+    certificate command and check the chain.
+- slug: ev000040
+  dir: meetings
+  name: 2026-05-12-standup.md
+  content: |
+    # Standup, 12 May
+    Deploy went out fine. Someone asked about Postgres connection limits again; pointed them at
+    the note. New hire starts onboarding next week. The office dog was in. Backups green.
+- slug: ev000041
+  dir: meetings
+  name: 2026-06-02-retro.md
+  content: |
+    # Retro, 2 June
+    Good: the rollback during the outage was fast. Bad: flaky tests blocked two merges. Try:
+    rotate the on-call handover to Tuesday. Rails upgrade still dragging.
+- slug: ev000042
+  dir: planning
+  name: q3-plan.md
+  content: |
+    # Q3 plan
+    Ship SSO for the remaining enterprise accounts, cut CI time under eight minutes, finish the
+    design system migration, and run a second restore drill. Hire two engineers.

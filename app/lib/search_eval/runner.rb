@@ -4,14 +4,16 @@ module SearchEval
   # unstemmed, plus a substring match on the name) and reports where the expected asset
   # landed. Rank 1 is best; "--" means it was not in the top K at all.
   #
-  # The queries file is a list of `{query:, expect: [slug, ...]}` entries. It names real
-  # assets in a real corpus, so it is never committed: pass its path to the rake task,
+  # The queries file is a list of `{query:, expect: [slug, ...]}` entries. A file naming your
+  # own assets is never committed: pass its path to the rake task,
   # `bin/rails "folklore:search_eval[path/to/queries.yml]"`, or set FOLKLORE_EVAL_QUERIES.
+  # With neither, the task runs the committed synthetic set instead (SearchEval::Synthetic).
   #
   # The baseline recomputes a plain tsvector per row rather than reading content_tsv,
   # which holds english lexemes. At the corpus sizes this is run against that is fine.
   class Runner
     MissingQueriesError = Class.new(StandardError)
+    UnknownSlugError = Class.new(StandardError)
 
     K = 10
 
@@ -23,15 +25,19 @@ module SearchEval
       new(queries_path, out:).call
     end
 
-    def initialize(queries_path, out:)
+    # `within` confines the corpus to one directory, as SearchEval::Synthetic does to keep its
+    # assets apart from whatever else the database holds.
+    def initialize(queries_path, out:, within: nil)
       @queries_path = queries_path
       @out = out
+      @within = within
     end
 
     def call
+      check_expected_slugs!
       rows = cases.map { |kase| row_for(kase["query"], Array(kase["expect"])) }
 
-      @out.puts "corpus: #{Asset.live.count} live assets   queries: #{rows.size}   K: #{K}"
+      @out.puts "corpus: #{corpus.count} live assets   queries: #{rows.size}   K: #{K}"
       @out.puts
       @out.puts format("%-46s %-14s %-14s", "query", "baseline", "current")
       @out.puts "-" * 78
@@ -47,13 +53,34 @@ module SearchEval
     private
 
     def cases
-      path = @queries_path.to_s
-      if path.blank? || !File.exist?(path)
-        raise MissingQueriesError, "no queries file at #{path.inspect}: pass a path to folklore:search_eval " \
-                                   "or set FOLKLORE_EVAL_QUERIES"
-      end
+      @cases ||= begin
+        path = @queries_path.to_s
+        if path.blank? || !File.exist?(path)
+          raise MissingQueriesError, "no queries file at #{path.inspect}: pass a path to folklore:search_eval " \
+                                     "or set FOLKLORE_EVAL_QUERIES"
+        end
 
-      YAML.load_file(path)
+        YAML.load_file(path)
+      end
+    end
+
+    # An answer that is not in the corpus can never be found, so a typo in a slug would
+    # count as a miss and lower the score without saying why.
+    def check_expected_slugs!
+      expected = cases.flat_map { |kase| Array(kase["expect"]) }.uniq
+      known = corpus.where(slug: expected).pluck(:slug)
+      missing = cases.flat_map do |kase|
+        (Array(kase["expect"]) - known).map { |slug| "#{kase['query'].inspect} expects #{slug}" }
+      end
+      return if missing.empty?
+
+      raise UnknownSlugError, "expected slugs not in the corpus (missing, deleted or eval-excluded): " \
+                              "#{missing.join('; ')}"
+    end
+
+    def corpus
+      scope = Asset.live.where.not(id: excluded_ids)
+      @within ? scope.under_dir(@within) : scope
     end
 
     def row_for(query, expected)
@@ -73,16 +100,19 @@ module SearchEval
       Asset.joins(:tags).where(tags: { name: EXCLUDED }).select(:id)
     end
 
+    # Ordered by its own score, then slug, so the baseline lands the same way on every run.
     def baseline_results(query)
-      Asset.live.where(Asset.sanitize_sql_array([
+      corpus.where(Asset.sanitize_sql_array([
         "to_tsvector('simple', COALESCE(assets.content, '')) @@ plainto_tsquery('simple', ?) " \
         "OR assets.name ILIKE ?",
         query, "%#{Asset.sanitize_sql_like(query)}%"
-      ])).where.not(id: excluded_ids).limit(K).to_a
+      ])).order(Arel.sql(Asset.sanitize_sql_array([
+        "ts_rank(to_tsvector('simple', COALESCE(assets.content, '')), plainto_tsquery('simple', ?)) DESC", query
+      ])), :slug).limit(K).to_a
     end
 
     def current_results(query)
-      Assets::Search.query(query:, exclude_tags: EXCLUDED, limit: K).to_a
+      Assets::Search.query(query:, path: @within, exclude_tags: EXCLUDED, limit: K).to_a
     end
 
     def cell(rank, hits)

@@ -255,6 +255,18 @@ class Assets::SearchTest < ActiveSupport::TestCase
     assert_equal %w[here.md], results.map(&:name)
   end
 
+  # The review queue: what `search(stale: true)` with no topic is for.
+  test "stale: true without a query returns every overdue asset, most overdue first" do
+    build("recent.md", stale_after: Date.current - 1)
+    build("oldest.md", stale_after: Date.current - 30)
+    build("fresh.md", stale_after: Date.current + 1)
+    build("middle.md", stale_after: Date.current - 7)
+
+    results = Assets::Search.query(query: nil, stale: true)
+
+    assert_equal %w[oldest.md middle.md recent.md], results.map(&:name)
+  end
+
   test "omitting stale leaves the result set unfiltered" do
     build("overdue.md", content: "rails", stale_after: Date.current - 1)
     build("undated.md", content: "rails")
@@ -445,10 +457,10 @@ class Assets::SearchTest < ActiveSupport::TestCase
     assert_equal %w[rails.md verbose.md], results.map(&:name)
   end
 
-  # Three assets, two lists. rails.md leads on name but trails on content; b.md is second on
-  # name (by id, both b and c score zero) and first on content. Their fused scores are
-  # 1/61 + 1/63 against 1/62 + 1/61, so b.md wins: the sum of both ranks decides, not
-  # either list alone.
+  # Three assets, two lists. Only rails.md clears the name threshold, so the name list is
+  # rails.md alone; b.md and c.md never enter it. Content ranks them b.md, c.md, rails.md.
+  # rails.md fuses to 1/61 + 1/63 against b.md's 1/61: the name match leads, as the docs
+  # promise, and the content-only matches follow in content order.
   test "fuses the content rank with the name rank" do
     build("rails.md", content: "rails once")
     build("b.md", content: "rails rails rails rails rails")
@@ -456,7 +468,50 @@ class Assets::SearchTest < ActiveSupport::TestCase
 
     results = Assets::Search.query(query: "rails")
 
-    assert_equal %w[b.md rails.md c.md], results.map(&:name)
+    assert_equal %w[rails.md b.md c.md], results.map(&:name)
+  end
+
+  # Neither name clears the threshold, so neither belongs in the name list. Ranking them
+  # there anyway, by id, handed the older asset a name rank it never earned and made
+  # creation order outweigh content.
+  test "content-only matches are ranked by content, not by when they were created" do
+    build("older.md", content: "rails once")
+    build("newer.md", content: "rails rails rails")
+
+    results = Assets::Search.query(query: "rails")
+
+    assert_equal %w[newer.md older.md], results.map(&:name)
+  end
+
+  # The fused ranks are computed over the assets the filters let through. Ranked across
+  # the whole corpus, the closer name matches elsewhere pushed rail-notes.md down the
+  # name list, and the content-only match won a scoped search it should lose.
+  test "a scoped search ranks within the scope, not across the whole corpus" do
+    build("content.md", content: "rails rails rails")
+    build("rail-notes.md", content: "unrelated filler")
+    3.times { |i| build("rails.md", content: "unrelated filler", dir: "member/other#{i}") }
+
+    results = Assets::Search.query(query: "rails", path: "member/notes")
+
+    assert_equal %w[rail-notes.md content.md], results.map(&:name)
+  end
+
+  test "a tag-filtered search ranks within the tagged assets" do
+    build("content.md", content: "rails rails rails", tags: %w[ruby])
+    build("rail-notes.md", content: "unrelated filler", tags: %w[ruby])
+    3.times { |i| build("rails.md", content: "unrelated filler", dir: "member/other#{i}") }
+
+    results = Assets::Search.query(query: "rails", tags: %w[ruby])
+
+    assert_equal %w[rail-notes.md content.md], results.map(&:name)
+  end
+
+  # The name retriever looks names up with the trigram operator, which reads its cutoff
+  # from this setting. Set higher, the index would drop names the search means to keep.
+  test "the trigram threshold the index operator reads is the documented one" do
+    threshold = Asset.connection.select_value("SHOW pg_trgm.word_similarity_threshold").to_f
+
+    assert_in_delta Assets::Search::NAME_SIMILARITY_THRESHOLD, threshold, 1e-9
   end
 
   test "a limit outside 1..500 or a negative offset is refused" do

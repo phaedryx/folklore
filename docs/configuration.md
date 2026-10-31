@@ -48,7 +48,7 @@ Phase 1 runs in single-user mode only. Team sign-in (OIDC) and a container image
 
 | Variable | Read by | Default | Meaning |
 |---|---|---|---|
-| `FOLKLORE_EVAL_QUERIES` | `bin/rails folklore:search_eval`, `script/search_eval.rb` | none | The path to a search-eval queries file, when it is not given as the rake argument. See [search.md](search.md). |
+| `FOLKLORE_EVAL_QUERIES` | `bin/rails folklore:search_eval`, `script/search_eval.rb` | none | The path to a search-eval queries file, when it is not given as the rake argument. With neither, the committed synthetic set runs. See [search.md](search.md). |
 | `FOLKLORE_SEARCH_LOG` | `SearchLogs::Record` | off in test | The search log is always on in development and production. In the test environment it is off unless this is `1`. |
 
 ## Test and CI only

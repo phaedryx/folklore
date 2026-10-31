@@ -1749,7 +1749,7 @@
   },
   {
     "name": "search",
-    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by status (a note's open|done or a task's pending|in_progress|done|failed), by task_status (tasks only), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
+    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by status (a note's open|done or a task's pending|in_progress|done|failed), by task_status (tasks only), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). q is required except with stale: true, where leaving it out lists every overdue asset, most overdue first. Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -1811,9 +1811,6 @@
           }
         }
       },
-      "required": [
-        "q"
-      ],
       "additionalProperties": false
     },
     "outputSchema": {
@@ -1821,8 +1818,10 @@
       "type": "object",
       "properties": {
         "query": {
-          "type": "string",
-          "minLength": 1
+          "type": [
+            "null",
+            "string"
+          ]
         },
         "count": {
           "type": "integer",

@@ -11,7 +11,7 @@ module Assets
     # while an unrelated query scores 0.
     #
     # 0.5 was too strict: a filename restating the whole query in a different order
-    # scored 0.475. Swept against the eval set: 0.45 and 0.47 tie for best (recall@10
+    # scored 0.475. Swept against the original, private eval set (docs/search.md): 0.45 and 0.47 tie for best (recall@10
     # 94.7%, top-1 84.2%), 0.55 and above lose recall, and below 0.40 top-1 decays as
     # weak name matches start outranking real ones. 0.45 sits at the wide end of that
     # plateau. Note the gain rests on one query, so trust the direction more than the
@@ -24,7 +24,7 @@ module Assets
     ANY_TERM  = "replace(#{ALL_TERMS}::text, '&', '|')::tsquery".freeze
 
     # Reciprocal rank fusion constant. Results are insensitive to it (10 and 60 score
-    # identically on the eval set) because it only damps how steeply the top of each
+    # identically on the private eval set) because it only damps how steeply the top of each
     # list is favoured, and both lists are short.
     RRF_K = 60
 
@@ -86,10 +86,19 @@ module Assets
     end
 
     def filtered(tsquery = nil)
+      @query.present? ? filters.where(match_condition(tsquery)) : filters
+    end
+
+    # Everything that narrows the result set except the query itself. The fused ranking is
+    # computed over this too, so a scoped search is ranked within its scope. Built once, so
+    # the results and both ranked lists agree on the tags and the date.
+    def filters
+      @filters ||= build_filters
+    end
+
+    def build_filters
       scope = Asset.live
       scope = scope.under_dir(@path) if @path.present?
-
-      scope = scope.where(match_condition(tsquery)) if @query.present?
 
       scope = scope.tagged_with(@tags)
 
@@ -99,7 +108,9 @@ module Assets
         scope = scope.where(status: @status).or(scope.where(id: Task.where(status: @status).select(:asset_id)))
       end
 
-      scope = scope.joins(:task).where(tasks: { status: @task_status }) if @task_status.present?
+      # A subquery rather than a join: the fused ranking embeds this scope's SQL inside the
+      # outer query, and a join of tasks on both sides makes Rails alias the outer one.
+      scope = scope.where(id: Task.where(status: @task_status).select(:asset_id)) if @task_status.present?
 
       scope = @stale ? scope.stale : scope.not_stale unless @stale.nil?
 
@@ -117,24 +128,28 @@ module Assets
     end
 
     def match_condition(tsquery)
-      sql, binds = match_clause(tsquery)
+      "(#{content_condition(tsquery)}) OR (#{name_condition})"
+    end
+
+    # EXISTS rather than a join: an asset that displaced the same phrase a dozen times
+    # is still one result.
+    def content_condition(tsquery)
+      sql = "assets.content_tsv @@ #{tsquery}"
+      binds = [ @query ]
+      if @include_versions
+        sql += " OR EXISTS (SELECT 1 FROM versions WHERE versions.asset_id = assets.id " \
+               "AND versions.content_tsv @@ #{tsquery})"
+        binds << @query
+      end
       Asset.sanitize_sql_array([ sql, *binds ])
     end
 
-    def match_clause(tsquery)
-      # Strictly greater, as measured; a name scoring exactly the threshold is out.
-      conditions = [ "assets.content_tsv @@ #{tsquery}", "word_similarity(?, assets.name) > ?" ]
-      binds = [ @query, @query, NAME_SIMILARITY_THRESHOLD ]
-
-      # EXISTS rather than a join: an asset that displaced the same phrase a dozen times
-      # is still one result.
-      if @include_versions
-        conditions << "EXISTS (SELECT 1 FROM versions WHERE versions.asset_id = assets.id " \
-                      "AND versions.content_tsv @@ #{tsquery})"
-        binds << @query
-      end
-
-      [ conditions.join(" OR "), binds ]
+    # The trigram index answers `<%` but not a word_similarity() call, so the operator does
+    # the lookup, with the cutoff config/database.yml gives it, and the call keeps the
+    # comparison strictly greater, as measured: a name scoring exactly the threshold is out.
+    def name_condition
+      Asset.sanitize_sql_array([ "? <% assets.name AND word_similarity(?, assets.name) > ?",
+                                 @query, @query, NAME_SIMILARITY_THRESHOLD ])
     end
 
     def apply_sort(scope, tsquery)
@@ -146,39 +161,48 @@ module Assets
     # Content relevance and name similarity are not on the same scale, so adding them
     # made the weighting an accident of how ts_rank_cd happens to be distributed. Fusing
     # them by rank instead asks the only question that transfers between the two: how
-    # near the top of its own list did this asset come? Measured on the eval set, this
+    # near the top of its own list did this asset come? Measured on the private eval set, this
     # lifts recall@10 from 84.2% to 89.5% and MRR from 0.797 to 0.829.
     #
     # Fusing all-terms with any-term was also tried and is markedly worse: any-term is
     # a superset of all-terms, so it contributes no independent evidence, only noise.
     def relevance_order(scope, tsquery)
-      return scope if @query.blank?
+      return stale_order(scope) if @query.blank?
 
-      # A pure-name match and a pure-content match are each first in one list and second
-      # in the other, so they fuse to the same score. Break that tie toward the name: if
+      # A pure-name match and a pure-content match are each first in their own list and
+      # absent from the other, so they fuse to the same score. Break that tie toward the name: if
       # you search "rails" the file called rails.md is what you meant.
       scope.joins(fusion_join(tsquery)).reorder(Arel.sql(Asset.sanitize_sql_array([
         "fusion.score DESC, word_similarity(?, assets.name) DESC, assets.id ASC", @query
       ])))
     end
 
+    # With no query there is no relevance. The overdue list is a review queue, so it comes
+    # most overdue first, as Assets::Stale orders it.
+    def stale_order(scope)
+      @stale ? scope.reorder(:stale_after, :dir, :name) : scope
+    end
+
+    # Each list holds only the assets its own retriever matched, under the same filters as
+    # the results: an asset that misses the name threshold has no name rank, rather than
+    # a place at the bottom of the name list decided by its id. rank() rather than
+    # row_number(), so assets that score the same share a rank whatever their ids.
     # Grouped by id, so joining it cannot multiply rows.
     def fusion_join(tsquery)
-      match, match_binds = match_clause(tsquery)
+      by_content = filters.where(content_condition(tsquery)).select(Asset.sanitize_sql_array([
+        "assets.id, rank() OVER (ORDER BY ts_rank_cd(assets.content_tsv, #{tsquery}) DESC) AS rnk", @query
+      ]))
+      by_name = filters.where(name_condition).select(Asset.sanitize_sql_array([
+        "assets.id, rank() OVER (ORDER BY word_similarity(?, assets.name) DESC) AS rnk", @query
+      ]))
 
-      sql = <<~SQL.squish
+      <<~SQL.squish
         INNER JOIN (
           SELECT id, SUM(1.0 / (#{RRF_K} + rnk)) AS score FROM (
-            SELECT id, row_number() OVER (ORDER BY ts_rank_cd(content_tsv, #{tsquery}) DESC, id) AS rnk
-              FROM assets WHERE deleted_at IS NULL AND (#{match})
-            UNION ALL
-            SELECT id, row_number() OVER (ORDER BY word_similarity(?, assets.name) DESC, id) AS rnk
-              FROM assets WHERE deleted_at IS NULL AND (#{match})
+            #{by_content.to_sql} UNION ALL #{by_name.to_sql}
           ) ranked GROUP BY id
         ) fusion ON fusion.id = assets.id
       SQL
-
-      Asset.sanitize_sql_array([ sql, @query, *match_binds, @query, *match_binds ])
     end
 
     def apply_pagination(scope)
