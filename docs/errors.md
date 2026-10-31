@@ -7,7 +7,8 @@ web UI each map an entry in one place. A new error class is not handled by any t
 
 ## How each transport shows an error
 
-**MCP** answers with `isError: true` and the text `<prefix>: <message>`. The prefix follows the status:
+**MCP** answers with `isError: true` and the text `<prefix> [<code>]: <message>`, for example
+`Not found [not_found]: 00000000`. The prefix follows the status:
 
 | Status | Prefix |
 |---|---|
@@ -17,9 +18,11 @@ web UI each map an entry in one place. A new error class is not handled by any t
 | 422 | `Invalid` |
 
 Four task-queue codes keep a prefix of their own: `not_a_task` (`Not a task`), `already_claimed` (`Already claimed`),
-`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). A call made with `format: "json"` gets
-`{"error": "<prefix>: <message>", "code": "<code>"}`. Anything unregistered is `Internal error`, with the details in
-the server log. See [mcp.md](mcp.md#responses) for the errors the transport itself raises.
+`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). Match the code, not the prefix or the
+message: `\A(?<prefix>[^\[:]+) \[(?<code>[a-z_]+)\]: (?<message>.*)\z` (`FolkloreMcp::Tool::ERROR_TEXT`). A `read`
+of several refs reports each failed ref in place as `{"ref": ..., "error": "<the same text>", "code": "<code>"}`.
+Anything unregistered is `Internal error`, with the details in the server log, and carries no code. Neither do the
+errors the transport itself raises; see [mcp.md](mcp.md#responses).
 
 **JSON API** answers with the status and `{"status": "fail", "data": {"code": ..., "message": ...}}`. An error with a
 field also carries `{"<field>": ["<message>"]}` in `data`. A record validation failure (`invalid`) carries every
@@ -36,15 +39,13 @@ new token form re-render instead, keeping what was typed.
 | Code | Status | Field | Raised when |
 |---|---|---|---|
 | `not_found` | 404 | | No such live asset (archived assets are not found), or another record is missing |
-| `version_not_found` | 404 | | Restoring a version (web) that is not on the asset |
-| `tag_not_applied` | 404 | | `remove_tag` of a tag the asset does not have |
+| `version_not_found` | 404 | | Reading or restoring a version that is not on the asset |
 | `no_pending_task` | 404 | | `claim_task` with a `path_prefix` found nothing to claim |
 | `forbidden` | 403 | | Writing to another user's workspace, or revoking another user's token |
 | `version_conflict` | 409 | | `expected_version` is out of date (`<slug> is at version N`) |
 | `name_taken` | 409 | `name` | A live asset already has that path and name |
 | `already_archived` | 409 | | Archiving an archived asset |
 | `not_archived` | 409 | | Restoring an asset that is not archived |
-| `tag_already_applied` | 409 | | `add_tag` of a tag the asset already has |
 | `already_claimed` | 409 | | `claim_task` of a task someone else holds |
 | `wrong_claimer` | 409 | | Completing or failing a task you do not hold |
 | `already_revoked` | 409 | | Revoking a revoked token |
@@ -52,7 +53,7 @@ new token form re-render instead, keeping what was typed.
 | `invalid_name` | 422 | `name` | A blank name, one with `/` or whitespace, `.` or `..`, or one over 255 characters |
 | `invalid_path` | 422 | `path` | A malformed path, or one over 1024 characters |
 | `reserved_path` | 422 | `path` | A path under `<handle>/state` or `<handle>/archive` |
-| `invalid_location` | 422 | `location` | `read_path` or `bulk_read` given a location without a filename or workspace handle |
+| `invalid_location` | 422 | `location` | `read` given a location without a filename or workspace handle |
 | `content_too_large` | 422 | `content` | Content over 1 MiB |
 | `invalid_stale_after` | 422 | `stale_after` | A review date that is not `YYYY-MM-DD` |
 | `invalid_status` | 422 | `status` | A note status or task status filter that is not allowed |
@@ -60,9 +61,10 @@ new token form re-render instead, keeping what was typed.
 | `invalid_tag` | 422 | `tags` | A blank tag, or one over 100 characters |
 | `not_a_task` | 422 | | A task tool given an asset that is not a task |
 | `reason_required` | 422 | `reason` | `fail_task` without a reason |
-| `note_too_long` | 422 | | `complete_task`'s note or `fail_task`'s reason is over 10,000 characters |
+| `note_too_long` | 422 | `note` | `complete_task`'s note is over 10,000 characters |
+| `reason_too_long` | 422 | `reason` | `fail_task`'s reason is over 10,000 characters |
 | `invalid_lease` | 422 | `lease_seconds` | A lease outside 1 to the maximum |
-| `invalid_argument` | 422 | | A search, `claim_task` or `get_pending_tasks` argument out of range, or a missing slug and prefix |
+| `invalid_argument` | 422 | | A search, `claim_task` or `get_pending_tasks` argument out of range, a missing slug and prefix, or a `read` of no refs or more than 50 |
 | `empty_content` | 422 | `content` | `update_last_session` with empty content |
 | `no_agent` | 422 | | A checkpoint call from a web session |
 | `no_handle` | 422 | | A checkpoint call from a user without a handle |
@@ -80,5 +82,5 @@ was exceeded rather than a statement failure.
 | Asset name | 255 characters | `invalid_name` |
 | Asset path | 1024 characters | `invalid_path` |
 | Tag | 100 characters | `invalid_tag` |
-| Task outcome note (`note`, `reason`) | 10,000 characters | `note_too_long` |
+| Task outcome note (`note`, `reason`) | 10,000 characters | `note_too_long`, `reason_too_long` |
 | Asset content | 1 MiB | `content_too_large` |

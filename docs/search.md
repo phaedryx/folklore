@@ -130,7 +130,7 @@ place and searchable as usual.
 
 Each MCP `search` with a query records the query, the filters that differ from their defaults, the result slugs and
 the token and agent that ran it (the web search page is not logged). When the same token and agent then read one of
-those results with `read` or `read_path` within five minutes, the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
+those results with `read` within five minutes, the search is marked as followed by that slug. Over time this gives you real queries with the answers people actually
 opened, which is the raw material for a bigger eval set. It is a plain table (`search_logs`) and nothing in the app
 reads it back.
 

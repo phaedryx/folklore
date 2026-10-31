@@ -2,7 +2,6 @@ module Tags
   class Remove
     NotFoundError = Tags::NotFoundError
     ForbiddenError = Tags::ForbiddenError
-    NotAppliedError = Tags::NotAppliedError
 
     def self.mutate(actor:, slug:, tag:)
       new(actor:, slug:, tag:).mutate
@@ -17,10 +16,10 @@ module Tags
     def mutate
       ActiveRecord::Base.transaction do
         asset = Tags.writable!(@slug, @actor)
-        raise NotAppliedError, "tag #{@name} is not on #{@slug}" unless asset.tags.exists?(name: @name)
+        next Result.new(asset:, changed: false) unless asset.tags.exists?(name: @name)
 
         Tags::Change.mutate(actor: @actor, asset:, remove: [ @name ])
-        Tags.touch!(asset, @actor)
+        Result.new(asset: Tags.touch!(asset, @actor), changed: true)
       end
     end
   end

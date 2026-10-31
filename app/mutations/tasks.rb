@@ -10,7 +10,10 @@ module Tasks
   InvalidStatusError = Class.new(Error)
   InvalidLeaseError = Class.new(Error)
   InvalidArgumentError = Class.new(Error)
+  # An outcome note over Task::MAX_NOTE_LENGTH: complete's note or fail's reason.
   InvalidNoteError = Class.new(Error)
+  NoteTooLongError = Class.new(InvalidNoteError)
+  ReasonTooLongError = Class.new(InvalidNoteError)
 
   # Statuses a listing accepts: the task lifecycle plus "all".
   LIST_STATUSES = (Task::STATUSES + %w[all]).freeze
@@ -29,11 +32,12 @@ module Tasks
   end
 
   # Refuses an outcome note over Task::MAX_NOTE_LENGTH; `label` is what the
-  # caller called it (complete's note, fail's reason).
-  def self.validate_note!(note, label)
+  # caller called it, and `error` the error that names it (complete's note,
+  # fail's reason).
+  def self.validate_note!(note, label, error: NoteTooLongError)
     return if note.nil? || note.length <= Task::MAX_NOTE_LENGTH
 
-    raise InvalidNoteError, "#{label} is #{note.length} characters, over the #{Task::MAX_NOTE_LENGTH} character limit"
+    raise error, "#{label} is #{note.length} characters, over the #{Task::MAX_NOTE_LENGTH} character limit"
   end
 
   # "handle/agent" for a claimer or an event's actor.

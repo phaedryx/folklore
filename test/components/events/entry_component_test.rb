@@ -35,6 +35,13 @@ class Events::EntryComponentTest < ViewComponent::TestCase
     assert_selector "[data-testid='activity-detail-#{event.id}']", text: "shell"
   end
 
+  test "reads a move as where it went from and to" do
+    moved = Events::Record.mutate(actor: web_actor, asset: create_asset(name: "m.md"), action: "asset_moved",
+                                  metadata: { "from" => "member/notes/m.md", "to" => "member/done/m.md" })
+
+    assert_equal "from member/notes/m.md to member/done/m.md", Events::Detail.call(moved)
+  end
+
   test "reads a renewal, an expired lease and a cleared review date as such" do
     asset = create_asset(name: "t.md")
     renewal = Events::Record.mutate(actor: web_actor, asset:, action: "task_claimed",

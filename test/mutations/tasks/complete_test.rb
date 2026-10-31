@@ -21,7 +21,7 @@ class Tasks::CompleteTest < ActiveSupport::TestCase
   test "a note over the length limit is refused before anything changes" do
     asset = add_claimed("long.md")
 
-    error = assert_raises(Tasks::InvalidNoteError) { complete(asset, note: "n" * (Task::MAX_NOTE_LENGTH + 1)) }
+    error = assert_raises(Tasks::NoteTooLongError) { complete(asset, note: "n" * (Task::MAX_NOTE_LENGTH + 1)) }
 
     assert_equal "note is 10001 characters, over the 10000 character limit", error.message
     assert_equal "in_progress", asset.reload.task.status

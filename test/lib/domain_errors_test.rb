@@ -16,6 +16,11 @@ class DomainErrorsTest < ActiveSupport::TestCase
     assert_equal "invalid_path", DomainErrors.for(unregistered.new("x")).code
   end
 
+  test "an outcome note and a failure reason over the limit are told apart" do
+    assert_equal [ "note_too_long", :note ], DomainErrors.for(Tasks::NoteTooLongError.new("x")).then { [ _1.code, _1.field ] }
+    assert_equal [ "reason_too_long", :reason ], DomainErrors.for(Tasks::ReasonTooLongError.new("x")).then { [ _1.code, _1.field ] }
+  end
+
   test "an unregistered error resolves to nil" do
     assert_nil DomainErrors.for(RuntimeError.new("boom"))
   end

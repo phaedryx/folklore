@@ -7,8 +7,8 @@ module FolkloreMcp
   # Base class for every MCP tool. Subclasses declare `tool_name`, a
   # `description`, `input_schema` and `output_schema` blocks (dry-schema,
   # emitted as JSON Schema), and `annotations`; they implement
-  # `#invoke(**args, server_context:)` and answer with `respond`,
-  # `text_response`, `json_response` or `error_response`.
+  # `#invoke(**args, server_context:)` and answer with `text_response` or
+  # `json_response`.
   #
   # Subclasses register themselves on definition. The wire name is always
   # declared explicitly: tool classes live under their domain module, so a
@@ -18,8 +18,9 @@ module FolkloreMcp
     SCOPE_ERROR = "Forbidden: token lacks write scope".freeze
     READ_SCOPE_ERROR = "Forbidden: token lacks read scope".freeze
 
-    # How MCP shows a DomainErrors entry: "<prefix>: <message>", the prefix
-    # chosen by status. The task-queue outcomes are named for themselves.
+    # How MCP shows a DomainErrors entry: "<prefix> [<code>]: <message>", the
+    # prefix chosen by status. The task-queue outcomes are named for themselves.
+    # ERROR_TEXT parses one back; errors not in the registry carry no code.
     STATUS_PREFIXES = {
       not_found: "Not found",
       forbidden: "Forbidden",
@@ -32,6 +33,7 @@ module FolkloreMcp
       "no_pending_task" => "No pending task",
       "wrong_claimer" => "Wrong claimer"
     }.freeze
+    ERROR_TEXT = /\A(?<prefix>[^\[:]+) \[(?<code>[a-z_]+)\]: (?<message>.*)\z/m
 
     class << self
       def inherited(subclass)
@@ -78,36 +80,47 @@ module FolkloreMcp
         @annotations_value ||= annotations(read_only: false)
       end
 
+      # tools/list is read into every session, so it leaves out what says
+      # nothing: `$schema` (MCP's default dialect is the one we emit), hints
+      # equal to the spec's defaults (destructive, not idempotent, open world;
+      # destructive and idempotent mean nothing on a read-only tool), and in
+      # output schemas the minLength and not-null that `filled` adds.
       def to_h
-        super.merge(annotations: annotations_value.to_h)
+        hash = super.merge(annotations: annotation_hints)
+        hash[:inputSchema] = trim_schema(hash[:inputSchema], output: false)
+        hash[:outputSchema] = trim_schema(hash[:outputSchema], output: true) if hash[:outputSchema]
+        hash
       end
 
       def prefix_for(entry)
         CODE_PREFIXES.fetch(entry.code) { STATUS_PREFIXES.fetch(entry.status) }
       end
 
-      # Failures answer in the format the caller asked for: a tool that takes
-      # `format: "json"` gets `{"error": "...", "code": "..."}` back, as its
-      # successes are JSON. A registered error (DomainErrors) is mapped here
-      # and nowhere else; anything else is "Internal error".
+      def error_text(error)
+        entry = DomainErrors.for(error)
+        "#{prefix_for(entry)} [#{entry.code}]: #{DomainErrors.message(error)}"
+      end
+
+      # Failures are text only: some clients check any structured content
+      # against the outputSchema, error or not. A registered error
+      # (DomainErrors) is mapped here and nowhere else; anything else is
+      # "Internal error".
       def call(server_context: nil, **args)
-        format = args[:format]
         scope_error = scope_error(server_context)
-        return failure(scope_error, format:) if scope_error
+        return failure(scope_error) if scope_error
 
         unknown = unknown_arguments(args)
-        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}", format:) if unknown.any?
+        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}") if unknown.any?
 
         new.invoke(**args, server_context:)
       rescue MissingActorError
-        failure("Unauthenticated: no actor on request", format:)
+        failure("Unauthenticated: no actor on request")
       rescue *DomainErrors.classes => e
-        entry = DomainErrors.for(e)
-        failure("#{prefix_for(entry)}: #{DomainErrors.message(e)}", format:, code: entry.code)
+        failure(error_text(e))
       rescue => e
         raise if Rails.env.test? && ENV["MCP_RAISE_ERRORS"] == "1"
         Rails.logger.error("[MCP] #{name_value} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
-        failure("Internal error", format:)
+        failure("Internal error")
       end
 
       private
@@ -136,11 +149,31 @@ module FolkloreMcp
         args.keys.map(&:to_s) - properties.keys.map(&:to_s)
       end
 
-      def failure(text, format: nil, code: nil)
-        return MCP::Tool::Response.new([ { type: "text", text: } ], error: true) unless format.to_s == "json"
+      def annotation_hints
+        hints = annotations_value
+        return { openWorldHint: false, readOnlyHint: true } if hints.read_only_hint
 
-        payload = { error: text, code: }.compact
-        MCP::Tool::Response.new([ { type: "text", text: JSON.generate(payload) } ], structured_content: payload, error: true)
+        { destructiveHint: (false unless hints.destructive_hint), idempotentHint: (true if hints.idempotent_hint),
+          openWorldHint: (false unless hints.open_world_hint) }.compact
+      end
+
+      def trim_schema(node, output:)
+        case node
+        when Hash
+          node.each_with_object({}) do |(key, value), trimmed|
+            next if key == :"$schema"
+            next if key == :not && value == { type: "null" } && node[:type].is_a?(String)
+            next if output && key == :minLength && value == 1
+
+            trimmed[key] = trim_schema(value, output:)
+          end
+        when Array then node.map { |child| trim_schema(child, output:) }
+        else node
+        end
+      end
+
+      def failure(text)
+        MCP::Tool::Response.new([ { type: "text", text: } ], error: true)
       end
 
       def json_schema_from(block)
@@ -169,7 +202,7 @@ module FolkloreMcp
     end
 
     # The search log is the only thing read-only tools write (`search` records
-    # a query, `read` and `read_path` mark one followed). It is telemetry: a
+    # a query, `read` marks one followed). It is telemetry: a
     # failure is logged and never fails the call.
     def telemetry
       yield
@@ -177,32 +210,14 @@ module FolkloreMcp
       Rails.logger.warn("[MCP] #{self.class.name_value} search log failed: #{e.class}: #{e.message}")
     end
 
+    # A summary as text, with the data as structured content when there is any.
     def text_response(text, data: nil)
-      respond(format: "text", text:, data:)
+      MCP::Tool::Response.new([ { type: "text", text: text.to_s } ], structured_content: data)
     end
 
+    # The data as structured content and, serialized, as the text.
     def json_response(data)
-      respond(format: "json", text: data, data:)
-    end
-
-    def error_response(message, format: "text")
-      if format.to_s == "json"
-        respond(format:, text: { error: message.to_s }, error: true)
-      else
-        respond(format:, text: message.to_s, error: true)
-      end
-    end
-
-    # Text content always; structured content whenever there is data for it.
-    def respond(format:, text:, data: nil, error: false)
-      if format.to_s == "json"
-        payload = data || text
-        json = payload.is_a?(String) ? payload : JSON.generate(payload)
-        structured = payload.is_a?(String) ? JSON.parse(json) : payload
-        MCP::Tool::Response.new([ { type: "text", text: json } ], structured_content: structured, error:)
-      else
-        MCP::Tool::Response.new([ { type: "text", text: text.to_s } ], structured_content: data, error:)
-      end
+      MCP::Tool::Response.new([ { type: "text", text: JSON.generate(data) } ], structured_content: data)
     end
   end
 end

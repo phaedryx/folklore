@@ -3,10 +3,8 @@ module FolkloreMcp
     module Assets
       class Upsert < FolkloreMcp::Tool
         tool_name "upsert"
-        description "Create-or-update an asset by path + name. Updates the live asset at that " \
-                    "path + name if one exists (snapshotting prior content), otherwise creates it. " \
-                    "'path' is the DIRECTORY only (no trailing filename or known file extension — " \
-                    "those are rejected); 'name' is the leaf (no whitespace, no '/', not '.' or '..')."
+        description "Update the live asset at path + name, keeping the old text as a version, or " \
+                    "create it there. 'path' and 'name' as in create."
         annotations idempotent: true, destructive: true
 
         input_schema do

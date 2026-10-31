@@ -3,12 +3,10 @@ module FolkloreMcp
     module Assets
       class Update < FolkloreMcp::Tool
         tool_name "update"
-        description "Update an existing asset by slug. Snapshots prior content into versions on " \
-                    "content change; an empty content clears it, omitting it leaves it alone. " \
-                    "'name', when renaming, is the leaf only (no whitespace, no '/', not '.' or " \
-                    "'..') — it is not a path. Pass expected_version (from read's version field) " \
-                    "to refuse the write with Conflict if someone else edited first. Not found if " \
-                    "archived."
+        description "Update an asset by slug, changing only what you pass; an empty content clears it. " \
+                    "A content change keeps the old text as a version. 'name' renames it (a leaf, not a " \
+                    "path; use move for that). Pass expected_version (read's version) to get Conflict " \
+                    "if someone else edited first."
         annotations destructive: true
 
         input_schema do

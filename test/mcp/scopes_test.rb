@@ -4,7 +4,7 @@ require "test_helper"
 # tool's read_only annotation, so the annotations are pinned here too: a wrong
 # annotation is an authorization bug, not a cosmetic one.
 class FolkloreMcp::ScopesTest < ActiveSupport::TestCase
-  READ_ONLY_TOOLS = %w[activity bulk_read get_last_session get_pending_tasks list read read_path search tags versions].freeze
+  READ_ONLY_TOOLS = %w[activity get_last_session get_pending_tasks list read search tags versions].freeze
 
   def domain_tools
     FolkloreMcp.tool_classes.select { |tool| tool.name.start_with?("FolkloreMcp::Tools::") }
@@ -37,10 +37,10 @@ class FolkloreMcp::ScopesTest < ActiveSupport::TestCase
   test "a read-only token can still call read tools" do
     asset = ::Assets::Create.mutate(actor: actor_for(:member_default), path: "member/notes", name: "r.md", content: "body")
 
-    response = FolkloreMcp::Tools::Assets::Read.call(slug: asset.slug, server_context: actor_context(:member_readonly))
+    response = FolkloreMcp::Tools::Assets::Read.call(ref: asset.slug, server_context: actor_context(:member_readonly))
 
     refute response.to_h[:isError]
-    assert_equal "body", text_of(response)
+    assert_equal "body", response.to_h[:structuredContent][:content]
   end
 
   test "every read-only tool refuses a write-only token" do

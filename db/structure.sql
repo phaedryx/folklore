@@ -137,7 +137,7 @@ CREATE TABLE public.events (
     action character varying NOT NULL,
     metadata jsonb DEFAULT '{}'::jsonb NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT events_action_check CHECK (((action)::text = ANY (ARRAY[('asset_created'::character varying)::text, ('asset_updated'::character varying)::text, ('asset_deleted'::character varying)::text, ('asset_restored'::character varying)::text, ('tag_added'::character varying)::text, ('tag_removed'::character varying)::text, ('task_added'::character varying)::text, ('task_claimed'::character varying)::text, ('task_completed'::character varying)::text, ('task_failed'::character varying)::text, ('task_cancelled'::character varying)::text, ('task_lease_expired'::character varying)::text, ('version_restored'::character varying)::text, ('asset_verified'::character varying)::text, ('asset_review_scheduled'::character varying)::text, ('asset_status_set'::character varying)::text, ('asset_imported'::character varying)::text])))
+    CONSTRAINT events_action_check CHECK (((action)::text = ANY ((ARRAY['asset_created'::character varying, 'asset_updated'::character varying, 'asset_deleted'::character varying, 'asset_restored'::character varying, 'tag_added'::character varying, 'tag_removed'::character varying, 'task_added'::character varying, 'task_claimed'::character varying, 'task_completed'::character varying, 'task_failed'::character varying, 'task_cancelled'::character varying, 'task_lease_expired'::character varying, 'version_restored'::character varying, 'asset_verified'::character varying, 'asset_review_scheduled'::character varying, 'asset_status_set'::character varying, 'asset_imported'::character varying, 'asset_moved'::character varying])::text[])))
 );
 
 
@@ -1890,6 +1890,7 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20261030160002'),
 ('20261030160001'),
 ('20261030150101'),
+('20261030000002'),
 ('20261030000001'),
 ('20261028000003'),
 ('20261028000002'),

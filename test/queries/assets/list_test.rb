@@ -50,4 +50,15 @@ class Assets::ListTest < ActiveSupport::TestCase
   test "a dir with no assets yields an empty relation" do
     assert_empty names(path: "member/empty")
   end
+
+  test "a sort breaks ties by id, so pages neither skip nor repeat" do
+    stamp = Time.current
+    assets = %w[c.md a.md b.md].map { |name| create(name).tap { |a| a.update_columns(created_at: stamp) } }
+
+    assert_equal assets.sort_by(&:id).map(&:name), names(sort: "created_at")
+  end
+
+  test "limit is applied as given; callers clamp it" do
+    assert_equal 501, Assets::List.query(path: "member", limit: 501, actor: @actor).limit_value
+  end
 end

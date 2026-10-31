@@ -3,7 +3,7 @@ module FolkloreMcp
     module Tags
       class Remove < FolkloreMcp::Tool
         tool_name "remove_tag"
-        description "Detach a tag from an asset by slug. The tag itself is not deleted even if it becomes orphaned."
+        description "Detach a tag from an asset by slug. A tag not there is not an error: changed is false."
 
         input_schema do
           required(:slug).filled(:string)
@@ -15,14 +15,17 @@ module FolkloreMcp
           required(:slug).filled(:string)
           required(:tag).filled(:string)
           required(:tags).array(:string)
+          required(:changed).filled(:bool)
         end
 
         def invoke(slug:, tag:, server_context:, agent: nil)
           actor = actor_from(server_context, agent:)
-          asset = ::Tags::Remove.mutate(actor:, slug:, tag:)
+          result = ::Tags::Remove.mutate(actor:, slug:, tag:)
+          asset = result.asset
           name = Tag.normalize(tag)
+          text = result.changed ? "Removed tag #{name} from #{asset.slug}" : "#{asset.slug} does not have tag #{name}"
 
-          text_response("Removed tag #{name} from #{asset.slug}", data: { slug: asset.slug, tag: name, tags: asset.tags.reload.map(&:name).sort })
+          text_response(text, data: { slug: asset.slug, tag: name, tags: asset.tags.reload.map(&:name).sort, changed: result.changed })
         end
       end
     end

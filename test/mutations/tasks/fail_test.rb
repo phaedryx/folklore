@@ -21,7 +21,7 @@ class Tasks::FailTest < ActiveSupport::TestCase
   test "a reason over the length limit is refused before anything changes" do
     asset = add_claimed("long.md")
 
-    error = assert_raises(Tasks::InvalidNoteError) { fail_task(asset, reason: "r" * (Task::MAX_NOTE_LENGTH + 1)) }
+    error = assert_raises(Tasks::ReasonTooLongError) { fail_task(asset, reason: "r" * (Task::MAX_NOTE_LENGTH + 1)) }
 
     assert_equal "reason is 10001 characters, over the 10000 character limit", error.message
     assert_equal "in_progress", asset.reload.task.status

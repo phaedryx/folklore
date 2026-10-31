@@ -20,6 +20,8 @@ module Events
         [ ("released #{metadata['released_claim']}'s claim" if metadata["released_claim"]) ]
       when "version_restored"
         [ "from version #{metadata['restored_from_version_id']}" ]
+      when "asset_moved"
+        [ "from #{metadata['from']} to #{metadata['to']}" ]
       else
         LABELS.filter_map { |key, label| "#{label}: #{metadata[key].presence || 'cleared'}" if metadata.key?(key) }
       end

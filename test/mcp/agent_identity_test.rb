@@ -46,7 +46,7 @@ class FolkloreMcp::AgentIdentityTest < ActiveSupport::TestCase
                                      server_context: actor_context(:other_default))
 
       assert response.to_h[:isError]
-      assert_match(/\AInvalid: token "default" is not shared/, text_of(response))
+      assert_match(/\AInvalid \[[a-z_]+\]: token "default" is not shared/, text_of(response))
     end
   end
 
@@ -68,7 +68,7 @@ class FolkloreMcp::AgentIdentityTest < ActiveSupport::TestCase
     }
 
     calls.each do |name, call|
-      assert_match(/\AInvalid: token "default" is not shared/, text_of(call.call), name)
+      assert_match(/\AInvalid \[[a-z_]+\]: token "default" is not shared/, text_of(call.call), name)
     end
     assert_equal "pending", task.task.reload.status
     refute Asset.live.exists?(dir: "other/state/ping")

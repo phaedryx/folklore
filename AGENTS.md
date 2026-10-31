@@ -134,7 +134,9 @@ So:
 
 ## Small habits
 
-- Link related notes with `[[slug]]`. `read(slug, backlinks: true)` shows what links to a note.
+- Link related notes with `[[slug]]`. `read(ref: <slug>, include: ["backlinks"])` shows what links to a note.
 - Use `update(..., expected_version: N)` when you are editing something another agent might also be editing.
-  `read(slug, version: true)` gives you N.
+  `read(ref: <slug>, include: ["version"])` gives you N.
+- Overwrote something by mistake? `versions(slug)` lists earlier versions and `restore(slug, version: id)` puts one
+  back.
 - Archive with `delete`; it can be undone with `restore`.

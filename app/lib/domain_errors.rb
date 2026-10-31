@@ -34,6 +34,7 @@ module DomainErrors
     Assets::InvalidStatusError => entry("invalid_status", :unprocessable_content, :status),
     Assets::InvalidLocationError => entry("invalid_location", :unprocessable_content, :location),
     Assets::Search::InvalidArgumentError => entry("invalid_argument", :unprocessable_content),
+    Assets::BulkRead::InvalidArgumentError => entry("invalid_argument", :unprocessable_content),
     Asset::InvalidNameError => entry("invalid_name", :unprocessable_content, :name),
     Asset::InvalidDirError => entry("invalid_path", :unprocessable_content, :path),
     Asset::ReservedDirError => entry("reserved_path", :unprocessable_content, :path),
@@ -44,8 +45,6 @@ module DomainErrors
     # Tags. Tags::InvalidTagError is Tag::InvalidNameError.
     Tags::NotFoundError => entry("not_found", :not_found),
     Tags::ForbiddenError => entry("forbidden", :forbidden),
-    Tags::AlreadyAppliedError => entry("tag_already_applied", :conflict),
-    Tags::NotAppliedError => entry("tag_not_applied", :not_found),
     Tag::InvalidNameError => entry("invalid_tag", :unprocessable_content, :tags),
 
     # Tasks
@@ -57,7 +56,8 @@ module DomainErrors
     Tasks::InvalidStatusError => entry("invalid_status", :unprocessable_content, :status),
     Tasks::InvalidLeaseError => entry("invalid_lease", :unprocessable_content, :lease_seconds),
     Tasks::InvalidArgumentError => entry("invalid_argument", :unprocessable_content),
-    Tasks::InvalidNoteError => entry("note_too_long", :unprocessable_content),
+    Tasks::NoteTooLongError => entry("note_too_long", :unprocessable_content, :note),
+    Tasks::ReasonTooLongError => entry("reason_too_long", :unprocessable_content, :reason),
 
     # Checkpoints and identity
     Checkpoints::EmptyContentError => entry("empty_content", :unprocessable_content, :content),
