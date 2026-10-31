@@ -54,7 +54,8 @@ shared ...` and changes nothing. Passing its own name is allowed.
 `agent`, issue a shared token at **Settings → Tokens** and move them to it, or they will get `Invalid` on every call.
 A claim made through the old token stays bound to it until its lease runs out. A checkpoint an agent saved with
 `agent` before the upgrade sits at `<handle>/state/<agent>`, and the shared token looks under
-`<handle>/state/<token>/<agent>`: read the old one with `read_path` and save it again with `update_last_session`.
+`<handle>/state/<token>/<agent>`: read the old one with `read(ref: <location>)` and save it again with
+`update_last_session`.
 
 The override is a label within the token's user and can never act as another user. A task claim also records the token,
 so another token passing the same `agent` is a different claimer (see [tasks.md](tasks.md)). Agent names are lowercase

@@ -105,6 +105,10 @@
         "tag": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -170,6 +174,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -215,6 +223,10 @@
         "text": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -245,7 +257,7 @@
   },
   {
     "name": "claim_task",
-    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
+    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, token, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -307,7 +319,7 @@
   },
   {
     "name": "complete_task",
-    "description": "Mark a task you hold done, with an optional outcome note. Only the (you, agent) that claimed it can complete it; pass the same agent you claimed with. Anyone else gets Wrong claimer.",
+    "description": "Mark a task you hold done, with an optional outcome note. Only the (you, token, agent) that claimed it can complete it; use the same token and agent you claimed with. Anyone else gets Wrong claimer.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -382,6 +394,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -423,6 +439,10 @@
         "slug": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -451,7 +471,7 @@
   },
   {
     "name": "fail_task",
-    "description": "Mark a task you hold failed, with a required reason; the reason is kept on the task and in the activity log. Only the (you, agent) that claimed it can fail it; pass the same agent you claimed with. Anyone else gets Wrong claimer.",
+    "description": "Mark a task you hold failed, with a required reason; the reason is kept on the task and in the activity log. Only the (you, token, agent) that claimed it can fail it; use the same token and agent you claimed with. Anyone else gets Wrong claimer.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -546,7 +566,7 @@
   },
   {
     "name": "get_pending_tasks",
-    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags.",
+    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags. Returns at most 100 tasks unless you pass limit (up to 500); truncated says more remain, and offset pages on.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -563,6 +583,12 @@
         "status": {
           "type": "string",
           "minLength": 1
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "offset": {
+          "type": "integer"
         }
       },
       "required": [
@@ -631,10 +657,14 @@
               "created_at"
             ]
           }
+        },
+        "truncated": {
+          "type": "boolean"
         }
       },
       "required": [
-        "tasks"
+        "tasks",
+        "truncated"
       ]
     },
     "annotations": {
@@ -749,6 +779,10 @@
           "minLength": 1
         },
         "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent": {
           "type": "string",
           "minLength": 1
         }
@@ -1052,6 +1086,10 @@
         "tag": {
           "type": "string",
           "minLength": 1
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1103,6 +1141,10 @@
         },
         "version": {
           "type": "integer"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1134,7 +1176,7 @@
   },
   {
     "name": "search",
-    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by status (a note's open|done or a task's pending|in_progress|done|failed), by task_status (tasks only), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
+    "description": "Full-text + fuzzy-name search across live assets, optionally scoped to a path prefix and tag set. Filter by status (a note's open|done or a task's pending|in_progress|done|failed), by task_status (tasks only), or exclude assets having ANY of exclude_tags (e.g. tagged X but not done). Pass stale: true for assets whose stale_after review date has passed (false for the rest; assets with no review date are never stale). q is required except with stale: true, where leaving it out lists every overdue asset, most overdue first. Optionally sort (name|created_at|updated_at) and paginate (limit/offset). Each result is a `slug  name  (dir)` line with a short content snippet around the first match beneath it. Pass include_versions: true to also match content an asset used to have but no longer does, for finding something you wrote and later edited away. Those hits are snippeted from the version and marked with the date it was displaced.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -1183,16 +1225,16 @@
           "type": "boolean"
         }
       },
-      "required": [
-        "q"
-      ],
       "additionalProperties": false
     },
     "outputSchema": {
       "type": "object",
       "properties": {
         "query": {
-          "type": "string"
+          "type": [
+            "null",
+            "string"
+          ]
         },
         "count": {
           "type": "integer"
@@ -1257,6 +1299,10 @@
         },
         "stale_after": {
           "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1301,6 +1347,10 @@
         },
         "status": {
           "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1405,6 +1455,10 @@
         },
         "expected_version": {
           "type": "integer"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1505,6 +1559,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [
@@ -1553,6 +1611,10 @@
         },
         "stale_after": {
           "type": "string"
+        },
+        "agent": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "required": [

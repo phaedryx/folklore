@@ -12,6 +12,7 @@ module FolkloreMcp
           required(:slug).filled(:string)
           required(:path).filled(:string)
           optional(:name).filled(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -20,8 +21,8 @@ module FolkloreMcp
           required(:version).filled(:integer)
         end
 
-        def invoke(slug:, path:, server_context:, name: nil)
-          actor = actor_from(server_context)
+        def invoke(slug:, path:, server_context:, name: nil, agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Assets::Move.mutate(actor:, slug:, path:, name:)
 
           text_response("Moved #{asset.slug} to #{asset.location}",
