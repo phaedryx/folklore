@@ -42,7 +42,7 @@ class Bundles::ExportTest < ActiveSupport::TestCase
     assert_equal({ assets: 4, archived: 1, versions: 2, tasks: 1 }, result.counts)
     assert_equal result.counts, manifest[:counts]
 
-    loaded = Bundles::Format.load_asset(read("assets/member/notes/note.md"))
+    loaded = Bundles::Format.load_asset(read("assets/#{note.slug}/member/notes/note.md"))
     assert_equal note.slug, loaded[:slug]
     assert_equal "member", loaded[:owner]
     assert_equal "ends without newline", loaded[:content]
@@ -53,12 +53,12 @@ class Bundles::ExportTest < ActiveSupport::TestCase
     assert_equal note.created_at, loaded[:created_at]
     assert_nil loaded[:task]
 
-    assert_nil Bundles::Format.load_asset(read("assets/member/notes/empty.md"))[:content]
+    assert_nil Bundles::Format.load_asset(read("assets/#{empty.slug}/member/notes/empty.md"))[:content]
 
     archived = Bundles::Format.load_asset(read("archived/#{gone.slug}/member/notes/gone.md"))
     assert_equal gone.reload.deleted_at, archived[:deleted_at]
 
-    loaded_task = Bundles::Format.load_asset(read("assets/member/tasks/do.md"))[:task]
+    loaded_task = Bundles::Format.load_asset(read("assets/#{task.slug}/member/tasks/do.md"))[:task]
     assert_equal({ status: "done", attempts: 1, outcome_note: "shipped" }, loaded_task.slice(:status, :attempts, :outcome_note))
 
     versions = Bundles::Format.load_versions(read("versions/#{note.slug}.jsonl"))
@@ -68,7 +68,7 @@ class Bundles::ExportTest < ActiveSupport::TestCase
 
     entries = manifest[:assets].index_by { |a| a[:slug] }
     assert_equal 4, entries.size
-    assert_equal "assets/member/notes/note.md", entries[note.slug][:file]
+    assert_equal "assets/#{note.slug}/member/notes/note.md", entries[note.slug][:file]
     assert_equal Digest::SHA256.hexdigest("ends without newline"), entries[note.slug][:sha256]
     assert_nil entries[empty.slug][:sha256]
     assert_equal "archived/#{gone.slug}/member/notes/gone.md", entries[gone.slug][:file]
@@ -98,19 +98,51 @@ class Bundles::ExportTest < ActiveSupport::TestCase
     export
 
     assert_equal [ live.slug, "live" ],
-                 Bundles::Format.load_asset(read("assets/member/notes/same.md")).values_at(:slug, :content)
+                 Bundles::Format.load_asset(read("assets/#{live.slug}/member/notes/same.md")).values_at(:slug, :content)
     assert_equal "first", Bundles::Format.load_asset(read("archived/#{first.slug}/member/notes/same.md"))[:content]
     assert_equal "second", Bundles::Format.load_asset(read("archived/#{second.slug}/member/notes/same.md"))[:content]
   end
 
+  # Every file must read back as the asset the manifest says it is; a
+  # collision either crashes the export or leaves one asset's bytes under
+  # another's entry.
+  def assert_every_entry_reads_back(assets)
+    entries = manifest[:assets].index_by { |a| a[:slug] }
+    assert_equal assets.map(&:slug).sort, entries.keys.sort
+    assert_equal entries.size, entries.values.map { |e| e[:file].downcase }.uniq.size, "two entries share a file on a case-insensitive disk"
+    assets.each do |asset|
+      loaded = Bundles::Format.load_asset(read(entries[asset.slug][:file]))
+      assert_equal [ asset.slug, asset.content ], loaded.values_at(:slug, :content)
+      assert_equal Asset.sha256(loaded[:content]), entries[asset.slug][:sha256]
+    end
+  end
+
+  test "an asset and a directory with the same location both export" do
+    file = create("a", path: "member", content: "the file")
+    inside = create("b.md", path: "member/a", content: "inside the directory")
+
+    export
+
+    assert_every_entry_reads_back([ file, inside ])
+  end
+
+  test "names that differ only in case export to different files" do
+    upper = create("A.md", content: "upper")
+    lower = create("a.md", content: "lower")
+
+    export
+
+    assert_every_entry_reads_back([ upper, lower ])
+  end
+
   test "handle limits the export to one workspace" do
-    create("mine.md")
+    mine = create("mine.md")
     create("theirs.md", path: "other/notes", actor: actor_for(:other_default))
 
     result = export(handle: "member")
 
     assert_equal 1, result.counts[:assets]
-    assert_equal [ "assets/member/notes/mine.md" ], manifest[:assets].pluck(:file)
+    assert_equal [ "assets/#{mine.slug}/member/notes/mine.md" ], manifest[:assets].pluck(:file)
   end
 
   test "query count does not grow with the number of assets" do

@@ -1,8 +1,14 @@
 # Bundles
 
-A bundle is a folklore instance written out as plain files: one file per asset, its versions beside it, and a manifest.
-It is how you back up an instance, move it to another one, or bring notes in from another system. Anything that can
-write Markdown and JSON can produce one.
+A bundle is a folklore instance's assets written out as plain files: one file per asset, its versions beside it, and a
+manifest. It is a portability format: it moves assets to another instance, or brings notes in from another system.
+Anything that can write Markdown and JSON can produce one.
+
+A bundle is not a backup. It carries assets (with their tags, versions, task rows and checkpoints) and nothing else: no
+users, no tokens, no events, no search logs. Import adds to an instance and never replaces anything; it refuses a
+bundle if any of its slugs, or any of its live assets' locations, already exists there, so you cannot restore a bundle
+over the instance it came from. To back up an instance, back up its database: `pg_dump` the whole of it, and restore
+with `pg_restore` or `psql`.
 
 ```
 bin/rails "folklore:export[/path/to/bundle]"            # write every workspace
@@ -20,13 +26,16 @@ exits non-zero if the bundle was refused.
 ```
 <bundle>/
   manifest.json
-  assets/<dir>/<name>            # live assets, one file each
+  assets/<slug>/<dir>/<name>     # live assets, one file each
   archived/<slug>/<dir>/<name>   # archived (deleted) assets
   versions/<slug>.jsonl          # an asset's earlier versions, oldest first
 ```
 
-A live asset at `tad/notes/x.md` is the file `assets/tad/notes/x.md`. Archived assets sit under their slug, because
-several archived assets can share a location, and one can share it with a live asset.
+A live asset `abcd1234` at `tad/notes/x.md` is the file `assets/abcd1234/tad/notes/x.md`. Every asset sits under its
+slug, because locations that folklore keeps apart can meet on disk: an asset `tad/a` and a directory `tad/a/` cannot
+both exist in a filesystem, and `A.md` and `a.md` are one file on a case-insensitive one (macOS, Windows). Slugs are
+unique and lowercase, so each slug directory holds exactly one file. Archived assets need it too: several can share a
+location, and one can share it with a live asset.
 
 ## manifest.json
 
@@ -37,7 +46,7 @@ several archived assets can share a location, and one can share it with a live a
   "exported_at": "2026-10-28T17:04:11.512034Z",
   "counts": { "assets": 3, "archived": 1, "versions": 5, "tasks": 1 },
   "assets": [
-    { "slug": "abcd1234", "file": "assets/tad/notes/x.md", "sha256": "9f86d08..." }
+    { "slug": "abcd1234", "file": "assets/abcd1234/tad/notes/x.md", "sha256": "9f86d08..." }
   ]
 }
 ```
@@ -131,7 +140,10 @@ Before writing anything, import collects every problem in the bundle and refuses
 - every slug is new to this instance. Importing the same bundle twice is refused; there is no merge;
 - no live asset's location is already taken here;
 - every `owner` exists as a user, and owns the workspace its `dir` starts with;
-- every file sits where its front matter says it should (`assets/<dir>/<name>`, or `archived/<slug>/<dir>/<name>`);
+- every slug is one folklore could have made (eight characters from `0-9a-z` without `i`, `l`, `o` and `u`), since
+  that is all its URLs and `[[slug]]` links accept;
+- every file sits where its front matter says it should (`assets/<slug>/<dir>/<name>`, or
+  `archived/<slug>/<dir>/<name>`);
 - every `dir` and `name` passes folklore's usual rules. The reserved `<handle>/state` directory is allowed only as
   `<handle>/state/<agent>` or `<handle>/state/<token>/<agent>`, where checkpoints live (see
   [checkpoints](checkpoints.md));

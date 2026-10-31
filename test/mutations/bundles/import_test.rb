@@ -217,7 +217,7 @@ class Bundles::ImportTest < ActiveSupport::TestCase
   test "an unlisted file, a missing file and versions for an unknown slug are rejected" do
     @bundle.asset(name: "a.md")
     @bundle.versions("nosuch00", [ { content: "x", content_type: nil, created_at: Time.utc(2026, 1, 1), actor: nil } ])
-    @bundle.write { |m| m[:assets] << { slug: "missing0", file: "assets/member/notes/missing.md", sha256: nil } }
+    @bundle.write { |m| m[:assets] << { slug: "missing0", file: "assets/missing0/member/notes/missing.md", sha256: nil } }
     @bundle.put("assets/member/notes/stray.md", "---\nslug: stray000\n---\n")
 
     errors = rejection.errors.join("\n")
@@ -229,10 +229,22 @@ class Bundles::ImportTest < ActiveSupport::TestCase
   test "a file whose path does not match its front matter is rejected" do
     note = @bundle.asset(name: "a.md")
     @bundle.write
-    FileUtils.mv(File.join(@dir, "assets/member/notes/a.md"), File.join(@dir, "assets/member/notes/b.md"))
-    File.write(File.join(@dir, "manifest.json"), File.read(File.join(@dir, "manifest.json")).sub("notes/a.md", "notes/b.md"))
+    FileUtils.mkdir_p(File.join(@dir, "assets/member/notes"))
+    FileUtils.mv(File.join(@dir, "assets/#{note[:slug]}/member/notes/a.md"), File.join(@dir, "assets/member/notes/a.md"))
+    File.write(File.join(@dir, "manifest.json"), File.read(File.join(@dir, "manifest.json")).sub("#{note[:slug]}/member", "member"))
 
-    assert_match(/#{note[:slug]}.*should be at assets\/member\/notes\/a.md/, rejection.errors.join)
+    assert_match(%r{#{note[:slug]}.*should be at assets/#{note[:slug]}/member/notes/a.md}, rejection.errors.join)
+  end
+
+  test "a slug the app could not route is rejected" do
+    %w[abc1234 abcdefghi ABCD1234 abcd123i abcd123u].each { |slug| @bundle.asset(slug:, name: "#{slug}.md") }
+    @bundle.write
+    before = table_counts
+
+    errors = rejection.errors
+    assert_equal 5, errors.size, errors.join("\n")
+    errors.each { |error| assert_match(/is not a valid slug/, error) }
+    assert_equal before, table_counts
   end
 
   test "every problem is reported at once" do

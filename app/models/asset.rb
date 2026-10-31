@@ -33,6 +33,10 @@ class Asset < ApplicationRecord
   WRITE_LOCK = "FOR NO KEY UPDATE".freeze
 
   SLUG_CHARS = "0123456789abcdefghjkmnpqrstvwxyz".freeze
+  # What generate_slug makes, and what the routes and wikilinks accept.
+  # Unanchored for routes and larger patterns; SLUG_REGEX checks a whole string.
+  SLUG_PATTERN = /[#{SLUG_CHARS}]{8}/
+  SLUG_REGEX = /\A#{SLUG_PATTERN}\z/
   NOTE_STATUSES = %w[open done].freeze
   # Second path segments the app owns: `<handle>/archive` is the web archive
   # page, `<handle>/state/...` holds checkpoints (see Checkpoint.dir_for).

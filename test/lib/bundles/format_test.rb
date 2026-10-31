@@ -124,8 +124,8 @@ class Bundles::FormatTest < ActiveSupport::TestCase
     assert_equal [ { slug: "abcd1234", file: "assets/member/x.md", sha256: nil } ], loaded[:assets]
   end
 
-  test "asset_path puts archived under archived/<slug>/" do
-    assert_equal "assets/member/notes/x.md",
+  test "asset_path puts every asset under its slug" do
+    assert_equal "assets/abcd1234/member/notes/x.md",
                  Bundles::Format.asset_path(dir: "member/notes", name: "x.md", slug: "abcd1234", archived: false)
     assert_equal "archived/abcd1234/member/notes/x.md",
                  Bundles::Format.asset_path(dir: "member/notes", name: "x.md", slug: "abcd1234", archived: true)

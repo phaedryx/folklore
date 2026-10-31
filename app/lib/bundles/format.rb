@@ -88,8 +88,12 @@ module Bundles
       asset
     end
 
+    # Every asset sits under its slug. Two locations the app keeps apart can
+    # meet on disk: `tad/a` (a file) and `tad/a/b` (inside a directory), or
+    # `A.md` and `a.md` on a case-insensitive filesystem. Slugs are unique and
+    # lowercase, so a slug directory holds exactly one file.
     def asset_path(dir:, name:, slug:, archived:)
-      archived ? File.join(ARCHIVED_DIR, slug, dir, name) : File.join(ASSETS_DIR, dir, name)
+      File.join(archived ? ARCHIVED_DIR : ASSETS_DIR, slug, dir, name)
     end
 
     def versions_path(slug)
