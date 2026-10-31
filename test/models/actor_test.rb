@@ -30,6 +30,17 @@ class ActorTest < ActiveSupport::TestCase
     end
   end
 
+  test "a token that is not shared cannot act as another agent" do
+    error = assert_raises(Actor::InvalidAgentError) { Actor.for_token(tokens(:other_default), agent: "ping") }
+
+    assert_match(/not shared/, error.message)
+  end
+
+  test "a token that is not shared may name its own agent" do
+    assert_equal "default", Actor.for_token(tokens(:other_default), agent: "default").agent
+    assert_equal "default", Actor.for_token(tokens(:other_default), agent: " default ").agent
+  end
+
   test "an MCP agent cannot pose as the web actor" do
     assert_raises(Actor::InvalidAgentError) { Actor.for_token(tokens(:member_default), agent: "web") }
   end

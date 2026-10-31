@@ -4,8 +4,8 @@ module FolkloreMcp
       class Fail < FolkloreMcp::Tool
         tool_name "fail_task"
         description "Mark a task you hold failed, with a required reason; the reason is kept on the " \
-                    "task and in the activity log. Only the (you, agent) that claimed it can fail it; " \
-                    "pass the same agent you claimed with. Anyone else gets Wrong claimer."
+                    "task and in the activity log. Only the (you, token, agent) that claimed it can fail " \
+                    "it; use the same token and agent you claimed with. Anyone else gets Wrong claimer."
         annotations idempotent: true
 
         input_schema do

@@ -1,5 +1,7 @@
 module Tasks
-  # Claims a task for the actor's (user, agent) under a lease.
+  # Claims a task for the actor's (user, token, agent) under a lease. The
+  # token is part of the claim: another token acting as the same agent label
+  # is a different claimer.
   #
   # By slug, the task is claimable when it is pending, when its lease has
   # expired, or when the actor already holds it (which renews the lease).
@@ -15,10 +17,16 @@ module Tasks
     DEFAULT_LEASE_SECONDS = 1800
     MAX_LEASE_SECONDS = 7 * 24 * 3600
 
+    # The current claimer is the actor. A web actor has no token, so the token
+    # comparison treats two NULLs as equal.
+    HOLDER = <<~SQL.squish.freeze
+      prev.claimed_by_user_id = :user_id AND prev.claimed_by_agent = :agent
+      AND prev.claimed_by_token_id IS NOT DISTINCT FROM :token_id
+    SQL
+
     ELIGIBLE = <<~SQL.squish.freeze
       prev.status = 'pending'
-      OR (prev.status = 'in_progress' AND (prev.lease_until < :now
-          OR (prev.claimed_by_user_id = :user_id AND prev.claimed_by_agent = :agent)))
+      OR (prev.status = 'in_progress' AND (prev.lease_until < :now OR (#{HOLDER})))
     SQL
 
     def self.mutate(actor:, slug: nil, path_prefix: nil, tags: [], lease_seconds: DEFAULT_LEASE_SECONDS)
@@ -39,7 +47,10 @@ module Tasks
 
       ActiveRecord::Base.transaction do
         prev = @slug ? claim_by_slug(now) : claim_next(now)
-        asset = Asset.find(prev.asset_id)
+        # A delete that committed while this waited on the row lock released the
+        # task to pending, and the claim saw that row; the asset is gone, so
+        # undo the claim rather than hold an archived task.
+        asset = Asset.live.find_by(id: prev.asset_id) or raise_deleted
         record_events(asset, prev)
         asset.reload
       end
@@ -77,7 +88,8 @@ module Tasks
     # Runs the claiming UPDATE over the (at most one) row `target` locks and
     # returns that row's previous state, or nil when it was not claimable.
     def claim(target, now)
-      locked = target.select("tasks.asset_id, tasks.status, tasks.claimed_by_user_id, tasks.claimed_by_agent, tasks.lease_until")
+      locked = target.select("tasks.asset_id, tasks.status, tasks.claimed_by_user_id, tasks.claimed_by_token_id, " \
+                             "tasks.claimed_by_agent, tasks.lease_until")
       sql = <<~SQL
         WITH prev AS (#{locked.to_sql})
         UPDATE tasks
@@ -86,14 +98,13 @@ module Tasks
                claimed_by_token_id = :token_id,
                claimed_by_agent = :agent,
                lease_until = :lease_until,
-               attempts = tasks.attempts + CASE
-                 WHEN prev.status = 'in_progress' AND prev.claimed_by_user_id = :user_id AND prev.claimed_by_agent = :agent
-                 THEN 0 ELSE 1 END,
+               attempts = tasks.attempts + CASE WHEN prev.status = 'in_progress' AND #{HOLDER} THEN 0 ELSE 1 END,
                updated_at = :now
           FROM prev
          WHERE tasks.asset_id = prev.asset_id AND (#{ELIGIBLE})
         RETURNING prev.asset_id, prev.status AS prev_status, prev.claimed_by_user_id AS prev_user_id,
-                  prev.claimed_by_agent AS prev_agent, prev.lease_until AS prev_lease_until
+                  prev.claimed_by_token_id AS prev_token_id, prev.claimed_by_agent AS prev_agent,
+                  prev.lease_until AS prev_lease_until
       SQL
       Task.find_by_sql([ sql, { user_id: @actor.user.id, token_id: @actor.token&.id, agent: @actor.agent,
                                 lease_until: now + @lease_seconds, now: } ]).first
@@ -101,7 +112,8 @@ module Tasks
 
     def record_events(asset, prev)
       held_before = prev.prev_status == "in_progress"
-      renewal = held_before && prev.prev_user_id == @actor.user.id && prev.prev_agent == @actor.agent
+      renewal = held_before && prev.prev_user_id == @actor.user.id && prev.prev_agent == @actor.agent &&
+                prev.prev_token_id == @actor.token&.id
       metadata = { "lease_until" => asset.task.reload.lease_until.iso8601 }
 
       if renewal
@@ -119,11 +131,17 @@ module Tasks
       Events::Record.mutate(actor: @actor, asset:, action: "task_claimed", metadata:)
     end
 
+    def raise_deleted
+      raise Assets::NotFoundError, @slug if @slug
+
+      raise NoPendingTaskError, "nothing to claim under #{@path_prefix}"
+    end
+
     def unavailable(asset)
       task = Task.find(asset.id)
       return "#{@slug} is #{task.status}" unless task.status == "in_progress"
 
-      "#{@slug} is claimed by #{Tasks.label(task.claimed_by_user_id, task.claimed_by_agent)} until #{task.lease_until.iso8601}"
+      "#{@slug} is claimed by #{Tasks.holder(task, @actor)} until #{task.lease_until.iso8601}"
     end
   end
 end

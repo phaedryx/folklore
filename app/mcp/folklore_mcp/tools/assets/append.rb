@@ -9,6 +9,7 @@ module FolkloreMcp
         input_schema do
           required(:slug).filled(:string)
           required(:text).filled(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -16,8 +17,8 @@ module FolkloreMcp
           required(:version).filled(:integer)
         end
 
-        def invoke(slug:, text:, server_context:)
-          actor = actor_from(server_context)
+        def invoke(slug:, text:, server_context:, agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Assets::Append.mutate(actor:, slug:, text:)
 
           text_response("Appended to #{asset.slug}", data: { slug: asset.slug, version: asset.lock_version })

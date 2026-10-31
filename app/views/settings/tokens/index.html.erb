@@ -10,7 +10,8 @@
 
 <p class="mb-4 max-w-3xl text-sm text-surface-700">
   Each token lets one agent reach this server through MCP or the JSON API as you, under its agent name.
-  The agent name labels its writes, its checkpoint and its task claims. A token is shown once, when it is issued:
+  The agent name labels its writes, its checkpoint and its task claims. A shared token is held by several agents, each
+  naming itself with the <code>agent</code> argument. A token is shown once, when it is issued:
   treat it like a password, and revoke any you no longer recognise.
 </p>
 
@@ -30,7 +31,12 @@
       <tbody>
         <% @tokens.each do |token| %>
           <tr data-testid="token-<%= token.id %>" class="border-b border-surface-100 last:border-0">
-            <td class="px-4 py-2 font-mono"><%= token.agent_name %></td>
+            <td class="px-4 py-2">
+              <span class="font-mono"><%= token.agent_name %></span>
+              <% if token.shared? %>
+                <span data-testid="token-shared" class="ml-1 rounded-full bg-surface-100 px-2 py-0.5 text-xs text-surface-700">shared</span>
+              <% end %>
+            </td>
             <td class="px-4 py-2 font-mono text-surface-700"><%= token.scopes.join(", ") %></td>
             <td class="px-4 py-2 text-surface-700"><%= token.created_at.strftime("%Y-%m-%d %H:%M") %></td>
             <td class="px-4 py-2 text-surface-700"><%= token.last_used_at ? token.last_used_at.strftime("%Y-%m-%d %H:%M") : "never" %></td>

@@ -21,7 +21,7 @@
           class: "inline-flex h-12 cursor-pointer items-center justify-center rounded-thick border-2 border-primary bg-primary px-8 text-base font-bold text-white hover:border-primary-hover hover:bg-primary-hover" %>
   <% end %>
 
-  <% if Rails.env.development? || Rails.env.test? %>
+  <% if Rails.configuration.x.developer_sign_in %>
     <%= form_with url: "/auth/developer/callback", method: :post, data: { turbo: false }, class: "flex flex-col gap-2 border-t border-surface-200 pt-4" do |f| %>
       <%= f.label :email, "Developer sign-in (no password)", for: "developer_email", class: "text-sm" %>
       <div class="flex gap-2">

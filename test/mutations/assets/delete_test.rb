@@ -39,4 +39,39 @@ class Assets::DeleteTest < ActiveSupport::TestCase
     assert_nil @asset.reload.deleted_at
     assert_nil Event.find_by(action: "asset_deleted")
   end
+
+  test "deleting a claimed task releases the claim and says whose it was" do
+    task = Tasks::Add.mutate(actor: @actor, path: "member/inbox", name: "t.md", content: "")
+    Tasks::Claim.mutate(actor: @actor, slug: task.slug)
+
+    Assets::Delete.mutate(actor: actor_for(:member_default, agent: "pong"), slug: task.slug)
+
+    facet = task.task.reload
+    assert_equal "pending", facet.status
+    assert_nil facet.claimed_by_user_id
+    assert_nil facet.claimed_by_token_id
+    assert_nil facet.claimed_by_agent
+    assert_nil facet.lease_until
+    assert_equal({ "released_claim" => "member/ping" }, Event.where(asset_id: task.id, action: "asset_deleted").sole.metadata)
+  end
+
+  test "a restored task is claimable again, by anyone" do
+    task = Tasks::Add.mutate(actor: @actor, path: "member/inbox", name: "t.md", content: "")
+    Tasks::Claim.mutate(actor: @actor, slug: task.slug)
+    Assets::Delete.mutate(actor: @actor, slug: task.slug)
+    Assets::Restore.mutate(actor: @actor, slug: task.slug)
+
+    claimed = Tasks::Claim.mutate(actor: actor_for(:member_default, agent: "pong"), slug: task.slug)
+
+    assert_equal "pong", claimed.task.claimed_by_agent
+  end
+
+  test "deleting a task nobody holds leaves it as it was" do
+    task = Tasks::Add.mutate(actor: @actor, path: "member/inbox", name: "t.md", content: "")
+
+    Assets::Delete.mutate(actor: @actor, slug: task.slug)
+
+    assert_equal "pending", task.task.reload.status
+    assert_equal({}, Event.where(asset_id: task.id, action: "asset_deleted").sole.metadata)
+  end
 end

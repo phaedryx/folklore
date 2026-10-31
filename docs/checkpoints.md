@@ -11,19 +11,30 @@ update_last_session(content: "W3: search tool done; next, wire the log follow-up
 
 ## One per agent
 
-Each agent has its own checkpoint, keyed by (user, agent). It is stored as an ordinary asset at
+Each agent has its own checkpoint, keyed by (user, token, agent). It is stored as an ordinary asset. A token's own
+agent keeps it at
 
 ```
-<handle>/state/<agent>/last_session.md
+<handle>/state/<token>/last_session.md
 ```
 
-The agent is the token's agent name. When several agents share one token, each passes its own `agent` and so keeps
-its own checkpoint:
+where `<token>` is the token's agent name. When several agents share one token, issued as shared, each passes its own
+`agent` and keeps its checkpoint under the token (a token that is not shared refuses any other `agent`; see
+[mcp.md](mcp.md#agent-identity)):
 
 ```
-update_last_session(content: "...", agent: "ping")
+<handle>/state/<token>/<agent>/last_session.md
+```
+
+```
+update_last_session(content: "...", agent: "ping")   # you/state/team/ping/last_session.md, on a shared token named team
 get_last_session(agent: "pong")      # No checkpoint yet for you/pong. Call update_last_session before finishing.
 ```
+
+Because a shared token's agents live under the token's own name, no `agent` it passes can reach another token's
+checkpoint: a shared token named `team` passing `agent: "ci"` gets `you/state/team/ci`, never the `ci` token's
+`you/state/ci`. The key is the token's name, not the token itself, so a token reissued under the same name picks up
+the old one's checkpoints.
 
 "No checkpoint yet" is a separate answer from an empty one, so a fresh agent can tell it has never saved. `update_last_session`
 refuses empty content, so a bad save cannot wipe where the agent left off. Saving the same text again writes nothing
@@ -36,7 +47,7 @@ Because a checkpoint is a plain asset, it gets everything an asset has:
 
 - Every overwrite keeps the previous text as a version. `versions(slug)` lists them; the text of an old one is on its
   **History** page in the web UI.
-- `read_path(location: "you/state/ping/last_session.md")` reads any agent's checkpoint. Every user can read every
+- `read_path(location: "you/state/team/ping/last_session.md")` reads any agent's checkpoint. Every user can read every
   checkpoint, as with any asset.
 - `list(path: "you/state")` shows every agent's checkpoint.
 

@@ -5,7 +5,7 @@ module FolkloreMcp
         tool_name "claim_task"
         description "Claim a task under a lease, as your agent. Pass a slug to claim that task, or " \
                     "omit it and pass path_prefix (and optionally tags) to claim the oldest pending " \
-                    "task there. Atomic: only one claimer wins. A claim belongs to (you, agent): pass " \
+                    "task there. Atomic: only one claimer wins. A claim belongs to (you, token, agent): pass " \
                     "agent when several agents share one token, so they exclude each other. Claiming a " \
                     "task you already hold renews its lease; a task whose lease (lease_seconds, default " \
                     "1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task."

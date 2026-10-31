@@ -12,6 +12,7 @@ module FolkloreMcp
         input_schema do
           required(:slug).filled(:string)
           optional(:stale_after).value(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -20,8 +21,8 @@ module FolkloreMcp
           required(:stale_after).maybe(:string)
         end
 
-        def invoke(slug:, server_context:, **options)
-          actor = actor_from(server_context)
+        def invoke(slug:, server_context:, agent: nil, **options)
+          actor = actor_from(server_context, agent:)
           args = { actor:, slug: }
           args[:stale_after] = options[:stale_after] if options.key?(:stale_after)
           asset = ::Assets::Verify.mutate(**args)

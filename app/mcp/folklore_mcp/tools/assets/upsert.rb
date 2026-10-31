@@ -15,6 +15,7 @@ module FolkloreMcp
           optional(:content).value(:string)
           optional(:content_type).filled(:string)
           optional(:tags).array(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -24,8 +25,8 @@ module FolkloreMcp
           required(:created).filled(:bool)
         end
 
-        def invoke(path:, name:, server_context:, content: nil, content_type: nil, tags: nil)
-          actor = actor_from(server_context)
+        def invoke(path:, name:, server_context:, content: nil, content_type: nil, tags: nil, agent: nil)
+          actor = actor_from(server_context, agent:)
           result = ::Assets::Upsert.mutate(actor:, path:, name:, content:, content_type:, tags:)
           asset = result.asset
 

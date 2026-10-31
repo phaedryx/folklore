@@ -254,7 +254,34 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     refute empty.to_h[:isError]
     assert_equal "No pending tasks under member/nothing-here", text_of(empty)
     assert_equal "No done tasks under member/inbox", text_of(Tools::Pending.call(path_prefix: "member/inbox", status: "done", server_context: ctx))
-    assert_equal({ tasks: [] }, structured(empty))
+    assert_equal({ tasks: [], truncated: false }, structured(empty))
+  end
+
+  test "get_pending_tasks returns at most 100 tasks unless told otherwise, and pages with offset" do
+    101.times { |i| add(format("t%03d.md", i)) }
+
+    response = Tools::Pending.call(path_prefix: "member/inbox", server_context: ctx)
+    first = structured(response)[:tasks]
+    assert_equal 100, first.size
+    assert_equal "t000.md", first.first[:name]
+    assert structured(response)[:truncated]
+    assert_match(/\n\(100 shown; pass offset: 100 for more\)\z/, text_of(response))
+
+    response = Tools::Pending.call(path_prefix: "member/inbox", offset: 100, server_context: ctx)
+    assert_equal %w[t100.md], structured(response)[:tasks].map { |row| row[:name] }
+    refute structured(response)[:truncated]
+    refute_match(/for more/, text_of(response))
+
+    two = structured(Tools::Pending.call(path_prefix: "member/inbox", limit: 2, offset: 1, server_context: ctx))[:tasks]
+    assert_equal %w[t001.md t002.md], two.map { |row| row[:name] }
+  end
+
+  test "get_pending_tasks refuses a limit above the maximum or below one" do
+    [ 0, ::Tasks::List::MAX_LIMIT + 1 ].each do |limit|
+      response = Tools::Pending.call(path_prefix: "member/inbox", limit:, server_context: ctx)
+
+      assert_match(/\AInvalid: limit must be between 1 and 500/, text_of(response), limit)
+    end
   end
 
   test "get_pending_tasks refuses an unknown status" do

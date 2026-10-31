@@ -1,7 +1,8 @@
 module Events
   # The one-line detail of an event's metadata, shared by the activity page
   # and the `activity` tool: a lease renewal reads as one, an expired lease
-  # names the claimer who lost it, and a cleared value says so.
+  # names the claimer who lost it, as does a deleted task's released claim,
+  # and a cleared value says so.
   module Detail
     LABELS = {
       "tag" => "tag", "note" => "note", "reason" => "reason",
@@ -15,6 +16,8 @@ module Events
         [ ("renewal" if metadata["renewal"]), lease("lease until", metadata["lease_until"]) ]
       when "task_lease_expired"
         [ "#{metadata['claimed_by']}'s lease ended #{metadata['lease_until']}" ]
+      when "asset_deleted"
+        [ ("released #{metadata['released_claim']}'s claim" if metadata["released_claim"]) ]
       when "version_restored"
         [ "from version #{metadata['restored_from_version_id']}" ]
       else

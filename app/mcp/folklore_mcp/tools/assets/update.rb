@@ -18,6 +18,7 @@ module FolkloreMcp
           optional(:content_type).filled(:string)
           optional(:tags).array(:string)
           optional(:expected_version).filled(:integer)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -26,8 +27,8 @@ module FolkloreMcp
           required(:version).filled(:integer)
         end
 
-        def invoke(slug:, server_context:, content: nil, name: nil, content_type: nil, tags: nil, expected_version: nil)
-          actor = actor_from(server_context)
+        def invoke(slug:, server_context:, content: nil, name: nil, content_type: nil, tags: nil, expected_version: nil, agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Assets::Update.mutate(actor:, slug:, content:, name:, content_type:, tags:, expected_version:)
 
           text_response("Updated #{asset.slug}",

@@ -8,19 +8,19 @@ any other asset. The lifecycle lives in a separate tasks row, so claiming a task
 
 | Tool | Arguments | Does |
 |---|---|---|
-| `add_task` | `path`, `name`, `content`, `content_type`, `tags` | Creates a pending task in your workspace |
+| `add_task` | `path`, `name`, `content`, `content_type`, `tags`, `agent` | Creates a pending task in your workspace |
 | `claim_task` | `slug` or `path_prefix` (+ `tags`), `lease_seconds`, `agent` | Takes a task under a lease |
 | `complete_task` | `slug`, `note`, `agent` | Marks a task you hold done, with an optional outcome note |
 | `fail_task` | `slug`, `reason`, `agent` | Marks a task you hold failed, with a required reason |
-| `get_pending_tasks` | `path_prefix`, `status`, `tags` | Lists tasks under a directory, oldest first |
+| `get_pending_tasks` | `path_prefix`, `status`, `tags`, `limit`, `offset` | Lists tasks under a directory, oldest first: 100 unless you pass `limit` (at most 500) |
 
 ## Claims are leased
 
-A claim belongs to (user, agent) and lasts `lease_seconds`: 1800 (30 minutes) by default, from 1 up to 604800
+A claim belongs to (user, token, agent) and lasts `lease_seconds`: 1800 (30 minutes) by default, from 1 up to 604800
 (a week). The claim is a single conditional update, so when two agents race for one task exactly one wins. The other
 gets `Already claimed: <slug> is claimed by handle/agent until ...`.
 
-- **Renewing.** To keep a task past its lease, claim it again with the same agent. That sets a new lease and records a
+- **Renewing.** To keep a task past its lease, claim it again with the same token and agent. That sets a new lease and records a
   `task_claimed` event marked as a renewal. It does not count as a new attempt.
 - **Expiry.** Once a lease runs out, anyone may claim the task. The takeover records `task_lease_expired`, naming the
   previous claimer, beside the new `task_claimed`. `attempts` counts claims by a new claimer, the first claim included;
@@ -37,10 +37,16 @@ whose lease has expired. Concurrent callers skip rows another caller has locked,
 
 ## Finish with the same agent
 
-`complete_task` and `fail_task` work only for the (user, agent) that holds the claim. If several agents share one
-token, pass the same `agent` you claimed with. Anyone else gets `Wrong claimer: ...`. Finishing clears the claimer and
+`complete_task` and `fail_task` work only for the (user, token, agent) that holds the claim. If several agents share one
+token, pass the same `agent` you claimed with. Anyone else gets `Wrong claimer: ...`, including another token passing
+the holder's `agent`: the label alone does not make you the holder. Finishing clears the claimer and
 the lease. The note or reason is kept on the task (`outcome_note`) and in the event, and the event records who
 finished it. Repeating the same finish call does nothing.
+
+## Deleting a task
+
+Deleting (archiving) a task you or anyone else holds releases the claim: the task goes back to `pending`, and the
+`asset_deleted` event names the claim it released. Restoring it brings it back unclaimed.
 
 ## Resuming after a crash
 
@@ -52,10 +58,16 @@ get_pending_tasks(path_prefix: "you/backlog", status: "in_progress")
 ```
 
 The structured content gives each task's `claimed_by` (`handle/agent`), `lease_until` and `attempts`. Re-claim your own
-to renew the lease and carry on. `status` also accepts `done`, `failed`, `all` and the reserved `cancelled`. An unknown status is
+to renew the lease and carry on. The listing returns 100 tasks unless you pass `limit` (1 to 500). When more
+remain, `truncated` is true and the text ends with the `offset` to pass for the next page.
+
+A claim is bound to the token that made it. If your token was revoked and you were issued a new one, you cannot renew
+or finish what the old token held: wait for its lease to run out, then claim it again. `status` also accepts `done`, `failed`, `all` and the reserved `cancelled`. An unknown status is
 `Invalid`, not an empty list.
 
 ## Example
+
+`ping` and `pong` share one token issued as shared (see [mcp.md](mcp.md#agent-identity)):
 
 ```
 add_task(path: "you/backlog", name: "fix-login.md", content: "Login 500s when the email has a plus sign")

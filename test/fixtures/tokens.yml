@@ -1,8 +1,11 @@
 # Plaintexts (never stored): member_default is flk_test_member, other_default is flk_test_other,
 # member_readonly is flk_test_member_readonly, member_writeonly flk_test_member_writeonly.
+# member_default is shared, so tests can act as several agents (ping, pong) on one token;
+# every other token is not.
 member_default:
   user: member
   agent_name: default
+  shared: true
   token_digest: <%= Digest::SHA256.hexdigest("flk_test_member") %>
 
 member_revoked:

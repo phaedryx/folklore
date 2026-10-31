@@ -1,6 +1,6 @@
 # Who is acting: the user, the token they presented (nil for web sessions),
-# and the agent label. The agent defaults to the token's name and may be
-# overridden per call, but never names a different user.
+# and the agent label. The agent defaults to the token's name. A shared token
+# may override it per call; the override never names a different user.
 class Actor < Data.define(:user, :token, :agent)
   InvalidAgentError = Class.new(StandardError)
 
@@ -10,7 +10,13 @@ class Actor < Data.define(:user, :token, :agent)
   AGENT_REGEX = /\A[a-z0-9][a-z0-9_-]{0,63}\z/
 
   def self.for_token(token, agent: nil)
-    new(user: token.user, token:, agent: validate_agent!(agent.to_s.strip.presence || token.agent_name))
+    agent = validate_agent!(agent.to_s.strip.presence || token.agent_name)
+    if agent != token.agent_name && !token.shared?
+      raise InvalidAgentError, "token #{token.agent_name.inspect} is not shared, so it acts only as #{token.agent_name.inspect}; " \
+                               "issue a shared token to pass agent"
+    end
+
+    new(user: token.user, token:, agent:)
   end
 
   def self.validate_agent!(agent)

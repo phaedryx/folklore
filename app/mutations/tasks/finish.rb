@@ -1,9 +1,9 @@
 module Tasks
-  # The shared shape of complete and fail: only the (user, agent) holding the
-  # claim may finish a task, and finishing clears the claimer and lease. Once
-  # finished, the finisher is recorded only by the finishing event, so a
-  # repeat call by the same (user, agent) is answered from that event and is
-  # a no-op.
+  # The shared shape of complete and fail: only the (user, token, agent)
+  # holding the claim may finish a task, and finishing clears the claimer and
+  # lease. Once finished, the finisher is recorded only by the finishing
+  # event, so a repeat call by the same (user, token, agent) is answered from
+  # that event and is a no-op.
   class Finish
     def self.mutate(actor:, slug:, status:, action:, note:, metadata:)
       new(actor:, slug:, status:, action:, note:, metadata:).mutate
@@ -35,21 +35,23 @@ module Tasks
     private
 
     def holder?(task)
-      task.status == "in_progress" && task.claimed_by_user_id == @actor.user.id && task.claimed_by_agent == @actor.agent
+      task.status == "in_progress" && task.claimed_by_user_id == @actor.user.id &&
+        task.claimed_by_token_id == @actor.token&.id && task.claimed_by_agent == @actor.agent
     end
 
     def finisher?(asset, task)
       return false unless task.status == @status
 
       event = Event.where(asset_id: asset.id, action: @action).order(:id).last
-      event.present? && event.actor_user_id == @actor.user.id && event.actor_agent == @actor.agent
+      event.present? && event.actor_user_id == @actor.user.id && event.actor_token_id == @actor.token&.id &&
+        event.actor_agent == @actor.agent
     end
 
     def refusal(task)
       you = @actor.label
       case task.status
       when "pending" then "#{@slug} is not claimed; claim it before finishing it"
-      when "in_progress" then "#{@slug} is claimed by #{Tasks.label(task.claimed_by_user_id, task.claimed_by_agent)}, not #{you}"
+      when "in_progress" then "#{@slug} is claimed by #{Tasks.holder(task, @actor)}, not #{you}"
       else "#{@slug} is #{task.status} and #{you} did not finish it"
       end
     end

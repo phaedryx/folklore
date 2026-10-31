@@ -8,7 +8,8 @@ Rails.application.routes.draw do
   get    "/sign_in"                 => "sessions#new",      as: :sign_in
   post   "/sign_in"                 => "sessions#create"
   delete "/sign_out"                => "sessions#destroy",  as: :sign_out
-  match  "/auth/:provider/callback" => "sessions#callback", as: :auth_callback, via: %i[get post]
+  # POST only: a GET callback could be fired by any page the browser visits (login CSRF).
+  post   "/auth/:provider/callback" => "sessions#callback", as: :auth_callback
   get    "/auth/failure"            => "sessions#failure"
 
   namespace :api, defaults: { format: :json } do

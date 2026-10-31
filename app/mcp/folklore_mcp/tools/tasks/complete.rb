@@ -3,9 +3,9 @@ module FolkloreMcp
     module Tasks
       class Complete < FolkloreMcp::Tool
         tool_name "complete_task"
-        description "Mark a task you hold done, with an optional outcome note. Only the (you, agent) " \
-                    "that claimed it can complete it; pass the same agent you claimed with. Anyone " \
-                    "else gets Wrong claimer."
+        description "Mark a task you hold done, with an optional outcome note. Only the (you, token, agent) " \
+                    "that claimed it can complete it; use the same token and agent you claimed with. " \
+                    "Anyone else gets Wrong claimer."
         annotations idempotent: true
 
         input_schema do

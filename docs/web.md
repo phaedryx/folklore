@@ -5,8 +5,9 @@ tokens. It reads and writes through the same queries and mutations as MCP, so it
 
 ## Signing in
 
-In single-user mode, sign in at `/sign_in` with the email and password from `bin/setup`. In development and test there
-is also a developer sign-in, for existing users only.
+In single-user mode, sign in at `/sign_in` with the email and password from `bin/setup`. With
+`FOLKLORE_DEVELOPER_SIGN_IN=1` (see [configuration.md](configuration.md)) there is also a developer sign-in that takes
+an existing user's email and no password. It is off by default and never on in production.
 
 **A web session acts as the agent `web`.** Your edits, verifications, archives and restores are recorded as
 `handle/web`. Tasks are read-only in the browser: claiming and finishing them is done over MCP. A web session has no token, so it is not scope-checked.

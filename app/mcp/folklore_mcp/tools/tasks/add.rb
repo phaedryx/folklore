@@ -13,6 +13,7 @@ module FolkloreMcp
           optional(:content).value(:string)
           optional(:content_type).filled(:string)
           optional(:tags).array(:string)
+          optional(:agent).filled(:string)
         end
 
         output_schema do
@@ -21,8 +22,8 @@ module FolkloreMcp
           required(:status).filled(:string)
         end
 
-        def invoke(path:, name:, server_context:, content: nil, content_type: nil, tags: [])
-          actor = actor_from(server_context)
+        def invoke(path:, name:, server_context:, content: nil, content_type: nil, tags: [], agent: nil)
+          actor = actor_from(server_context, agent:)
           asset = ::Tasks::Add.mutate(actor:, path:, name:, content:, content_type:, tags:)
 
           text_response("Added task #{asset.slug} at #{asset.location}",

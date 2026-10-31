@@ -40,4 +40,12 @@ module Tasks
   def self.label(user_id, agent)
     Actor.label(User.where(id: user_id).pick(:handle), agent)
   end
+
+  # The claimer's label, for a refusal to `actor`. The token is part of the
+  # claim, so the holder may carry the caller's own label; then the token is
+  # what differs, and the refusal says so.
+  def self.holder(task, actor)
+    held_by = label(task.claimed_by_user_id, task.claimed_by_agent)
+    held_by == actor.label && task.claimed_by_token_id != actor.token&.id ? "#{held_by} on another token" : held_by
+  end
 end

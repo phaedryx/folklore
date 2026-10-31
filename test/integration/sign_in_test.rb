@@ -74,6 +74,38 @@ class SignInTest < ActionDispatch::IntegrationTest
     refute User.exists?(email: "ghost@example.com")
   end
 
+  # A GET could be triggered by any page the browser visits (login CSRF).
+  test "the auth callback refuses GET" do
+    developer_auth "member@example.com"
+
+    get "/auth/developer/callback"
+
+    # No callback answers a GET; the workspace browse catch-all sends a
+    # signed-out visitor to sign in.
+    assert_redirected_to sign_in_path
+    get "/"
+    assert_redirected_to sign_in_path
+  end
+
+  test "the sign-in page offers the developer sign-in only when it is enabled" do
+    get sign_in_path
+    assert_select "form[action='/auth/developer/callback']"
+
+    with_developer_sign_in(false) { get sign_in_path }
+    assert_select "form[action='/auth/developer/callback']", false
+  end
+
+  test "the developer callback signs nobody in when developer sign-in is off" do
+    developer_auth "member@example.com"
+
+    with_developer_sign_in(false) { post "/auth/developer/callback" }
+
+    assert_redirected_to sign_in_path
+    assert_match(/Developer sign-in is off/, flash[:alert])
+    get "/"
+    assert_redirected_to sign_in_path
+  end
+
   test "auth failure redirects to sign in with the reason" do
     get "/auth/failure", params: { message: "invalid_credentials" }
 
@@ -105,6 +137,14 @@ class SignInTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def with_developer_sign_in(enabled)
+    was = Rails.configuration.x.developer_sign_in
+    Rails.configuration.x.developer_sign_in = enabled
+    yield
+  ensure
+    Rails.configuration.x.developer_sign_in = was
+  end
 
   def developer_auth(email)
     OmniAuth.config.mock_auth[:developer] = OmniAuth::AuthHash.new(

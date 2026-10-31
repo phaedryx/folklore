@@ -35,7 +35,7 @@ class Asset < ApplicationRecord
   SLUG_CHARS = "0123456789abcdefghjkmnpqrstvwxyz".freeze
   NOTE_STATUSES = %w[open done].freeze
   # Second path segments the app owns: `<handle>/archive` is the web archive
-  # page, `<handle>/state/<agent>` holds checkpoints.
+  # page, `<handle>/state/...` holds checkpoints (see Checkpoint.dir_for).
   RESERVED_SEGMENTS = %w[archive state].freeze
   # Directory segments appear in URLs and on disk when exported, so they are
   # limited to characters that need no escaping anywhere.

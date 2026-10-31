@@ -21,9 +21,10 @@ module FolkloreMcp
     `stale: true` to find assets whose review date has passed.
 
     You act as the agent named by your token. When several agents share one
-    token, pass your own `agent` to `get_last_session`, `update_last_session`,
-    `claim_task`, `complete_task` and `fail_task`, so each keeps its own
-    checkpoint and task claims. No other tool takes `agent`.
+    token (a token issued as shared), pass your own `agent` to every write
+    tool and to `get_last_session`, so each keeps its own checkpoint, task
+    claims and authorship. A token that is not shared refuses an `agent`
+    other than its own.
   TEXT
 
   def self.tool_classes
