@@ -1,9 +1,19 @@
 module Api
   class AssetsController < BaseController
+    # A page of the index, unless the request asks for another size; a size
+    # outside 1..MAX_LIMIT is clamped to it rather than refused.
+    DEFAULT_LIMIT = 100
+    MAX_LIMIT = 500
+
+    # `next_offset` is where the next page starts, or nil on the last one.
     def index
-      assets = ::Assets::List.query(path: params.require(:path), tags: Array(params[:tags]), actor: current_actor)
-                             .preload(Assets::Serializer::PRELOADS)
-      render_success({ assets: assets.map { |asset| Assets::Serializer.call(asset) } })
+      limit = (params[:limit].presence || DEFAULT_LIMIT).to_i.clamp(1, MAX_LIMIT)
+      offset = [ params[:offset].to_i, 0 ].max
+      assets = ::Assets::List.query(path: params.require(:path), tags: Array(params[:tags]), limit: limit + 1, offset:,
+                                    actor: current_actor)
+                             .preload(Assets::Serializer::PRELOADS).to_a
+      next_offset = offset + limit if assets.size > limit
+      render_success({ assets: assets.first(limit).map { |asset| Assets::Serializer.call(asset) }, next_offset: })
     end
 
     def show

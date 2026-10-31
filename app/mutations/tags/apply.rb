@@ -22,8 +22,7 @@ module Tags
         asset = Tags.writable!(@slug, @actor)
         raise AlreadyAppliedError, "tag #{@name} is already on #{@slug}" if asset.tags.exists?(name: @name)
 
-        AssetTag.create!(asset:, tag: Tag.find_or_insert!(@name))
-        Events::Record.mutate(actor: @actor, asset:, action: "tag_added", metadata: { "tag" => @name })
+        Tags::Change.mutate(actor: @actor, asset:, add: [ @name ])
         Tags.touch!(asset, @actor)
       end
     end

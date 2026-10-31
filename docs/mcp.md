@@ -163,11 +163,14 @@ The same tokens authenticate `/api/assets`. Responses are `{"status": "success" 
 
 | Request | Does |
 |---|---|
-| `GET /api/assets?path=you/notes&tags[]=x` | List a subtree |
+| `GET /api/assets?path=you/notes&tags[]=x&limit=100&offset=0` | List a subtree, a page at a time |
 | `GET /api/assets/:slug` | Read one |
 | `POST /api/assets` with `{"asset": {"path", "name", "content", "content_type", "tags"}}` | Create |
 | `PATCH /api/assets/:slug` with `{"asset": {"content", "name", "content_type", "tags", "expected_version"}}` | Update |
 | `DELETE /api/assets/:slug` | Archive |
+
+The list returns at most `limit` assets (default 100; a value outside 1 to 500 is clamped to that range) and
+`next_offset`, the `offset` of the next page, or `null` on the last one.
 
 A failure is `{"status": "fail", "data": {"code": ..., "message": ...}}`, and an error about one input also carries
 `{"<field>": ["<message>"]}`. Status codes: 401 for no token or a bad or revoked one, 403 for not your workspace or a

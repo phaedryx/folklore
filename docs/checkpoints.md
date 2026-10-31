@@ -46,7 +46,9 @@ have no checkpoint.
 Because a checkpoint is a plain asset, it gets everything an asset has:
 
 - Every overwrite keeps the previous text as a version. `versions(slug)` lists them; the text of an old one is on its
-  **History** page in the web UI.
+  **History** page in the web UI. A checkpoint keeps its 20 newest versions: each `update_last_session` deletes any
+  older ones (an edit by slug through `update`, `append` or the web UI does not prune). Set
+  `FOLKLORE_CHECKPOINT_VERSIONS` to keep a different number (see [configuration.md](configuration.md)).
 - `read_path(location: "you/state/team/ping/last_session.md")` reads any agent's checkpoint. Every user can read every
   checkpoint, as with any asset.
 - `list(path: "you/state")` shows every agent's checkpoint.
@@ -58,3 +60,14 @@ those paths do not apply the empty-content check.
 
 Checkpoints match search queries, and one that quotes the queries can crowd out the real answers. Tag it
 `eval-excluded` to leave it out of a search evaluation (see [search.md](search.md)).
+
+## Version retention
+
+Only `update_last_session` prunes on write. Every other asset keeps all its versions until you prune them yourself:
+
+```
+bin/rails "folklore:prune_versions[50]"     # keep each asset's 50 newest versions, delete the rest
+```
+
+Newest means latest `created_at`, as the History page orders them. Pruning deletes rows outright; a bundle exported
+afterwards no longer has them. Nothing runs this on a schedule. Run it from cron if you want one.

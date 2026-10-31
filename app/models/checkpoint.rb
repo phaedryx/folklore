@@ -8,6 +8,9 @@ module Checkpoint
 
   SEGMENT = "state".freeze
   NAME = "last_session.md".freeze
+  # Every save keeps the text it replaced as a version; a write prunes the
+  # checkpoint's history to this many, newest first.
+  DEFAULT_VERSIONS_KEPT = 20
 
   # The directory of the actor's checkpoint. A token's own agent keeps it at
   # "member/state/ci". An agent a shared token names with `agent` keeps it
@@ -22,5 +25,11 @@ module Checkpoint
     return "#{handle}/#{SEGMENT}/#{actor.agent}" if token_name.nil? || token_name == actor.agent
 
     "#{handle}/#{SEGMENT}/#{token_name}/#{actor.agent}"
+  end
+
+  # FOLKLORE_CHECKPOINT_VERSIONS when set, read on each write so a change
+  # needs no restart.
+  def self.versions_kept
+    ENV.fetch("FOLKLORE_CHECKPOINT_VERSIONS", DEFAULT_VERSIONS_KEPT)
   end
 end

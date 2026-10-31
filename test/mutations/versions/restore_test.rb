@@ -14,7 +14,6 @@ class Versions::RestoreTest < ActiveSupport::TestCase
 
     @asset.reload
     assert_equal "v1", @asset.content
-    assert_equal Digest::SHA256.hexdigest("v1"), @asset.content_sha256
     assert_equal %w[v1 v2 v3], @asset.versions.order(:created_at).map(&:content)
     assert_equal "ping", @asset.updated_by_agent
   end

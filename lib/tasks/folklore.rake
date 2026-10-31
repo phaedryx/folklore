@@ -116,3 +116,15 @@ namespace :folklore do
     puts "Deleted #{deleted} search #{'log'.pluralize(deleted)} older than #{days} days"
   end
 end
+
+namespace :folklore do
+  desc "Delete all but each asset's KEEP newest versions; see docs/checkpoints.md"
+  task :prune_versions, [ :keep ] => :environment do |_t, args|
+    abort "usage: bin/rails \"folklore:prune_versions[KEEP]\"" if args[:keep].blank?
+
+    deleted = Versions::Prune.mutate(keep: args[:keep])
+    puts "Deleted #{deleted} versions, keeping the newest #{args[:keep]} of each asset"
+  rescue Versions::InvalidKeepError => e
+    abort "folklore:prune_versions: #{e.message}"
+  end
+end

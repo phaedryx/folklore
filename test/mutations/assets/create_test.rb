@@ -13,7 +13,6 @@ class Assets::CreateTest < ActiveSupport::TestCase
     assert_equal "jokes.sh", asset.name
     assert_equal "member/dad-jokes/jokes.sh", asset.location
     assert_equal users(:member), asset.owner
-    assert_equal Digest::SHA256.hexdigest("echo hello"), asset.content_sha256
     assert_nil asset.deleted_at
   end
 

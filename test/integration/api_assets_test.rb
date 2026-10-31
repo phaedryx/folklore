@@ -75,6 +75,49 @@ class ApiAssetsTest < ActionDispatch::IntegrationTest
     assert_equal [], body.dig("data", "assets")
   end
 
+  test "index pages with limit and offset, and says where the next page starts" do
+    %w[a b c].each { |n| create("#{n}.md") }
+
+    get "/api/assets", params: { path: "member/notes", limit: 2 }, headers: headers
+    assert_equal %w[a.md b.md], body.dig("data", "assets").map { |a| a["name"] }
+    assert_equal 2, body.dig("data", "next_offset")
+
+    get "/api/assets", params: { path: "member/notes", limit: 2, offset: 2 }, headers: headers
+    assert_equal %w[c.md], body.dig("data", "assets").map { |a| a["name"] }
+    assert_nil body.dig("data", "next_offset")
+  end
+
+  test "index caps a page at DEFAULT_LIMIT unless asked, and never returns more than MAX_LIMIT" do
+    stub_const(Api::AssetsController, :DEFAULT_LIMIT, 2) do
+      stub_const(Api::AssetsController, :MAX_LIMIT, 3) do
+        %w[a b c d].each { |n| create("#{n}.md") }
+
+        get "/api/assets", params: { path: "member/notes" }, headers: headers
+        assert_equal 2, body.dig("data", "assets").size
+
+        get "/api/assets", params: { path: "member/notes", limit: 1000 }, headers: headers
+        assert_equal 3, body.dig("data", "assets").size
+        assert_equal 3, body.dig("data", "next_offset")
+
+        get "/api/assets", params: { path: "member/notes", limit: "" }, headers: headers
+        assert_equal 2, body.dig("data", "assets").size
+
+        get "/api/assets", params: { path: "member/notes", limit: 0, offset: -5 }, headers: headers
+        assert_equal %w[a.md], body.dig("data", "assets").map { |a| a["name"] }
+      end
+    end
+  end
+
+  def stub_const(mod, name, value)
+    original = mod.const_get(name)
+    mod.send(:remove_const, name)
+    mod.const_set(name, value)
+    yield
+  ensure
+    mod.send(:remove_const, name)
+    mod.const_set(name, original)
+  end
+
   # Show
 
   test "show returns one asset by slug, 404 for unknown or archived" do

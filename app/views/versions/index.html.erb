@@ -13,14 +13,16 @@
 </header>
 
 <ol data-testid="version-list" class="flex flex-col gap-6">
-  <li data-testid="version-head" class="rounded-card border border-surface-300 bg-white p-4">
-    <div class="mb-2 flex flex-wrap items-baseline gap-2 text-sm">
-      <strong>Current</strong>
-      <time class="text-surface-700" datetime="<%= @asset.updated_at.iso8601 %>"><%= @asset.updated_at.strftime("%Y-%m-%d %H:%M") %></time>
-      <span class="text-surface-700">version <%= @asset.lock_version %></span>
-    </div>
-    <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-surface-50 p-3 font-mono text-xs"><code><%= @asset.content %></code></pre>
-  </li>
+  <% if @page == 1 %>
+    <li data-testid="version-head" class="rounded-card border border-surface-300 bg-white p-4">
+      <div class="mb-2 flex flex-wrap items-baseline gap-2 text-sm">
+        <strong>Current</strong>
+        <time class="text-surface-700" datetime="<%= @asset.updated_at.iso8601 %>"><%= @asset.updated_at.strftime("%Y-%m-%d %H:%M") %></time>
+        <span class="text-surface-700">version <%= @asset.lock_version %></span>
+      </div>
+      <pre class="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-surface-50 p-3 font-mono text-xs"><code><%= @asset.content %></code></pre>
+    </li>
+  <% end %>
 
   <% @versions.each do |version| %>
     <li data-testid="version-<%= version.id %>" class="rounded-card border border-surface-300 bg-white p-4">
@@ -43,6 +45,27 @@
   <% end %>
 </ol>
 
-<% if @versions.empty? %>
+<% if @versions.empty? && @page == 1 %>
   <p data-testid="versions-empty" class="mt-6 text-sm text-surface-700">No earlier versions: this file has not been edited since it was created.</p>
+<% elsif @versions.empty? %>
+  <p data-testid="versions-page-empty" class="mt-6 text-sm text-surface-700">No versions on this page.</p>
+<% end %>
+
+<% if @page > 1 || @more %>
+  <nav class="mt-6 flex items-center justify-between text-sm font-bold">
+    <% if @page > 1 %>
+      <%= link_to asset_url_for(@asset, action: :versions, page: (@page - 1 if @page > 2)), data: { testid: "versions-newer" },
+            class: "inline-flex items-center gap-1 no-underline" do %>
+        <%= heroicon_tag "arrow-up", variant: :outline, class: "h-4 w-4" %><span>Newer</span>
+      <% end %>
+    <% else %>
+      <span></span>
+    <% end %>
+    <% if @more %>
+      <%= link_to asset_url_for(@asset, action: :versions, page: @page + 1), data: { testid: "versions-older" },
+            class: "inline-flex items-center gap-1 no-underline" do %>
+        <span>Older</span><%= heroicon_tag "arrow-down", variant: :outline, class: "h-4 w-4" %>
+      <% end %>
+    <% end %>
+  </nav>
 <% end %>

@@ -1,9 +1,9 @@
 module AssetsHelper
   # The page for an asset, addressed by its current dir and name. The slug
   # is what the route resolves; the rest keeps the URL readable.
-  def asset_url_for(asset, action: :show)
+  def asset_url_for(asset, action: :show, **query)
     handle, location = asset.dir.split("/", 2)
-    args = { handle:, location:, slug: asset.slug, name: asset.name }
+    args = { handle:, location:, slug: asset.slug, name: asset.name, **query }
 
     case action
     when :show then leaf_path(**args)

@@ -31,11 +31,8 @@ module Assets
         check_version!(asset)
 
         content_changed = !@content.nil? && @content != asset.content
-        snapshot(asset) if content_changed
-        if content_changed
-          asset.content = @content
-          asset.content_sha256 = Asset.sha256(@content)
-        end
+        Versions::Snapshot.mutate(actor: @actor, asset:) if content_changed
+        asset.content = @content if content_changed
         asset.content_type = @content_type if @content_type.present?
         asset.name = @name if @name.present?
         tags_changed = @tags.nil? ? false : sync_tags(asset)
@@ -66,17 +63,6 @@ module Assets
       raise ConflictError, "#{asset.slug} is at version #{asset.lock_version}"
     end
 
-    def snapshot(asset)
-      Version.create!(
-        asset:,
-        content: asset.content,
-        content_type: asset.content_type,
-        actor_user: @actor.user,
-        actor_token: @actor.token,
-        actor_agent: @actor.agent
-      )
-    end
-
     # Returns whether the set changed.
     def sync_tags(asset)
       # Sorted, so two writers inserting the same new tags lock them in one order.
@@ -84,16 +70,7 @@ module Assets
       wanted.each { |name| Tag.validate_name!(name) }
       current = asset.tags.pluck(:name)
 
-      (wanted - current).each do |name|
-        AssetTag.create!(asset:, tag: Tag.find_or_insert!(name))
-        Events::Record.mutate(actor: @actor, asset:, action: "tag_added", metadata: { "tag" => name })
-      end
-
-      (current - wanted).each do |name|
-        asset.asset_tags.joins(:tag).find_by!(tags: { name: }).destroy!
-        Events::Record.mutate(actor: @actor, asset:, action: "tag_removed", metadata: { "tag" => name })
-      end
-
+      Tags::Change.mutate(actor: @actor, asset:, add: wanted - current, remove: current - wanted)
       wanted.sort != current.sort
     end
   end

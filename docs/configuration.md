@@ -45,6 +45,12 @@ Postgres must be version 16 or newer and have the `pg_trgm` extension available.
 
 Phase 1 runs in single-user mode only. Team sign-in (OIDC) and a container image are planned.
 
+## Checkpoints
+
+| Variable | Read by | Default | Meaning |
+|---|---|---|---|
+| `FOLKLORE_CHECKPOINT_VERSIONS` | `Checkpoints::Write` | `20` | How many earlier versions of each checkpoint to keep. Each checkpoint save deletes the older ones. `0` keeps none. It is read on every save; a value that is not a whole number of 0 or more makes saves fail. Other assets are not pruned on write: see [checkpoints.md](checkpoints.md#version-retention). |
+
 ## Search
 
 | Variable | Read by | Default | Meaning |

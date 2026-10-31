@@ -84,7 +84,6 @@ CREATE TABLE public.assets (
     name character varying NOT NULL,
     content text,
     content_type character varying,
-    content_sha256 character varying,
     lock_version integer DEFAULT 0 NOT NULL,
     status character varying,
     stale_after date,
@@ -1323,6 +1322,13 @@ CREATE INDEX index_links_on_dst_asset_id_and_kind ON public.links USING btree (d
 
 
 --
+-- Name: index_links_on_dst_ref_and_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_links_on_dst_ref_and_kind ON public.links USING btree (dst_ref, kind);
+
+
+--
 -- Name: index_links_on_src_asset_id_and_dst_ref_and_kind; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1881,6 +1887,8 @@ ALTER TABLE ONLY public.assets
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20261030160002'),
+('20261030160001'),
 ('20261030150101'),
 ('20261030000001'),
 ('20261028000003'),
