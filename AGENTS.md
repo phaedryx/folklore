@@ -9,12 +9,17 @@ into a project, or merge it into your agent instructions, and replace `<handle>`
    before you plan anything. If several agents share one token (it must be issued as shared), pass your own `agent` to
    `get_last_session` and to every tool that writes, so your checkpoint, claims and writes all carry your name. A token
    that is not shared refuses any `agent` but its own.
-2. **If you work from a task queue, resume before you claim.** Call
+2. **Before you plan an approach, each one and not just the first: pull the why-nots for its domain.**
+   `search(q: "<domain>", tags: ["why-not"])`, so a dead path is not proposed again. See
+   [Review them](#review-them-before-the-work-they-could-change).
+3. **If you work from a task queue, resume before you claim.** Call
    `get_pending_tasks(path_prefix: ..., status: "in_progress")` and pick up anything you still hold. A crashed claim
    does not show as pending.
-3. **Before you finish, and at any milestone worth resuming from: `update_last_session`.** Write what is done, what is
-   open, the next step, and anything the next session would otherwise have to work out again. It replaces the previous
-   checkpoint. The old text is kept as a version, readable on the checkpoint's **History** page in the web UI.
+4. **The moment you think you are done, before you report: `update_last_session`.** Also at any milestone worth
+   resuming from. Do it even if the session was short or the work is unfinished: the next session starts from whatever
+   checkpoint is there, stale or not. Write what is done, what is open, the next step, and anything the next session
+   would otherwise have to work out again. It replaces the previous checkpoint. The old text is kept as a version,
+   readable on the checkpoint's **History** page in the web UI.
 
 ## Facts go stale
 
@@ -35,6 +40,9 @@ of these is one asset.
 
 A correction that should not need making twice. Write one at the moment it happens: you acted on a wrong belief
 (wrote code, made a recommendation, stated a fact) and were corrected. Propose the entry before you move on to the fix.
+
+Check the correction against the code before you write it down. A correction given in passing is often imprecise, and
+an entry that restates it word for word records the wrong lesson. Record what the code shows.
 
 Name the file after the lesson, not the incident: `check-what-compels-the-read.md`, not `login-bug-mistake.md`.
 
@@ -100,13 +108,14 @@ Give every entry:
 ### Review them before the work they could change
 
 - **Before planning an approach**, pull the why-nots for its domain, so a dead path is not proposed again:
-  `list(path: "<handle>/why-nots", tags: ["<domain>"])`.
+  `search(q: "<domain>", tags: ["why-not"])`.
 - **Before reviewing or revising a change**, pull the mistakes for the domains it touches, to catch a recurring wrong
-  belief before someone has to correct it again: `list(path: "<handle>/mistakes", tags: ["<domain>"])`.
+  belief before someone has to correct it again: `search(q: "<domain>", tags: ["mistake"])`.
 
-`search` matches content and file names, not tags, so the domain tag is what `list(tags:)` finds. Follow it with
-`search(q: "<domain>", within: "<handle>/why-nots")` to catch an entry whose text names the domain but whose tags
-don't. Do not read the whole directory unfiltered. An entry nobody looks up is as good as no entry.
+Leave out `within`: one call then finds entries whoever wrote them, not only yours. `q` matches content and file
+names, not tags, so this misses an entry tagged with the domain whose text never names it. For your own entries, catch
+those with `list(path: "<handle>/why-nots", tags: ["<domain>"])` (or `mistakes`), which matches the tag and needs no
+query. Do not read the whole directory unfiltered. An entry nobody looks up is as good as no entry.
 
 ### Staleness
 
