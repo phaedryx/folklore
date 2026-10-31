@@ -10,6 +10,16 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
   BLOCK_TIMEOUT = 5
 
   teardown do
+    # A test that failed mid-race leaves its holder waiting for release and
+    # its writers running. Finish them before deleting what they would write.
+    @releases&.each(&:set)
+    waiting do
+      @threads&.each do |thread|
+        thread.join(BLOCK_TIMEOUT)
+      rescue StandardError
+        # Already reported by the test it failed.
+      end
+    end
     Event.delete_all
     AssetTag.delete_all
     Link.delete_all
@@ -30,6 +40,12 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
   # load interlock.
   def waiting(&block)
     ActiveSupport::Dependencies.interlock.permit_concurrent_loads(&block)
+  end
+
+  # The event a holder waits on before committing. Teardown sets it, so a
+  # failed test never leaves a holder open.
+  def release_event
+    Concurrent::Event.new.tap { |event| (@releases ||= []) << event }
   end
 
   def backend_pid
@@ -56,13 +72,13 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
       block.call
     ensure
       ActiveRecord::Base.connection_pool.release_connection
-    end
+    end.tap { |thread| (@threads ||= []) << thread }
   end
 
   test "a second update waits for the first and snapshots what the first wrote" do
     asset = create("one.md", "v0")
     first_written = Concurrent::Event.new
-    release = Concurrent::Event.new
+    release = release_event
     first_pid = nil
 
     first = thread do
@@ -89,7 +105,7 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
   test "an update waiting on a delete does not write into the tombstone" do
     asset = create("doomed.md", "before")
     deleted = Concurrent::Event.new
-    release = Concurrent::Event.new
+    release = release_event
     deleter_pid = nil
     outcome = nil
 
