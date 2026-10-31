@@ -151,7 +151,7 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
       response = Search.call(**args, server_context: actor_context)
 
       assert response.to_h[:isError]
-      assert_equal "Invalid: q is required unless stale is true", text_of(response)
+      assert_equal "Invalid [invalid_argument]: q is required unless stale is true", text_of(response)
     end
   end
 
@@ -194,7 +194,7 @@ class FolkloreMcp::Tools::Search::SearchTest < ActiveSupport::TestCase
     response = Search.call(q: "haystack", limit: -1, server_context: actor_context)
 
     assert response.to_h[:isError]
-    assert_match(/\AInvalid: limit/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: limit/, text_of(response))
   end
 
   test "without include_versions displaced content stays hidden" do

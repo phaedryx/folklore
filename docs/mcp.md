@@ -47,7 +47,7 @@ are each recorded as the author of their own writes. Pass your `agent` on every 
 token's own agent name. Checkpoints are keyed by token as well, so whatever `agent` a shared token passes, it never
 reads or overwrites another token's checkpoint (see [checkpoints.md](checkpoints.md)).
 
-A token that is not shared acts only as its own agent: passing any other `agent` gets `Invalid: token "<name>" is not
+A token that is not shared acts only as its own agent: passing any other `agent` gets `Invalid [invalid_agent]: token "<name>" is not
 shared ...` and changes nothing. Passing its own name is allowed.
 
 **Upgrading.** Tokens issued before the shared flag existed are not shared. If several agents use one of them with
@@ -88,20 +88,22 @@ snippet line under it), so line-oriented scripts keep working.
 annotation hints only where they differ from the spec's defaults. A tool without `destructiveHint` is destructive, one
 without `idempotentHint` is not idempotent, and a read-only tool carries only `readOnlyHint` and `openWorldHint`.
 
-Errors come back with `isError: true` and one of these prefixes, as text only: some clients check any structured
-content against the tool's `outputSchema`, error or not. A `read` of several refs reports each failed ref in place as
-`{ref, error, code}`. [errors.md](errors.md) lists every code, the prefix and HTTP
-status it maps to, and the length limits:
+Errors come back with `isError: true`, as text only: some clients check any structured content against the tool's
+`outputSchema`, error or not. A registered error reads `<prefix> [<code>]: <message>`, such as
+`Not found [not_found]: 00000000`; match on the code. A `read` of several refs reports each failed ref in place as
+`{ref, error, code}`. [errors.md](errors.md) lists every code, the prefix and HTTP status it maps to, and the length
+limits. The prefixes:
 
 | Text | Meaning |
 |---|---|
-| `Not found: ...` | No such live asset (archived assets are not found), or no such version of it |
-| `Forbidden: ...` | Not your workspace, or the token lacks the scope the tool needs |
-| `Conflict: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, or the asset is already archived or not archived |
-| `Invalid: ...` | A bad argument: path, name, tag, date, agent (or any `agent` on a token that is not shared), cursor, a value over its length limit, ... |
-| `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type |
-| `Missing required arguments: ...` | A required argument was left out |
-| `Already claimed: ...`, `Wrong claimer: ...`, `No pending task: ...`, `Not a task: ...` | Task queue outcomes, see [tasks.md](tasks.md) |
+| `Not found [...]: ...` | No such live asset (archived assets are not found), or no such version of it |
+| `Forbidden [forbidden]: ...` | Not your workspace |
+| `Forbidden: token lacks ...` | The token lacks the scope the tool needs (no code) |
+| `Conflict [...]: ...` | `update` got an out-of-date `expected_version` (`<slug> is at version N`), the name is taken, or the asset is already archived or not archived |
+| `Invalid [...]: ...` | A bad argument: path, name, tag, date, agent (or any `agent` on a token that is not shared), cursor, a value over its length limit, ... |
+| `Invalid arguments: ...` | An argument the tool does not take, or one of the wrong type (no code) |
+| `Missing required arguments: ...` | A required argument was left out (no code) |
+| `Already claimed [...]: ...`, `Wrong claimer [...]: ...`, `No pending task [...]: ...`, `Not a task [...]: ...` | Task queue outcomes, see [tasks.md](tasks.md) |
 | `Unauthenticated: ...` | No actor on the request |
 | `Internal error` | Anything unexpected. The details go to the server log, never to the client. |
 

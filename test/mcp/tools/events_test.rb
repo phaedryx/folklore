@@ -65,7 +65,7 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
     response = Activity.call(since: "yesterday-ish", server_context: actor_context)
 
     assert response.to_h[:isError]
-    assert_match(/\AInvalid: since/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: since/, text_of(response))
   end
 
   test "activity accepts a space-separated time, an email actor, and defaults to 50 events" do
@@ -84,6 +84,6 @@ class FolkloreMcp::Tools::EventsTest < ActiveSupport::TestCase
     response = Activity.call(since_id: "abc", server_context: actor_context)
 
     assert response.to_h[:isError]
-    assert_equal "Invalid: since_id must be a non-negative integer, got \"abc\"", text_of(response)
+    assert_equal "Invalid [invalid_cursor]: since_id must be a non-negative integer, got \"abc\"", text_of(response)
   end
 end

@@ -7,7 +7,8 @@ web UI each map an entry in one place. A new error class is not handled by any t
 
 ## How each transport shows an error
 
-**MCP** answers with `isError: true` and the text `<prefix>: <message>`. The prefix follows the status:
+**MCP** answers with `isError: true` and the text `<prefix> [<code>]: <message>`, for example
+`Not found [not_found]: 00000000`. The prefix follows the status:
 
 | Status | Prefix |
 |---|---|
@@ -17,9 +18,11 @@ web UI each map an entry in one place. A new error class is not handled by any t
 | 422 | `Invalid` |
 
 Four task-queue codes keep a prefix of their own: `not_a_task` (`Not a task`), `already_claimed` (`Already claimed`),
-`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). A `read` of several refs reports each
-failed ref in place as `{"ref": ..., "error": "<prefix>: <message>", "code": "<code>"}`. Anything unregistered is `Internal error`, with the details in
-the server log. See [mcp.md](mcp.md#responses) for the errors the transport itself raises.
+`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). Match the code, not the prefix or the
+message: `\A(?<prefix>[^\[:]+) \[(?<code>[a-z_]+)\]: (?<message>.*)\z` (`FolkloreMcp::Tool::ERROR_TEXT`). A `read`
+of several refs reports each failed ref in place as `{"ref": ..., "error": "<the same text>", "code": "<code>"}`.
+Anything unregistered is `Internal error`, with the details in the server log, and carries no code. Neither do the
+errors the transport itself raises; see [mcp.md](mcp.md#responses).
 
 **JSON API** answers with the status and `{"status": "fail", "data": {"code": ..., "message": ...}}`. An error with a
 field also carries `{"<field>": ["<message>"]}` in `data`. A record validation failure (`invalid`) carries every

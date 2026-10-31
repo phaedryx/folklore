@@ -8,7 +8,7 @@ module FolkloreMcpTest
 
     input_schema do
       required(:message).filled(:string)
-      optional(:format).filled(:string)
+      optional(:json).filled(:bool)
       optional(:fail_with).filled(:string)
     end
 
@@ -17,7 +17,7 @@ module FolkloreMcpTest
       required(:actor).filled(:string)
     end
 
-    def invoke(message:, server_context:, format: "text", fail_with: nil)
+    def invoke(message:, server_context:, json: false, fail_with: nil)
       actor = actor_from(server_context)
       case fail_with
       when "invalid" then Tag.create!(name: nil)
@@ -30,7 +30,7 @@ module FolkloreMcpTest
       end
 
       data = { message:, actor: "#{actor.handle}/#{actor.agent}" }
-      respond(format:, text: "#{data[:actor]}: #{message}", data:)
+      json ? json_response(data) : text_response("#{data[:actor]}: #{message}", data:)
     end
   end
 end

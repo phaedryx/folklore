@@ -71,10 +71,7 @@ module FolkloreMcp
         end
 
         def entry(item, include:)
-          if item.error
-            failure = DomainErrors.for(item.error)
-            return { ref: item.ref, error: "#{Tool.prefix_for(failure)}: #{DomainErrors.message(item.error)}", code: failure.code }
-          end
+          return { ref: item.ref, error: Tool.error_text(item.error), code: DomainErrors.for(item.error).code } if item.error
 
           data = ReadFormatter.call(item.asset, include:)
           item.content_omitted ? data.except(:content).merge(content_omitted: true) : data

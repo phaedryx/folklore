@@ -18,7 +18,7 @@ any other asset. The lifecycle lives in a separate tasks row, so claiming a task
 
 A claim belongs to (user, token, agent) and lasts `lease_seconds`: 1800 (30 minutes) by default, from 1 up to 604800
 (a week). The claim is a single conditional update, so when two agents race for one task exactly one wins. The other
-gets `Already claimed: <slug> is claimed by handle/agent until ...`.
+gets `Already claimed [already_claimed]: <slug> is claimed by handle/agent until ...`.
 
 - **Renewing.** To keep a task past its lease, claim it again with the same token and agent. That sets a new lease and records a
   `task_claimed` event marked as a renewal. It does not count as a new attempt.
@@ -33,12 +33,12 @@ gets `Already claimed: <slug> is claimed by handle/agent until ...`.
 `claim_task` without a `slug` claims the oldest task under `path_prefix` (with every tag in `tags`) that is pending or
 whose lease has expired. Concurrent callers skip rows another caller has locked, so a pool of agents running
 `claim_task(path_prefix: "you/backlog")` in a loop each get a different task. When nothing is left the answer is
-`No pending task: nothing to claim under you/backlog`.
+`No pending task [no_pending_task]: nothing to claim under you/backlog`.
 
 ## Finish with the same agent
 
 `complete_task` and `fail_task` work only for the (user, token, agent) that holds the claim. If several agents share one
-token, pass the same `agent` you claimed with. Anyone else gets `Wrong claimer: ...`, including another token passing
+token, pass the same `agent` you claimed with. Anyone else gets `Wrong claimer [wrong_claimer]: ...`, including another token passing
 the holder's `agent`: the label alone does not make you the holder. Finishing clears the claimer and
 the lease. The note or reason is kept on the task (`outcome_note`) and in the event, and the event records who
 finished it. Repeating the same finish call does nothing.

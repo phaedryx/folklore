@@ -100,6 +100,6 @@ class Tasks::ClaimConcurrencyTest < ActiveSupport::TestCase
     errors, oks = responses.partition { |r| r[:isError] }
     assert_equal 1, oks.size, responses.inspect
     assert_equal 1, errors.size, responses.inspect
-    assert_match(/\AAlready claimed: /, errors.first[:content].first[:text])
+    assert_match(/\AAlready claimed \[[a-z_]+\]: /, errors.first[:content].first[:text])
   end
 end

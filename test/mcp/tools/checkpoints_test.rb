@@ -75,17 +75,17 @@ class FolkloreMcp::Tools::CheckpointsTest < ActiveSupport::TestCase
     response = Update.call(content: "", server_context: ctx)
 
     assert response.to_h[:isError], text_of(response)
-    assert_equal "Invalid: checkpoint content cannot be empty", text_of(response)
+    assert_equal "Invalid [empty_content]: checkpoint content cannot be empty", text_of(response)
     assert_match(/real/, text_of(Get.call(server_context: ctx)))
   end
 
   test "a bad agent name and a missing handle are reported, not internal errors" do
-    assert_match(/\AInvalid: agent/, text_of(Get.call(agent: "../x", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: agent/, text_of(Get.call(agent: "../x", server_context: ctx)))
 
     handleless = User.create!(email: "nohandle@example.com", name: "No Handle")
     token = Token.create!(user: handleless, agent_name: "default", token_digest: Token.digest("flk_test_nohandle"))
     response = Get.call(server_context: { actor: Actor.for_token(token) })
     assert response.to_h[:isError]
-    assert_match(/\AInvalid: .*handle/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: .*handle/, text_of(response))
   end
 end

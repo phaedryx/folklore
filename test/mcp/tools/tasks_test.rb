@@ -65,11 +65,11 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
   test "add_task reports Forbidden for another member's workspace and Conflict for a taken name" do
     forbidden = Tools::Add.call(path: "other/stories", name: "x.md", server_context: ctx)
     assert forbidden.to_h[:isError]
-    assert_match(/\AForbidden: /, text_of(forbidden))
+    assert_match(/\AForbidden \[[a-z_]+\]: /, text_of(forbidden))
 
     add("dup.md")
     taken = Tools::Add.call(path: "member/inbox", name: "dup.md", server_context: ctx)
-    assert_match(/\AConflict: /, text_of(taken))
+    assert_match(/\AConflict \[[a-z_]+\]: /, text_of(taken))
   end
 
   # claim_task
@@ -93,7 +93,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     response = Tools::Claim.call(slug: asset.slug, agent: "pong", server_context: ctx)
 
     assert response.to_h[:isError]
-    assert_match(/\AAlready claimed: #{asset.slug} is claimed by member\/ping until /, text_of(response))
+    assert_match(/\AAlready claimed \[[a-z_]+\]: #{asset.slug} is claimed by member\/ping until /, text_of(response))
     assert_equal "ping", asset.task.reload.claimed_by_agent
   end
 
@@ -104,7 +104,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     assert_in_delta 120.seconds.from_now, asset.task.reload.lease_until, 5.seconds
 
     bad = Tools::Claim.call(slug: add("t2.md").slug, lease_seconds: 0, server_context: ctx)
-    assert_match(/\AInvalid: lease_seconds/, text_of(bad))
+    assert_match(/\AInvalid \[[a-z_]+\]: lease_seconds/, text_of(bad))
   end
 
   test "claim_task without a slug claims the oldest pending task under path_prefix with the given tags" do
@@ -118,21 +118,21 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     assert_equal tagged.slug, structured(by_tag)[:slug]
     assert_equal "member/backlog/old.md", structured(oldest)[:location]
     assert none.to_h[:isError]
-    assert_equal "No pending task: nothing to claim under member/backlog", text_of(none)
+    assert_equal "No pending task [no_pending_task]: nothing to claim under member/backlog", text_of(none)
   end
 
   test "claim_task with neither slug nor path_prefix is Invalid" do
     response = Tools::Claim.call(server_context: ctx)
 
-    assert_match(/\AInvalid: pass a slug/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: pass a slug/, text_of(response))
   end
 
   test "claim_task reports Not a task, Not found and a bad agent" do
     note = ::Assets::Create.mutate(actor: member, path: "member/notes", name: "n.md", content: "")
 
-    assert_equal "Not a task: #{note.slug}", text_of(Tools::Claim.call(slug: note.slug, server_context: ctx))
-    assert_equal "Not found: 00000000", text_of(Tools::Claim.call(slug: "00000000", server_context: ctx))
-    assert_match(/\AInvalid: agent/, text_of(Tools::Claim.call(slug: note.slug, agent: "Bad Agent", server_context: ctx)))
+    assert_equal "Not a task [not_a_task]: #{note.slug}", text_of(Tools::Claim.call(slug: note.slug, server_context: ctx))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::Claim.call(slug: "00000000", server_context: ctx))
+    assert_match(/\AInvalid \[[a-z_]+\]: agent/, text_of(Tools::Claim.call(slug: note.slug, agent: "Bad Agent", server_context: ctx)))
   end
 
   test "an agent override from a web session is refused" do
@@ -141,7 +141,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     response = Tools::Claim.call(slug: asset.slug, agent: "ping", server_context: { actor: Actor.for_user(users(:member)) })
 
     assert response.to_h[:isError]
-    assert_match(/\AInvalid: agent override needs a token/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: agent override needs a token/, text_of(response))
     assert_equal "pending", asset.task.reload.status
   end
 
@@ -166,7 +166,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     response = Tools::Complete.call(slug: asset.slug, agent: "pong", server_context: ctx)
 
     assert response.to_h[:isError]
-    assert_equal "Wrong claimer: #{asset.slug} is claimed by member/ping, not member/pong", text_of(response)
+    assert_equal "Wrong claimer [wrong_claimer]: #{asset.slug} is claimed by member/ping, not member/pong", text_of(response)
   end
 
   test "fail_task by the claiming agent records the reason; without the claim it is Wrong claimer" do
@@ -174,7 +174,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     ::Tasks::Claim.mutate(actor: member(agent: "ping"), slug: asset.slug)
 
     wrong = Tools::Fail.call(slug: asset.slug, reason: "x", server_context: ctx(:other_default))
-    assert_match(/\AWrong claimer: /, text_of(wrong))
+    assert_match(/\AWrong claimer \[[a-z_]+\]: /, text_of(wrong))
 
     response = Tools::Fail.call(slug: asset.slug, reason: "API timeout", agent: "ping", server_context: ctx)
     refute response.to_h[:isError], text_of(response)
@@ -186,7 +186,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     asset = add("task.md")
     ::Tasks::Claim.mutate(actor: member, slug: asset.slug)
 
-    assert_match(/\AInvalid: a reason is required/, text_of(Tools::Fail.call(slug: asset.slug, reason: "  ", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: a reason is required/, text_of(Tools::Fail.call(slug: asset.slug, reason: "  ", server_context: ctx)))
   end
 
   test "a note or reason over the length limit is Invalid" do
@@ -194,9 +194,9 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     ::Tasks::Claim.mutate(actor: member, slug: asset.slug)
     long = "n" * (Task::MAX_NOTE_LENGTH + 1)
 
-    assert_equal "Invalid: note is 10001 characters, over the 10000 character limit",
+    assert_equal "Invalid [note_too_long]: note is 10001 characters, over the 10000 character limit",
                  text_of(Tools::Complete.call(slug: asset.slug, note: long, server_context: ctx))
-    assert_equal "Invalid: reason is 10001 characters, over the 10000 character limit",
+    assert_equal "Invalid [reason_too_long]: reason is 10001 characters, over the 10000 character limit",
                  text_of(Tools::Fail.call(slug: asset.slug, reason: long, server_context: ctx))
   end
 
@@ -280,14 +280,14 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     [ 0, ::Tasks::List::MAX_LIMIT + 1 ].each do |limit|
       response = Tools::Pending.call(path_prefix: "member/inbox", limit:, server_context: ctx)
 
-      assert_match(/\AInvalid: limit must be between 1 and 500/, text_of(response), limit)
+      assert_match(/\AInvalid \[[a-z_]+\]: limit must be between 1 and 500/, text_of(response), limit)
     end
   end
 
   test "get_pending_tasks refuses an unknown status" do
     response = Tools::Pending.call(path_prefix: "member/inbox", status: "open", server_context: ctx)
 
-    assert_match(/\AInvalid: status must be one of/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: status must be one of/, text_of(response))
   end
 
   test "set_status still refuses a task" do

@@ -48,21 +48,21 @@ class FolkloreMcp::Tools::TagsTest < ActiveSupport::TestCase
   test "add_tag and remove_tag report not found and forbidden" do
     asset = create("t.md", tags: %w[ruby])
 
-    assert_equal "Not found: 00000000", text_of(Tools::Add.call(slug: "00000000", tag: "x", server_context: ctx))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::Add.call(slug: "00000000", tag: "x", server_context: ctx))
     assert_match(/\AForbidden/, text_of(Tools::Add.call(slug: asset.slug, tag: "x", server_context: ctx(:other_default))))
-    assert_match(/\AInvalid: tag is required/, text_of(Tools::Add.call(slug: asset.slug, tag: " ", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: tag is required/, text_of(Tools::Add.call(slug: asset.slug, tag: " ", server_context: ctx)))
   end
 
   test "a tag over the length limit is Invalid from add_tag and from create, not Internal error" do
     asset = create("t.md")
     long = "t" * (Tag::MAX_NAME_LENGTH + 1)
 
-    assert_equal "Invalid: tag is 101 characters, over the 100 character limit",
+    assert_equal "Invalid [invalid_tag]: tag is 101 characters, over the 100 character limit",
                  text_of(Tools::Add.call(slug: asset.slug, tag: long, server_context: ctx))
     create_response = FolkloreMcp::Tools::Assets::Create.call(path: "member/notes", name: "u.md", tags: [ long ], server_context: ctx)
-    assert_equal "Invalid: tag is 101 characters, over the 100 character limit", text_of(create_response)
+    assert_equal "Invalid [invalid_tag]: tag is 101 characters, over the 100 character limit", text_of(create_response)
     update_response = FolkloreMcp::Tools::Assets::Update.call(slug: asset.slug, tags: [ long ], server_context: ctx)
-    assert_equal "Invalid: tag is 101 characters, over the 100 character limit", text_of(update_response)
+    assert_equal "Invalid [invalid_tag]: tag is 101 characters, over the 100 character limit", text_of(update_response)
   end
 
   test "tags enumerates counts, scoped by within, or says there are none" do

@@ -71,7 +71,7 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
   end
 
   test "a json call puts the JSON in the text and the data in structured content" do
-    response = Echo.call(message: "hi", format: "json", server_context: actor_context)
+    response = Echo.call(message: "hi", json: true, server_context: actor_context)
 
     assert_equal({ "message" => "hi", "actor" => "member/default" }, JSON.parse(text_of(response)))
     assert_equal({ message: "hi", actor: "member/default" }, response.to_h[:structuredContent])
@@ -81,7 +81,7 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     response = Echo.call(message: "hi", fail_with: "invalid", server_context: actor_context)
 
     assert response.to_h[:isError]
-    assert_match(/\AInvalid: Name can't be blank/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: Name can't be blank/, text_of(response))
   end
 
   test "an unexpected exception is reported as exactly Internal error, with no exception text" do
@@ -92,8 +92,8 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
   end
 
   test "domain input errors are reported with their message, not as Internal error" do
-    { "dir" => /\AInvalid: path segments cannot be/, "stale" => /\AInvalid: stale_after must be/,
-      "agent" => /\AInvalid: agent/, "missing" => /\ANot found: asset\z/, "conflict" => /\AConflict/ }.each do |mode, pattern|
+    { "dir" => /\AInvalid \[[a-z_]+\]: path segments cannot be/, "stale" => /\AInvalid \[[a-z_]+\]: stale_after must be/,
+      "agent" => /\AInvalid \[[a-z_]+\]: agent/, "missing" => /\ANot found \[[a-z_]+\]: asset\z/, "conflict" => /\AConflict/ }.each do |mode, pattern|
       response = Echo.call(message: "hi", fail_with: mode, server_context: actor_context)
 
       assert response.to_h[:isError], mode
@@ -111,14 +111,23 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     end
   end
 
-  test "a json-format failure carries the error's code beside the text" do
-    response = Echo.call(message: "hi", format: "json", fail_with: "dir", server_context: actor_context)
+  test "a registered error carries its code in the text, between the prefix and the message" do
+    { "dir" => "Invalid [invalid_path]: path segments cannot be",
+      "missing" => "Not found [not_found]: asset",
+      "conflict" => "Conflict [version_conflict]: " }.each do |mode, start|
+      response = Echo.call(message: "hi", fail_with: mode, server_context: actor_context)
 
-    assert response.to_h[:isError]
-    payload = JSON.parse(text_of(response))
-    assert_equal "invalid_path", payload["code"]
-    assert_match(/\AInvalid: path segments cannot be/, payload["error"])
-    assert_equal payload, response.to_h[:structuredContent].stringify_keys
+      assert response.to_h[:isError], mode
+      assert text_of(response).start_with?(start), "#{mode}: #{text_of(response)}"
+      assert_nil response.to_h[:structuredContent], mode
+    end
+  end
+
+  test "error_text parses back into prefix, code and message" do
+    text = FolkloreMcp::Tool.error_text(Assets::NotFoundError.new("asset 00000000 not found"))
+
+    assert_equal "Not found [not_found]: asset 00000000 not found", text
+    assert_equal [ "Not found", "not_found", "asset 00000000 not found" ], text.match(FolkloreMcp::Tool::ERROR_TEXT).captures
   end
 
   test "an unexpected exception re-raises when MCP_RAISE_ERRORS is set" do
@@ -126,14 +135,5 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
     assert_raises(RuntimeError) { Echo.call(message: "hi", fail_with: "boom", server_context: actor_context) }
   ensure
     ENV.delete("MCP_RAISE_ERRORS")
-  end
-
-  test "error_response in json format wraps the message" do
-    tool = Echo.new
-    response = tool.error_response("Not found: x", format: "json")
-
-    assert response.to_h[:isError]
-    assert_equal({ "error" => "Not found: x" }, JSON.parse(text_of(response)))
-    assert_equal "Not found: x", tool.error_response("Not found: x").to_h[:content].first[:text]
   end
 end

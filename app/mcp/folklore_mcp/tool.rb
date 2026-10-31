@@ -7,8 +7,8 @@ module FolkloreMcp
   # Base class for every MCP tool. Subclasses declare `tool_name`, a
   # `description`, `input_schema` and `output_schema` blocks (dry-schema,
   # emitted as JSON Schema), and `annotations`; they implement
-  # `#invoke(**args, server_context:)` and answer with `respond`,
-  # `text_response`, `json_response` or `error_response`.
+  # `#invoke(**args, server_context:)` and answer with `text_response` or
+  # `json_response`.
   #
   # Subclasses register themselves on definition. The wire name is always
   # declared explicitly: tool classes live under their domain module, so a
@@ -18,8 +18,9 @@ module FolkloreMcp
     SCOPE_ERROR = "Forbidden: token lacks write scope".freeze
     READ_SCOPE_ERROR = "Forbidden: token lacks read scope".freeze
 
-    # How MCP shows a DomainErrors entry: "<prefix>: <message>", the prefix
-    # chosen by status. The task-queue outcomes are named for themselves.
+    # How MCP shows a DomainErrors entry: "<prefix> [<code>]: <message>", the
+    # prefix chosen by status. The task-queue outcomes are named for themselves.
+    # ERROR_TEXT parses one back; errors not in the registry carry no code.
     STATUS_PREFIXES = {
       not_found: "Not found",
       forbidden: "Forbidden",
@@ -32,6 +33,7 @@ module FolkloreMcp
       "no_pending_task" => "No pending task",
       "wrong_claimer" => "Wrong claimer"
     }.freeze
+    ERROR_TEXT = /\A(?<prefix>[^\[:]+) \[(?<code>[a-z_]+)\]: (?<message>.*)\z/m
 
     class << self
       def inherited(subclass)
@@ -94,28 +96,31 @@ module FolkloreMcp
         CODE_PREFIXES.fetch(entry.code) { STATUS_PREFIXES.fetch(entry.status) }
       end
 
-      # Failures answer in the format the caller asked for: a tool that takes
-      # `format: "json"` gets `{"error": "...", "code": "..."}` back, as its
-      # successes are JSON. A registered error (DomainErrors) is mapped here
-      # and nowhere else; anything else is "Internal error".
+      def error_text(error)
+        entry = DomainErrors.for(error)
+        "#{prefix_for(entry)} [#{entry.code}]: #{DomainErrors.message(error)}"
+      end
+
+      # Failures are text only: some clients check any structured content
+      # against the outputSchema, error or not. A registered error
+      # (DomainErrors) is mapped here and nowhere else; anything else is
+      # "Internal error".
       def call(server_context: nil, **args)
-        format = args[:format]
         scope_error = scope_error(server_context)
-        return failure(scope_error, format:) if scope_error
+        return failure(scope_error) if scope_error
 
         unknown = unknown_arguments(args)
-        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}", format:) if unknown.any?
+        return failure("Invalid: unknown argument#{'s' if unknown.size > 1} #{unknown.join(', ')}") if unknown.any?
 
         new.invoke(**args, server_context:)
       rescue MissingActorError
-        failure("Unauthenticated: no actor on request", format:)
+        failure("Unauthenticated: no actor on request")
       rescue *DomainErrors.classes => e
-        entry = DomainErrors.for(e)
-        failure("#{prefix_for(entry)}: #{DomainErrors.message(e)}", format:, code: entry.code)
+        failure(error_text(e))
       rescue => e
         raise if Rails.env.test? && ENV["MCP_RAISE_ERRORS"] == "1"
         Rails.logger.error("[MCP] #{name_value} #{e.class}: #{e.message}\n#{e.backtrace&.first(8)&.join("\n")}")
-        failure("Internal error", format:)
+        failure("Internal error")
       end
 
       private
@@ -167,11 +172,8 @@ module FolkloreMcp
         end
       end
 
-      def failure(text, format: nil, code: nil)
-        return MCP::Tool::Response.new([ { type: "text", text: } ], error: true) unless format.to_s == "json"
-
-        payload = { error: text, code: }.compact
-        MCP::Tool::Response.new([ { type: "text", text: JSON.generate(payload) } ], structured_content: payload, error: true)
+      def failure(text)
+        MCP::Tool::Response.new([ { type: "text", text: } ], error: true)
       end
 
       def json_schema_from(block)
@@ -208,32 +210,14 @@ module FolkloreMcp
       Rails.logger.warn("[MCP] #{self.class.name_value} search log failed: #{e.class}: #{e.message}")
     end
 
+    # A summary as text, with the data as structured content when there is any.
     def text_response(text, data: nil)
-      respond(format: "text", text:, data:)
+      MCP::Tool::Response.new([ { type: "text", text: text.to_s } ], structured_content: data)
     end
 
+    # The data as structured content and, serialized, as the text.
     def json_response(data)
-      respond(format: "json", text: data, data:)
-    end
-
-    def error_response(message, format: "text")
-      if format.to_s == "json"
-        respond(format:, text: { error: message.to_s }, error: true)
-      else
-        respond(format:, text: message.to_s, error: true)
-      end
-    end
-
-    # Text content always; structured content whenever there is data for it.
-    def respond(format:, text:, data: nil, error: false)
-      if format.to_s == "json"
-        payload = data || text
-        json = payload.is_a?(String) ? payload : JSON.generate(payload)
-        structured = payload.is_a?(String) ? JSON.parse(json) : payload
-        MCP::Tool::Response.new([ { type: "text", text: json } ], structured_content: structured, error:)
-      else
-        MCP::Tool::Response.new([ { type: "text", text: text.to_s } ], structured_content: data, error:)
-      end
+      MCP::Tool::Response.new([ { type: "text", text: JSON.generate(data) } ], structured_content: data)
     end
   end
 end

@@ -87,9 +87,9 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     [ "00000000", gone.slug, "member/notes/nope.md" ].each do |ref|
       response = Tools::Read.call(ref:, server_context: ctx)
       assert response.to_h[:isError]
-      assert_equal "Not found: #{ref}", text_of(response)
+      assert_equal "Not found [not_found]: #{ref}", text_of(response)
     end
-    assert_match(/\AInvalid: /, text_of(Tools::Read.call(ref: "member/", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: /, text_of(Tools::Read.call(ref: "member/", server_context: ctx)))
   end
 
   test "any member can read another's asset" do
@@ -109,7 +109,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     refute response.to_h[:isError], text_of(response)
     assets = structured(response)[:assets]
     assert_equal first.slug, assets[0][:slug]
-    assert_equal({ ref: "00000000", error: "Not found: 00000000", code: "not_found" }, assets[1])
+    assert_equal({ ref: "00000000", error: "Not found [not_found]: 00000000", code: "not_found" }, assets[1])
     assert_equal "2", assets[2][:content]
     assert_equal "invalid_location", assets[3][:code]
     assert_equal 2, structured(response)[:bytes_returned]
@@ -130,7 +130,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
   test "read of one ref refuses max_bytes, which only budgets an array" do
     response = Tools::Read.call(ref: create("one.md").slug, max_bytes: 10, server_context: ctx)
 
-    assert_equal "Invalid: max_bytes applies only to an array of refs", text_of(response)
+    assert_equal "Invalid [invalid_argument]: max_bytes applies only to an array of refs", text_of(response)
   end
 
   test "list treats a negative offset as zero" do
@@ -146,9 +146,9 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     capped = Tools::Read.call(ref: [ big.slug, also.slug ], max_bytes: 10_000_000, server_context: ctx)
     assert structured(capped)[:truncated], "max_bytes is capped at #{::Assets::BulkRead::MAX_BYTES}"
 
-    assert_match(/\AInvalid: /, text_of(Tools::Read.call(ref: [], server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: /, text_of(Tools::Read.call(ref: [], server_context: ctx)))
     too_many = Tools::Read.call(ref: Array.new(::Assets::BulkRead::MAX_REFS + 1) { big.slug }, server_context: ctx)
-    assert_equal "Invalid: read takes at most #{::Assets::BulkRead::MAX_REFS} refs, got #{::Assets::BulkRead::MAX_REFS + 1}", text_of(too_many)
+    assert_equal "Invalid [invalid_argument]: read takes at most #{::Assets::BulkRead::MAX_REFS} refs, got #{::Assets::BulkRead::MAX_REFS + 1}", text_of(too_many)
   end
 
   # The ping skill picks its next task this way: read the queue without
@@ -221,11 +221,11 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     create("dup.md")
 
     {
-      { path: "member/archive", name: "x.md" } => /\AInvalid: member\/archive is reserved/,
-      { path: "other/notes", name: "x.md" } => /\AForbidden: cannot write to other\/notes/,
-      { path: "member/../x", name: "x.md" } => /\AInvalid: path segments/,
-      { path: "member/notes", name: "a b.md" } => /\AInvalid: name cannot contain whitespace/,
-      { path: "member/notes", name: "dup.md" } => /\AConflict: member\/notes\/dup\.md already exists/
+      { path: "member/archive", name: "x.md" } => /\AInvalid \[[a-z_]+\]: member\/archive is reserved/,
+      { path: "other/notes", name: "x.md" } => /\AForbidden \[[a-z_]+\]: cannot write to other\/notes/,
+      { path: "member/../x", name: "x.md" } => /\AInvalid \[[a-z_]+\]: path segments/,
+      { path: "member/notes", name: "a b.md" } => /\AInvalid \[[a-z_]+\]: name cannot contain whitespace/,
+      { path: "member/notes", name: "dup.md" } => /\AConflict \[[a-z_]+\]: member\/notes\/dup\.md already exists/
     }.each do |args, pattern|
       response = Tools::Create.call(**args, server_context: ctx)
       assert response.to_h[:isError], args.inspect
@@ -238,14 +238,14 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     # name), which without a cap surfaced as Internal error.
     long_name = SecureRandom.alphanumeric(4000)
     response = Tools::Create.call(path: "member/notes", name: long_name, server_context: ctx)
-    assert_equal "Invalid: name is 4000 characters, over the 255 character limit", text_of(response)
+    assert_equal "Invalid [invalid_name]: name is 4000 characters, over the 255 character limit", text_of(response)
 
     response = Tools::Create.call(path: "member/#{SecureRandom.alphanumeric(4000)}", name: "a.md", server_context: ctx)
-    assert_equal "Invalid: path is 4007 characters, over the 1024 character limit", text_of(response)
+    assert_equal "Invalid [invalid_path]: path is 4007 characters, over the 1024 character limit", text_of(response)
 
     asset = create("u.md")
     response = Tools::Update.call(slug: asset.slug, name: long_name, server_context: ctx)
-    assert_equal "Invalid: name is 4000 characters, over the 255 character limit", text_of(response)
+    assert_equal "Invalid [invalid_name]: name is 4000 characters, over the 255 character limit", text_of(response)
   end
 
   test "update changes content, snapshots a version, and reports the new version" do
@@ -266,7 +266,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     response = Tools::Append.call(slug: asset.slug, text: "x" * (Asset::MAX_CONTENT_BYTES + 1), server_context: ctx)
 
     assert response.to_h[:isError]
-    assert_match(/\AInvalid: content is \d+ bytes, over the 1 MiB cap/, text_of(response))
+    assert_match(/\AInvalid \[[a-z_]+\]: content is \d+ bytes, over the 1 MiB cap/, text_of(response))
   end
 
   test "update with a stale expected_version is a Conflict naming the current version" do
@@ -276,7 +276,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     response = Tools::Update.call(slug: asset.slug, content: "v3", expected_version: 0, server_context: ctx)
 
     assert response.to_h[:isError]
-    assert_equal "Conflict: #{asset.slug} is at version 1", text_of(response)
+    assert_equal "Conflict [version_conflict]: #{asset.slug} is at version 1", text_of(response)
     assert_equal "v2", asset.reload.content
 
     ok = Tools::Update.call(slug: asset.slug, content: "v3", expected_version: 1, server_context: ctx)
@@ -286,8 +286,8 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
   test "update returns Not found and Forbidden" do
     asset = create("u.md")
 
-    assert_equal "Not found: 00000000", text_of(Tools::Update.call(slug: "00000000", content: "x", server_context: ctx))
-    assert_match(/\AForbidden: /, text_of(Tools::Update.call(slug: asset.slug, content: "x", server_context: ctx(:other_default))))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::Update.call(slug: "00000000", content: "x", server_context: ctx))
+    assert_match(/\AForbidden \[[a-z_]+\]: /, text_of(Tools::Update.call(slug: asset.slug, content: "x", server_context: ctx(:other_default))))
   end
 
   test "upsert creates then updates" do
@@ -310,7 +310,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal "Appended to #{asset.slug}", text_of(response)
     assert_equal({ slug: asset.slug, version: 1 }, structured(response))
     assert_equal "line 1\nline 2", asset.reload.content
-    assert_equal "Not found: 00000000", text_of(Tools::Append.call(slug: "00000000", text: "x", server_context: ctx))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::Append.call(slug: "00000000", text: "x", server_context: ctx))
   end
 
   # move
@@ -336,14 +336,14 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert asset.reload.deleted_at?
 
     again = Tools::Delete.call(slug: asset.slug, server_context: ctx)
-    assert_equal "Conflict: #{asset.slug} is already deleted", text_of(again)
+    assert_equal "Conflict [already_archived]: #{asset.slug} is already deleted", text_of(again)
 
     res = Tools::Restore.call(slug: asset.slug, server_context: ctx)
     assert_equal "Restored #{asset.slug}", text_of(res)
     refute asset.reload.deleted_at?
 
     not_deleted = Tools::Restore.call(slug: asset.slug, server_context: ctx)
-    assert_equal "Conflict: #{asset.slug} is not deleted", text_of(not_deleted)
+    assert_equal "Conflict [not_archived]: #{asset.slug} is not deleted", text_of(not_deleted)
   end
 
   # versions
@@ -361,7 +361,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal({ handle: "member", agent: "ping" }, version[:actor])
 
     assert_equal "No prior versions", text_of(Tools::Versions.call(slug: create("n.md").slug, server_context: ctx))
-    assert_equal "Not found: 00000000", text_of(Tools::Versions.call(slug: "00000000", server_context: ctx))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::Versions.call(slug: "00000000", server_context: ctx))
   end
 
   test "versions with an id returns that version's content, once" do
@@ -379,7 +379,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
 
     other = create("other.md", content: "a")
     ::Assets::Update.mutate(actor: actor_for(:member_default), slug: other.slug, content: "b")
-    assert_equal "Not found: version #{other.versions.sole.id} is not on #{asset.slug}",
+    assert_equal "Not found [version_not_found]: version #{other.versions.sole.id} is not on #{asset.slug}",
                  text_of(Tools::Versions.call(slug: asset.slug, id: other.versions.sole.id, server_context: ctx))
   end
 
@@ -395,7 +395,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal "mine", asset.reload.content
     assert_equal %w[mine clobbered], asset.versions.order(:id).pluck(:content)
     assert_equal({ slug: asset.slug, location: asset.location, version: asset.lock_version }, structured(response))
-    assert_match(/\ANot found: version 0 /, text_of(Tools::Restore.call(slug: asset.slug, version: 0, server_context: ctx)))
+    assert_match(/\ANot found \[[a-z_]+\]: version 0 /, text_of(Tools::Restore.call(slug: asset.slug, version: 0, server_context: ctx)))
     assert_match(/\AForbidden/, text_of(Tools::Restore.call(slug: asset.slug, version: mine.id, server_context: ctx(:other_default))))
   end
 
@@ -419,9 +419,9 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
   test "verify reports not found, forbidden and an unparseable date" do
     asset = create("n.md")
 
-    assert_equal "Not found: 00000000", text_of(Tools::Verify.call(slug: "00000000", server_context: ctx))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::Verify.call(slug: "00000000", server_context: ctx))
     assert_match(/\AForbidden/, text_of(Tools::Verify.call(slug: asset.slug, server_context: ctx(:other_default))))
-    assert_match(/\AInvalid: stale_after/, text_of(Tools::Verify.call(slug: asset.slug, stale_after: "next tuesday", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: stale_after/, text_of(Tools::Verify.call(slug: asset.slug, stale_after: "next tuesday", server_context: ctx)))
   end
 
   test "set_stale_after schedules and clears a review date without verifying" do
@@ -435,7 +435,7 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal "Cleared the review date on #{asset.slug}", text_of(cleared)
     assert_nil structured(cleared)[:stale_after]
 
-    assert_match(/\AInvalid: stale_after/, text_of(Tools::SetStaleAfter.call(slug: asset.slug, stale_after: "soon", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: stale_after/, text_of(Tools::SetStaleAfter.call(slug: asset.slug, stale_after: "soon", server_context: ctx)))
     assert_match(/\AForbidden/, text_of(Tools::SetStaleAfter.call(slug: asset.slug, stale_after: "2026-12-01", server_context: ctx(:other_default))))
   end
 
@@ -450,11 +450,11 @@ class FolkloreMcp::Tools::AssetsTest < ActiveSupport::TestCase
     assert_equal "Set status of #{asset.slug} to none", text_of(none)
     assert_nil asset.reload.status
 
-    assert_match(/\AInvalid: status must be one of/, text_of(Tools::SetStatus.call(slug: asset.slug, status: "in_progress", server_context: ctx)))
+    assert_match(/\AInvalid \[[a-z_]+\]: status must be one of/, text_of(Tools::SetStatus.call(slug: asset.slug, status: "in_progress", server_context: ctx)))
 
     Task.create!(asset:, status: "pending")
-    assert_match(/\AInvalid: #{asset.slug} is a task/, text_of(Tools::SetStatus.call(slug: asset.slug, status: "done", server_context: ctx)))
-    assert_equal "Not found: 00000000", text_of(Tools::SetStatus.call(slug: "00000000", status: "done", server_context: ctx))
+    assert_match(/\AInvalid \[[a-z_]+\]: #{asset.slug} is a task/, text_of(Tools::SetStatus.call(slug: asset.slug, status: "done", server_context: ctx)))
+    assert_equal "Not found [not_found]: 00000000", text_of(Tools::SetStatus.call(slug: "00000000", status: "done", server_context: ctx))
   end
 
   test "an argument a tool does not take is refused as invalid, not an internal error" do
