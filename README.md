@@ -14,7 +14,7 @@ It is a Rails 8.1 app on Postgres, MIT licensed.
 
 ## Install
 
-You need Ruby 4.0.1 (see `.ruby-version`) and PostgreSQL 16 or newer with the `pg_trgm` extension available (it ships
+You need Ruby 4.0.1 (see `.ruby-version`) and PostgreSQL 17 or newer with the `pg_trgm` extension available (it ships
 with Postgres). The development and test databases are `folklore_development` and `folklore_test` on the local
 server; see [docs/configuration.md](docs/configuration.md) to point elsewhere.
 
