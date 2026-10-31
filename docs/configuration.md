@@ -17,14 +17,13 @@ When any of the three admin variables is unset and stdin is a terminal (and `CI`
 it. With no handle or email and no terminal, it prints a notice and creates nothing. Running it again is safe: it finds
 the user by email and only issues a token if the user has no active one.
 
-## Web server and jobs
+## Web server
 
 | Variable | Read by | Default | Meaning |
 |---|---|---|---|
 | `PORT` | `config/puma.rb`, `folklore:admin` | `3000` | The port Puma listens on. `folklore:admin` uses it in the `.mcp.json` snippet it prints. |
 | `RAILS_MAX_THREADS` | `config/puma.rb`, `config/database.yml` | `3` (Puma), `5` (database pool) | Puma threads per process, and the Active Record connection pool size. |
 | `PIDFILE` | `config/puma.rb` | none | Where Puma writes its pid, if set. |
-| `JOB_CONCURRENCY` | `config/queue.yml` | `1` | Solid Queue worker processes. Jobs share the primary database. |
 | `RAILS_LOG_LEVEL` | `config/environments/production.rb` | `info` | The production log level. Logs are one line per request (lograge). |
 
 ## Database
@@ -34,7 +33,8 @@ the user by email and only issues a token if the user has no active one.
 | `DATABASE_URL` | `config/database.yml` (production) | none | The production connection, e.g. `postgres://folklore:secret@db/folklore_production`. In development and test, Rails also merges it into the local settings when it is set. |
 | `FOLKLORE_DB_SUFFIX` | `config/database.yml` (development, test) | none | An optional suffix for the local database names. With `FOLKLORE_DB_SUFFIX=foo`, the databases are `folklore_development_foo` and `folklore_test_foo`, so several checkouts of the repo on one machine do not share a database. Set it per checkout in `.env.development.local` and `.env.test.local`, which are gitignored and loaded by dotenv. Leave it unset otherwise. |
 
-Postgres must be version 16 or newer and have the `pg_trgm` extension available. A migration enables it.
+Postgres must be version 17 or newer and have the `pg_trgm` extension available. A migration enables it. 17 is the
+floor because `db/structure.sql` sets `transaction_timeout`, which `pg_dump` 17 writes and Postgres 16 rejects.
 
 ## Production
 

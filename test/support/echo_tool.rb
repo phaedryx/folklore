@@ -1,5 +1,7 @@
 # A tool that exists only in the test suite, so the transport and the Tool
-# base class can be exercised before any domain tool lands.
+# base class can be exercised without a domain tool. Defining it registers it
+# like any tool, so it is unregistered at once and served only to tests that
+# include ServesEchoTool; every other test sees the real tools/list.
 module FolkloreMcpTest
   class EchoTool < FolkloreMcp::Tool
     tool_name "echo"
@@ -31,6 +33,17 @@ module FolkloreMcpTest
 
       data = { message:, actor: "#{actor.handle}/#{actor.agent}" }
       json ? json_response(data) : text_response("#{data[:actor]}: #{message}", data:)
+    end
+  end
+
+  FolkloreMcp::Tool.registered_tools.delete(EchoTool)
+
+  module ServesEchoTool
+    extend ActiveSupport::Concern
+
+    included do
+      setup { FolkloreMcp::Tool.register(EchoTool) }
+      teardown { FolkloreMcp::Tool.registered_tools.delete(EchoTool) }
     end
   end
 end

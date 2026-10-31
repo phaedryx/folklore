@@ -1,6 +1,8 @@
 require "test_helper"
 
 class McpEndpointTest < ActionDispatch::IntegrationTest
+  include FolkloreMcpTest::ServesEchoTool
+
   MCP_HEADERS = {
     "Content-Type" => "application/json",
     "Accept" => "application/json, text/event-stream"

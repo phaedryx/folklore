@@ -14,7 +14,7 @@ It is a Rails 8.1 app on Postgres, MIT licensed.
 
 ## Install
 
-You need Ruby 4.0.1 (see `.ruby-version`) and PostgreSQL 16 or newer with the `pg_trgm` extension available (it ships
+You need Ruby 4.0.1 (see `.ruby-version`) and PostgreSQL 17 or newer with the `pg_trgm` extension available (it ships
 with Postgres). The development and test databases are `folklore_development` and `folklore_test` on the local
 server; see [docs/configuration.md](docs/configuration.md) to point elsewhere.
 
@@ -26,7 +26,7 @@ FOLKLORE_ADMIN_HANDLE=you FOLKLORE_ADMIN_EMAIL=you@example.com FOLKLORE_ADMIN_PA
 
 `bin/setup` installs gems, prepares the database and creates the single user. If a variable is missing it prompts for
 it on a terminal. The first time, it prints an MCP token for an agent named `default`. Then it starts `bin/dev` (web
-server, job runner and Tailwind watcher) on port 3000. Pass `--skip-server` to stop before the server starts.
+server and Tailwind watcher) on port 3000. Pass `--skip-server` to stop before the server starts.
 
 Sign in at <http://localhost:3000/sign_in> with the email and password.
 
@@ -101,7 +101,7 @@ The domains are `Assets`, `Tags`, `Versions`, `Links`, `Events`, `Tasks`, `Check
 ## Development
 
 ```sh
-bin/dev      # web on :3000, jobs, CSS watcher
+bin/dev      # web on :3000, CSS watcher
 bin/ci       # setup, rubocop, bundler-audit, importmap audit, brakeman, leak greps (tree and commit
              # messages), unit and integration tests, system tests, seeds
 bin/rails test

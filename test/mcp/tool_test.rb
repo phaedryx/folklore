@@ -4,7 +4,11 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
   Echo = FolkloreMcpTest::EchoTool
 
   test "a tool registers itself when defined" do
-    assert_includes FolkloreMcp::Tool.registered_tools, Echo
+    klass = Class.new(FolkloreMcp::Tool) { tool_name "scratch" }
+
+    assert_includes FolkloreMcp::Tool.registered_tools, klass
+  ensure
+    FolkloreMcp::Tool.registered_tools.delete(klass)
   end
 
   test "the wire name is declared explicitly, not derived from the class name" do

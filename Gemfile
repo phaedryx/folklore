@@ -32,10 +32,7 @@ gem "bcrypt", "~> 3.1.7"
 gem "omniauth"
 gem "omniauth-rails_csrf_protection"
 
-# Database-backed Active Job adapter
-gem "solid_queue"
-
-# Foreman runs Procfile.dev for bin/dev (web + jobs + css)
+# Foreman runs Procfile.dev for bin/dev (web + css)
 gem "foreman", require: false
 
 # Heroicons SVGs via `heroicon_tag` view helper

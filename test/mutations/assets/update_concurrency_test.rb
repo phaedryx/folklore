@@ -6,11 +6,20 @@ require "test_helper"
 class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
   self.use_transactional_tests = false
 
-  # Long enough for a writer that should be waiting on a row lock to have
-  # finished if it is not waiting.
-  BLOCKED_FOR = 0.3
+  # How long a writer may take to reach the row lock before the test gives up.
+  BLOCK_TIMEOUT = 5
 
   teardown do
+    # A test that failed mid-race leaves its holder waiting for release and
+    # its writers running. Finish them before deleting what they would write.
+    @releases&.each(&:set)
+    waiting do
+      @threads&.each do |thread|
+        thread.join(BLOCK_TIMEOUT)
+      rescue StandardError
+        # Already reported by the test it failed.
+      end
+    end
     Event.delete_all
     AssetTag.delete_all
     Link.delete_all
@@ -33,22 +42,49 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
     ActiveSupport::Dependencies.interlock.permit_concurrent_loads(&block)
   end
 
+  # The event a holder waits on before committing. Teardown sets it, so a
+  # failed test never leaves a holder open.
+  def release_event
+    Concurrent::Event.new.tap { |event| (@releases ||= []) << event }
+  end
+
+  def backend_pid
+    ActiveRecord::Base.lease_connection.select_value("SELECT pg_backend_pid()")
+  end
+
+  # Returns once some backend is waiting on a lock held by `holder_pid`, so the
+  # race is certain to have happened rather than given time to happen. Keyed
+  # on the holder because parallel test workers share the server; uncached
+  # because the test runs inside the executor's query cache.
+  def wait_until_blocked_by(holder_pid, waiter)
+    sql = "SELECT count(*) FROM pg_stat_activity WHERE #{Integer(holder_pid)} = ANY(pg_blocking_pids(pid))"
+    deadline = BLOCK_TIMEOUT.seconds.from_now
+    waiting do
+      until ActiveRecord::Base.uncached { ActiveRecord::Base.lease_connection.select_value(sql) }.positive?
+        flunk "no writer blocked on the held row lock" if !waiter.alive? || Time.current > deadline
+        sleep 0.01
+      end
+    end
+  end
+
   def thread(&block)
     Thread.new do
       block.call
     ensure
       ActiveRecord::Base.connection_pool.release_connection
-    end
+    end.tap { |thread| (@threads ||= []) << thread }
   end
 
   test "a second update waits for the first and snapshots what the first wrote" do
     asset = create("one.md", "v0")
     first_written = Concurrent::Event.new
-    release = Concurrent::Event.new
+    release = release_event
+    first_pid = nil
 
     first = thread do
       ActiveRecord::Base.transaction do
         Assets::Update.mutate(actor:, slug: asset.slug, content: "alpha")
+        first_pid = backend_pid
         first_written.set
         release.wait(5)
       end
@@ -56,8 +92,7 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
     waiting { first_written.wait(5) }
     second = thread { Assets::Update.mutate(actor:, slug: asset.slug, content: "beta") }
 
-    waiting { sleep BLOCKED_FOR }
-    assert second.alive?, "the second update did not wait for the first one's row lock"
+    wait_until_blocked_by(first_pid, second)
     release.set
     waiting { [ first, second ].each(&:join) }
 
@@ -70,12 +105,14 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
   test "an update waiting on a delete does not write into the tombstone" do
     asset = create("doomed.md", "before")
     deleted = Concurrent::Event.new
-    release = Concurrent::Event.new
+    release = release_event
+    deleter_pid = nil
     outcome = nil
 
     deleter = thread do
       ActiveRecord::Base.transaction do
         Assets::Delete.mutate(actor:, slug: asset.slug)
+        deleter_pid = backend_pid
         deleted.set
         release.wait(5)
       end
@@ -88,7 +125,7 @@ class Assets::UpdateConcurrencyTest < ActiveSupport::TestCase
       outcome = :not_found
     end
 
-    waiting { sleep BLOCKED_FOR }
+    wait_until_blocked_by(deleter_pid, updater)
     release.set
     waiting { [ deleter, updater ].each(&:join) }
 
