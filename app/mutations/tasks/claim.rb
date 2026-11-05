@@ -9,6 +9,12 @@ module Tasks
   # `path_prefix` (and carrying every tag in `tags`) is claimed, skipping rows
   # another claimer has locked, so concurrent agents take different tasks.
   #
+  # A task whose dependencies are not all done is not ready: by slug it is
+  # refused with BlockedError (unless the actor holds it already, since a
+  # renewal is not a new claim), and without a slug it is passed over for the
+  # oldest ready task. Readiness is part of the locked candidate query, not a
+  # filter applied afterwards, so racing callers still take distinct tasks.
+  #
   # Either way the claim is one UPDATE whose CTE locks the row and returns its
   # previous claimer, and the events it implies commit in the same
   # transaction. Lease times are computed here rather than with now(), so the
@@ -28,6 +34,10 @@ module Tasks
       prev.status = 'pending'
       OR (prev.status = 'in_progress' AND (prev.lease_until < :now OR (#{HOLDER})))
     SQL
+
+    # What next-pending mode may take, before readiness: unclaimed, or held
+    # on a lease that has run out.
+    NEXT_ELIGIBLE = "tasks.status = 'pending' OR (tasks.status = 'in_progress' AND tasks.lease_until < ?)".freeze
 
     def self.mutate(actor:, slug: nil, path_prefix: nil, tags: [], lease_seconds: DEFAULT_LEASE_SECONDS)
       new(actor:, slug:, path_prefix:, tags:, lease_seconds:).mutate
@@ -68,21 +78,49 @@ module Tasks
     def claim_by_slug(now)
       asset = Asset.live.find_by(slug: @slug)
       raise Assets::NotFoundError, @slug unless asset
-      raise NotATaskError, @slug unless Task.exists?(asset_id: asset.id)
 
+      task = Task.preload(dependencies: :asset).find_by(asset_id: asset.id)
+      raise NotATaskError, @slug unless task
+
+      refuse_blocked(task)
       target = Task.where(asset_id: asset.id).lock("FOR UPDATE")
       claim(target, now) or raise AlreadyClaimedError, unavailable(asset)
     end
 
+    # A task that could be taken (pending, or held by someone else) is refused
+    # while a dependency is unfinished. The holder renewing is not taking it.
+    def refuse_blocked(task)
+      return unless task.status == "pending" || (task.status == "in_progress" && !holder?(task))
+
+      blockers = task.blockers
+      raise BlockedError, "#{@slug} waits on #{blockers.map { |dep| dep.asset.slug }.join(', ')}" if blockers.any?
+    end
+
+    def holder?(task)
+      task.claimed_by_user_id == @actor.user.id && task.claimed_by_agent == @actor.agent &&
+        task.claimed_by_token_id == @actor.token&.id
+    end
+
     def claim_next(now)
-      candidates = Asset.live.under_dir(@path_prefix).tagged_with(@tags).select(:id)
-      target = Task.joins(:asset)
-                   .where(asset_id: candidates)
-                   .where("tasks.status = 'pending' OR (tasks.status = 'in_progress' AND tasks.lease_until < ?)", now)
-                   .order("assets.created_at", "assets.id")
-                   .limit(1)
-                   .lock("FOR UPDATE OF tasks SKIP LOCKED")
-      claim(target, now) or raise NoPendingTaskError, "nothing to claim under #{@path_prefix}"
+      target = next_candidates(now).ready
+                                   .order("assets.created_at", "assets.id")
+                                   .limit(1)
+                                   .lock("FOR UPDATE OF tasks SKIP LOCKED")
+      claim(target, now) or raise NoPendingTaskError, nothing_to_claim(now)
+    end
+
+    def next_candidates(now)
+      assets = Asset.live.under_dir(@path_prefix).tagged_with(@tags).select(:id)
+      Task.joins(:asset).where(asset_id: assets).where(NEXT_ELIGIBLE, now)
+    end
+
+    # An empty queue and a waiting one read differently, so an agent polling
+    # in a loop can tell them apart.
+    def nothing_to_claim(now)
+      blocked = next_candidates(now).blocked.count
+      return "nothing to claim under #{@path_prefix}" if blocked.zero?
+
+      "nothing ready under #{@path_prefix}; #{blocked} blocked"
     end
 
     # Runs the claiming UPDATE over the (at most one) row `target` locks and

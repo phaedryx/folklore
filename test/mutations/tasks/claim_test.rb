@@ -8,8 +8,8 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
     @other = actor_for(:other_default)
   end
 
-  def add(name, path: "member/inbox", tags: [])
-    Tasks::Add.mutate(actor: @member, path:, name:, content: "", tags:)
+  def add(name, path: "member/inbox", tags: [], depends_on: [])
+    Tasks::Add.mutate(actor: @member, path:, name:, content: "", tags:, depends_on:)
   end
 
   def claim(asset, actor: @member, **args)
@@ -248,5 +248,105 @@ class Tasks::ClaimTest < ActiveSupport::TestCase
 
   test "requires a slug or a path_prefix" do
     assert_raises(Tasks::InvalidArgumentError) { Tasks::Claim.mutate(actor: @ping) }
+  end
+
+  # Dependencies: a task is ready when every task it depends on is done.
+
+  def finish(asset, actor: @member)
+    claim(asset, actor:)
+    Tasks::Complete.mutate(actor:, slug: asset.slug, note: "finished #{asset.name}")
+  end
+
+  test "claim by slug refuses a blocked task, naming only its unfinished dependencies" do
+    done = add("done.md")
+    finish(done)
+    waiting = add("waiting.md")
+    failed = add("failed.md")
+    claim(failed)
+    Tasks::Fail.mutate(actor: @member, slug: failed.slug, reason: "no")
+    dependent = add("dependent.md", depends_on: [ done.slug, waiting.slug, failed.slug ])
+
+    error = assert_raises(Tasks::BlockedError) { claim(dependent) }
+
+    assert_equal "#{dependent.slug} waits on #{waiting.slug}, #{failed.slug}", error.message
+    assert_equal "pending", dependent.task.reload.status
+    assert_equal [ "task_added" ], actions(dependent)
+  end
+
+  test "a soft-deleted dependency blocks even when it was done" do
+    dep = add("dep.md")
+    finish(dep)
+    dependent = add("dependent.md", depends_on: [ dep.slug ])
+    Assets::Delete.mutate(actor: @member, slug: dep.slug)
+
+    error = assert_raises(Tasks::BlockedError) { claim(dependent) }
+
+    assert_equal "#{dependent.slug} waits on #{dep.slug}", error.message
+    assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/inbox") }
+  end
+
+  test "completing the last dependency makes the dependent claimable on the next call" do
+    dep = add("dep.md", path: "member/backlog")
+    dependent = add("dependent.md", path: "member/backlog", depends_on: [ dep.slug ])
+
+    assert_raises(Tasks::BlockedError) { claim(dependent, actor: @ping) }
+    claim(dep, actor: @pong)
+    assert_raises(Tasks::BlockedError) { claim(dependent, actor: @ping) }
+    Tasks::Complete.mutate(actor: @pong, slug: dep.slug)
+
+    assert_equal dependent.id, claim(dependent, actor: @ping).id
+  end
+
+  test "the holder renewing a task it holds is not blocked by a dependency deleted since" do
+    dep = add("dep.md")
+    finish(dep)
+    dependent = add("dependent.md", depends_on: [ dep.slug ])
+    claim(dependent, actor: @ping, lease_seconds: 60)
+    Assets::Delete.mutate(actor: @member, slug: dep.slug)
+
+    renewed = claim(dependent, actor: @ping, lease_seconds: 60)
+
+    assert_equal 1, renewed.task.attempts
+    assert_raises(Tasks::BlockedError) { travel(2.minutes) { claim(dependent, actor: @pong) } }
+  end
+
+  test "without a slug skips a blocked task and takes the next ready one, even when the blocked one is older" do
+    dep = add("dep.md", path: "member/other")
+    travel_to(2.hours.ago) { add("blocked.md", path: "member/backlog", depends_on: [ dep.slug ]) }
+    ready = travel_to(1.hour.ago) { add("ready.md", path: "member/backlog") }
+
+    claimed = Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog")
+
+    assert_equal ready.id, claimed.id
+    assert_equal "pending", Asset.find_by!(name: "blocked.md").task.status
+  end
+
+  test "without a slug and only blocked tasks says how many are waiting" do
+    dep = add("dep.md", path: "member/other")
+    add("a.md", path: "member/backlog", depends_on: [ dep.slug ])
+    add("b.md", path: "member/backlog", depends_on: [ dep.slug ])
+    held = add("held.md", path: "member/backlog", depends_on: [ dep.slug ])
+    finish(dep)
+    claim(held, actor: @pong)
+
+    error = assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog", tags: %w[none]) }
+    assert_equal "nothing to claim under member/backlog", error.message
+
+    Assets::Delete.mutate(actor: @member, slug: dep.slug)
+    error = assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog") }
+    assert_equal "nothing ready under member/backlog; 2 blocked", error.message
+
+    error = assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/empty") }
+    assert_equal "nothing to claim under member/empty", error.message
+  end
+
+  test "a failed dependency blocks its dependents without failing them" do
+    dep = add("dep.md", path: "member/backlog")
+    dependent = add("dependent.md", path: "member/backlog", depends_on: [ dep.slug ])
+    Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog")
+    Tasks::Fail.mutate(actor: @ping, slug: dep.slug, reason: "broke")
+
+    assert_raises(Tasks::NoPendingTaskError) { Tasks::Claim.mutate(actor: @ping, path_prefix: "member/backlog") }
+    assert_equal "pending", dependent.task.reload.status
   end
 end

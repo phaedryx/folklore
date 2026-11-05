@@ -3,8 +3,8 @@ require "test_helper"
 class Tasks::ListTest < ActiveSupport::TestCase
   setup { @actor = actor_for(:member_default) }
 
-  def add(name, path: "member/inbox", tags: [])
-    Tasks::Add.mutate(actor: @actor, path:, name:, content: "", tags:)
+  def add(name, path: "member/inbox", tags: [], depends_on: [])
+    Tasks::Add.mutate(actor: @actor, path:, name:, content: "", tags:, depends_on:)
   end
 
   # Moves a task's row to a status directly, so the listing is tested without
@@ -123,5 +123,36 @@ class Tasks::ListTest < ActiveSupport::TestCase
     found = relation.to_a
     assert_equal [ task ], found
     assert found.first.task.association(:claimed_by_user).loaded?
+  end
+
+  test "status ready lists pending tasks whose every dependency is done" do
+    done = add("done.md")
+    set_status(done, "done")
+    open = add("open.md")
+    add("ready.md", depends_on: [ done.slug ])
+    add("blocked.md", depends_on: [ done.slug, open.slug ])
+    set_status(add("busy.md"), "in_progress")
+
+    assert_equal %w[open.md ready.md], names(status: "ready").sort
+    assert_equal %w[blocked.md open.md ready.md], names.sort
+  end
+
+  test "status ready treats a deleted dependency as unfinished" do
+    done = add("done.md")
+    set_status(done, "done")
+    add("dependent.md", depends_on: [ done.slug ])
+    Assets::Delete.mutate(actor: @actor, slug: done.slug)
+
+    assert_equal [], names(status: "ready")
+  end
+
+  test "preloads each task's dependencies with their assets" do
+    dep = add("dep.md")
+    add("dependent.md", depends_on: [ dep.slug ])
+
+    found = Tasks::List.query(path_prefix: "member", status: "all").to_a
+    dependent = found.find { |a| a.name == "dependent.md" }
+    assert dependent.task.association(:dependencies).loaded?
+    assert dependent.task.dependencies.first.association(:asset).loaded?
   end
 end

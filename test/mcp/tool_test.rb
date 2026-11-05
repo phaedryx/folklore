@@ -108,7 +108,7 @@ class FolkloreMcp::ToolTest < ActiveSupport::TestCase
   test "every registered error answers with the prefix its status maps to" do
     expected = { not_found: "Not found", forbidden: "Forbidden", conflict: "Conflict", unprocessable_content: "Invalid" }
     task_codes = { "not_a_task" => "Not a task", "already_claimed" => "Already claimed",
-                   "no_pending_task" => "No pending task", "wrong_claimer" => "Wrong claimer" }
+                   "no_pending_task" => "No pending task", "blocked" => "Blocked", "wrong_claimer" => "Wrong claimer" }
 
     DomainErrors::ENTRIES.each do |klass, entry|
       assert_equal task_codes.fetch(entry.code) { expected.fetch(entry.status) }, FolkloreMcp::Tool.prefix_for(entry), klass.name

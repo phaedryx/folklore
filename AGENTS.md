@@ -14,7 +14,8 @@ into a project, or merge it into your agent instructions, and replace `<handle>`
    [Review them](#review-them-before-the-work-they-could-change).
 3. **If you work from a task queue, resume before you claim.** Call
    `get_pending_tasks(path_prefix: ..., status: "in_progress")` and pick up anything you still hold. A crashed claim
-   does not show as pending.
+   does not show as pending. A task that waits on other tasks is normal: `claim_task` passes over it, and answers
+   `nothing ready ...; N blocked` when only such tasks remain. Keep polling; it becomes ready when they are done.
 4. **The moment you think you are done, before you report: `update_last_session`.** Also at any milestone worth
    resuming from. Do it even if the session was short or the work is unfinished: the next session starts from whatever
    checkpoint is there, stale or not. Write what is done, what is open, the next step, and anything the next session

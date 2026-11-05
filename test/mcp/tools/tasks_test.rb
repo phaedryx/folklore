@@ -83,7 +83,7 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     task = asset.task.reload
     assert_equal "Claimed #{asset.slug} at member/inbox/task.md as member/default until #{task.lease_until.iso8601}", text_of(response)
     assert_equal({ slug: asset.slug, location: "member/inbox/task.md", claimed_by: "member/default",
-                   lease_until: task.lease_until.iso8601, attempts: 1 }, structured(response))
+                   lease_until: task.lease_until.iso8601, attempts: 1, dependencies: [] }, structured(response))
   end
 
   test "claim_task with agent records that agent, and another agent on the token gets Already claimed" do
@@ -224,7 +224,8 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     assert_equal "#{a.slug}  member/stories/proj-123/tasks/a.md\n#{b.slug}  member/stories/proj-123/tasks/b.md", text_of(response)
     row = structured(response)[:tasks].first
     assert_equal({ slug: a.slug, location: "member/stories/proj-123/tasks/a.md", name: "a.md", dir: "member/stories/proj-123/tasks",
-                   status: "pending", claimed_by: nil, lease_until: nil, attempts: 0, tags: [], created_at: a.created_at.iso8601 }, row)
+                   status: "pending", claimed_by: nil, lease_until: nil, attempts: 0, tags: [], created_at: a.created_at.iso8601,
+                   depends_on: [], blocked_by: [] }, row)
   end
 
   test "get_pending_tasks with status in_progress finds a claim held when an agent died" do
@@ -296,5 +297,94 @@ class FolkloreMcp::Tools::TasksTest < ActiveSupport::TestCase
     response = FolkloreMcp::Tools::Assets::SetStatus.call(slug: asset.slug, status: "done", server_context: ctx)
 
     assert response.to_h[:isError]
+  end
+
+  # Dependencies
+
+  def finish(asset, agent: "ping", note: nil)
+    ::Tasks::Claim.mutate(actor: member(agent:), slug: asset.slug)
+    ::Tasks::Complete.mutate(actor: member(agent:), slug: asset.slug, note:)
+  end
+
+  test "add_task takes depends_on, and refuses a slug that is not a task or not found" do
+    dep = add("dep.md")
+    note = ::Assets::Create.mutate(actor: member, path: "member/notes", name: "n.md", content: "")
+
+    response = Tools::Add.call(path: "member/inbox", name: "dependent.md", depends_on: [ dep.slug ], server_context: ctx)
+    refute response.to_h[:isError], text_of(response)
+    assert_equal [ dep.id ], Asset.find_by!(slug: slug_from(response)).task.dependencies.map(&:asset_id)
+
+    assert_equal "Not a task [not_a_task]: #{note.slug}",
+                 text_of(Tools::Add.call(path: "member/inbox", name: "x.md", depends_on: [ note.slug ], server_context: ctx))
+    assert_equal "Not found [not_found]: 00000000",
+                 text_of(Tools::Add.call(path: "member/inbox", name: "x.md", depends_on: [ "00000000" ], server_context: ctx))
+    assert_nil Asset.find_by(dir: "member/inbox", name: "x.md")
+  end
+
+  test "claim_task returns the outcome notes of the dependencies, in dependency creation order" do
+    second = travel_to(2.hours.ago) { add("second.md", path: "member/steps") }
+    first = travel_to(3.hours.ago) { add("first.md", path: "member/steps") }
+    finish(first, note: "schema is in")
+    finish(second, note: nil)
+    dependent = add("third.md", path: "member/steps")
+    TaskDependency.create!(task_asset_id: dependent.id, depends_on_asset_id: second.id)
+    TaskDependency.create!(task_asset_id: dependent.id, depends_on_asset_id: first.id)
+
+    response = Tools::Claim.call(path_prefix: "member/steps", agent: "pong", server_context: ctx)
+
+    refute response.to_h[:isError], text_of(response)
+    data = structured(response)
+    assert_equal dependent.slug, data[:slug]
+    assert_equal [ { slug: first.slug, location: "member/steps/first.md", outcome_note: "schema is in" },
+                   { slug: second.slug, location: "member/steps/second.md", outcome_note: nil } ], data[:dependencies]
+    assert_match(/\ndepends on #{first.slug} member\/steps\/first.md: schema is in\ndepends on #{second.slug} member\/steps\/second.md\z/, text_of(response))
+  end
+
+  test "claim_task of a task with no dependencies reports an empty list" do
+    asset = add("task.md")
+
+    assert_equal [], structured(Tools::Claim.call(slug: asset.slug, server_context: ctx))[:dependencies]
+  end
+
+  test "claim_task by slug of a blocked task is Blocked, naming what it waits on" do
+    dep = add("dep.md")
+    dependent = ::Tasks::Add.mutate(actor: member, path: "member/inbox", name: "dependent.md", content: "", depends_on: [ dep.slug ])
+
+    response = Tools::Claim.call(slug: dependent.slug, server_context: ctx)
+
+    assert response.to_h[:isError]
+    assert_equal "Blocked [blocked]: #{dependent.slug} waits on #{dep.slug}", text_of(response)
+    assert_equal "pending", dependent.task.reload.status
+  end
+
+  test "claim_task without a slug tells a waiting queue from an empty one" do
+    dep = add("dep.md", path: "member/other")
+    ::Tasks::Add.mutate(actor: member, path: "member/backlog", name: "dependent.md", content: "", depends_on: [ dep.slug ])
+
+    waiting = Tools::Claim.call(path_prefix: "member/backlog", server_context: ctx)
+    empty = Tools::Claim.call(path_prefix: "member/nothing", server_context: ctx)
+
+    assert_equal "No pending task [no_pending_task]: nothing ready under member/backlog; 1 blocked", text_of(waiting)
+    assert_equal "No pending task [no_pending_task]: nothing to claim under member/nothing", text_of(empty)
+  end
+
+  test "get_pending_tasks shows each task's dependencies and blockers, and status ready skips the blocked" do
+    done = add("done.md")
+    finish(done)
+    open = add("open.md")
+    ready = ::Tasks::Add.mutate(actor: member, path: "member/inbox", name: "ready.md", content: "", depends_on: [ done.slug ])
+    blocked = ::Tasks::Add.mutate(actor: member, path: "member/inbox", name: "blocked.md", content: "", depends_on: [ done.slug, open.slug ])
+
+    pending = Tools::Pending.call(path_prefix: "member/inbox", server_context: ctx)
+    rows = structured(pending)[:tasks].index_by { |row| row[:slug] }
+    assert_equal [ [], [] ], [ rows[open.slug][:depends_on], rows[open.slug][:blocked_by] ]
+    assert_equal [ [ done.slug ], [] ], [ rows[ready.slug][:depends_on], rows[ready.slug][:blocked_by] ]
+    assert_equal [ [ done.slug, open.slug ], [ open.slug ] ], [ rows[blocked.slug][:depends_on], rows[blocked.slug][:blocked_by] ]
+    assert_equal "#{open.slug}  member/inbox/open.md\n#{ready.slug}  member/inbox/ready.md\n" \
+                 "#{blocked.slug}  member/inbox/blocked.md  blocked by #{open.slug}", text_of(pending)
+
+    ready_only = Tools::Pending.call(path_prefix: "member/inbox", status: "ready", server_context: ctx)
+    assert_equal [ open.slug, ready.slug ], structured(ready_only)[:tasks].map { |row| row[:slug] }
+    assert_equal "No ready tasks under member/none", text_of(Tools::Pending.call(path_prefix: "member/none", status: "ready", server_context: ctx))
   end
 end

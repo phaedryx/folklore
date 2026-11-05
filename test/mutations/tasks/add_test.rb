@@ -78,4 +78,54 @@ class Tasks::AddTest < ActiveSupport::TestCase
 
     assert_raises(Tasks::Add::NameTakenError) { add("dup.md") }
   end
+
+  # Dependencies: set once, at creation, by slug.
+
+  test "depends_on records each dependency and the slugs in the task_added event" do
+    first = add("first.md")
+    second = add("second.md")
+
+    dependent = add("third.md", depends_on: [ first.slug, second.slug, first.slug ])
+
+    assert_equal [ first.id, second.id ].sort, dependent.task.dependencies.map(&:asset_id).sort
+    assert_equal [ first.slug, second.slug ], Event.where(asset_id: dependent.id, action: "task_added").sole.metadata["depends_on"]
+  end
+
+  test "a task with no dependencies records none in its event" do
+    asset = add("alone.md")
+
+    assert_nil Event.where(asset_id: asset.id, action: "task_added").sole.metadata["depends_on"]
+    assert_empty asset.task.dependencies
+  end
+
+  test "a dependency may be a task in another member's workspace, or one already done" do
+    theirs = Tasks::Add.mutate(actor: actor_for(:other_default), path: "other/inbox", name: "theirs.md", content: "")
+    done = add("done.md")
+    Tasks::Claim.mutate(actor: @actor, slug: done.slug)
+    Tasks::Complete.mutate(actor: @actor, slug: done.slug)
+
+    dependent = add("mine.md", depends_on: [ theirs.slug, done.slug ])
+
+    assert_equal [ theirs.id, done.id ].sort, dependent.task.dependencies.map(&:asset_id).sort
+  end
+
+  test "refuses depends_on naming a note, and creates nothing" do
+    note = Assets::Create.mutate(actor: @actor, path: "member/notes", name: "n.md", content: "")
+
+    error = assert_raises(Tasks::NotATaskError) { add("blocked.md", depends_on: [ note.slug ]) }
+
+    assert_equal note.slug, error.message
+    assert_equal 0, Asset.where(dir: "member/inbox", name: "blocked.md").count
+    assert_equal 0, TaskDependency.count
+  end
+
+  test "refuses depends_on naming an unknown or deleted slug, and creates nothing" do
+    gone = add("gone.md")
+    Assets::Delete.mutate(actor: @actor, slug: gone.slug)
+
+    assert_equal "00000000", assert_raises(Assets::NotFoundError) { add("x.md", depends_on: [ "00000000" ]) }.message
+    assert_equal gone.slug, assert_raises(Assets::NotFoundError) { add("x.md", depends_on: [ gone.slug ]) }.message
+    assert_equal 0, Asset.where(dir: "member/inbox", name: "x.md").count
+    assert_equal 0, TaskDependency.count
+  end
 end

@@ -4,10 +4,11 @@ module Bundles
   # Every problem in the bundle is collected before anything is written, and
   # any problem refuses the whole bundle. The write is one transaction:
   # assets keep their slugs and timestamps, their tags, versions and task
-  # rows follow, wikilinks are synced once every asset is in (so a link to an
-  # asset later in the bundle resolves; archived assets get theirs when
-  # restored, as they would here), and each asset gets one
-  # asset_imported event. A dry run does all of that and rolls it back.
+  # rows follow with their dependencies (by slug, on tasks in the bundle or
+  # already here), wikilinks are synced once every asset is in (so a link to
+  # an asset later in the bundle resolves; archived assets get theirs when
+  # restored, as they would here), and each asset gets one asset_imported
+  # event. A dry run does all of that and rolls it back.
   class Import
     class RejectedError < StandardError
       attr_reader :errors
@@ -38,6 +39,7 @@ module Bundles
     def mutate
       assets, versions = read
       check_instance(assets)
+      check_dependencies(assets)
       raise RejectedError, @errors if @errors.any?
 
       report = nil
@@ -236,6 +238,41 @@ module Bundles
       end
     end
 
+    # Every dependency must name a task: one in the bundle, or one already on
+    # this instance (import keeps slugs, so the edge resolves). A task made
+    # through add_task can only depend on tasks that already exist, so a cycle
+    # cannot arise there; a bundle written by hand could carry one, and it
+    # would leave every task in it blocked for good, so it is refused.
+    def check_dependencies(assets)
+      tasks = assets.select { |a| a[:task] }.index_by { |a| a[:slug] }
+      wanted = tasks.values.flat_map { |a| a[:task][:depends_on] }.uniq - tasks.keys
+      here = Task.joins(:asset).where(assets: { slug: wanted }).pluck("assets.slug").to_set
+      tasks.each_value do |a|
+        a[:task][:depends_on].uniq.each do |dep|
+          if dep == a[:slug]
+            reject("#{a[:file]} (#{a[:slug]}): cannot depend on itself")
+          elsif !tasks.key?(dep) && !here.include?(dep)
+            reject("#{a[:file]} (#{a[:slug]}): depends_on #{dep} is not a task#{' in the bundle or here' unless assets.any? { |b| b[:slug] == dep }}")
+          end
+        end
+      end
+      check_cycles(tasks)
+    end
+
+    # Peels off tasks whose in-bundle dependencies are all peeled; what is
+    # left is on or behind a cycle.
+    def check_cycles(tasks)
+      edges = tasks.transform_values { |a| (a[:task][:depends_on] - [ a[:slug] ]) & tasks.keys }
+      remaining = edges.keys.to_set
+      loop do
+        free = remaining.reject { |slug| edges[slug].any? { |dep| remaining.include?(dep) } }
+        break if free.empty?
+
+        remaining.subtract(free)
+      end
+      reject("task dependencies form a cycle: #{remaining.sort.join(', ')}") if remaining.any?
+    end
+
     def bundle_path?(file)
       segments = file.split("/")
       [ Format::ASSETS_DIR, Format::ARCHIVED_DIR ].include?(segments.first) && segments.size > 1 &&
@@ -256,6 +293,7 @@ module Bundles
       insert_tags(assets, ids, now)
       insert_versions(versions, ids, users)
       insert_tasks(assets, ids)
+      insert_dependencies(assets, ids, now)
 
       imported = Asset.where(id: ids.values).preload(:owner)
       imported.live.find_each { |asset| Links::Sync.mutate(asset:) }
@@ -315,6 +353,18 @@ module Bundles
         }
       end
       rows.each_slice(BATCH_SIZE) { |batch| Task.insert_all!(batch, record_timestamps: false) }
+    end
+
+    def insert_dependencies(assets, ids, now)
+      tasks = assets.select { |a| a[:task] }
+      wanted = tasks.flat_map { |a| a[:task][:depends_on] }.uniq - ids.keys
+      here = Task.joins(:asset).where(assets: { slug: wanted }).pluck("assets.slug", "tasks.asset_id").to_h
+      rows = tasks.flat_map do |a|
+        a[:task][:depends_on].uniq.map do |dep|
+          { task_asset_id: ids.fetch(a[:slug]), depends_on_asset_id: ids[dep] || here.fetch(dep), created_at: now }
+        end
+      end
+      rows.each_slice(BATCH_SIZE) { |batch| TaskDependency.insert_all!(batch, returning: false, record_timestamps: false) }
     end
 
     def version_handles(versions)

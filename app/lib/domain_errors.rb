@@ -51,6 +51,7 @@ module DomainErrors
     Tasks::NotATaskError => entry("not_a_task", :unprocessable_content),
     Tasks::AlreadyClaimedError => entry("already_claimed", :conflict),
     Tasks::NoPendingTaskError => entry("no_pending_task", :not_found),
+    Tasks::BlockedError => entry("blocked", :conflict),
     Tasks::WrongClaimerError => entry("wrong_claimer", :conflict),
     Tasks::ReasonRequiredError => entry("reason_required", :unprocessable_content, :reason),
     Tasks::InvalidStatusError => entry("invalid_status", :unprocessable_content, :status),

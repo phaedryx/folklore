@@ -150,7 +150,7 @@
   },
   {
     "name": "add_task",
-    "description": "Create a new task at the given path, status 'pending'. 'path' is the DIRECTORY only and must be under your own workspace; 'name' is the leaf. Tags pass through as given. Claim it with claim_task, finish it with complete_task or fail_task.",
+    "description": "Create a new task at the given path, status 'pending'. 'path' is the DIRECTORY only and must be under your own workspace; 'name' is the leaf. Tags pass through as given. depends_on lists slugs of tasks that must be done before this one can be claimed; it is set here and cannot be changed later, and a slug that is not a task refuses the call. Claim it with claim_task, finish it with complete_task or fail_task.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -170,6 +170,12 @@
           "minLength": 1
         },
         "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "depends_on": {
           "type": "array",
           "items": {
             "type": "string"
@@ -257,7 +263,7 @@
   },
   {
     "name": "claim_task",
-    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest pending task there. Atomic: only one claimer wins. A claim belongs to (you, token, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
+    "description": "Claim a task under a lease, as your agent. Pass a slug to claim that task, or omit it and pass path_prefix (and optionally tags) to claim the oldest ready task there. Atomic: only one claimer wins. A task whose dependencies are not all done is Blocked by slug and passed over by path_prefix; when only blocked tasks remain, No pending task says how many wait. The response carries each dependency's outcome note. A claim belongs to (you, token, agent): pass agent when several agents share one token, so they exclude each other. Claiming a task you already hold renews its lease; a task whose lease (lease_seconds, default 1800) has run out can be claimed by anyone. Finish it with complete_task or fail_task.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -302,6 +308,31 @@
         },
         "attempts": {
           "type": "integer"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "slug": {
+                "type": "string"
+              },
+              "location": {
+                "type": "string"
+              },
+              "outcome_note": {
+                "type": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "slug",
+              "location",
+              "outcome_note"
+            ]
+          }
         }
       },
       "required": [
@@ -309,7 +340,8 @@
         "location",
         "claimed_by",
         "lease_until",
-        "attempts"
+        "attempts",
+        "dependencies"
       ]
     },
     "annotations": {
@@ -566,7 +598,7 @@
   },
   {
     "name": "get_pending_tasks",
-    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each. Lists pending tasks by default; pass status (pending, in_progress, done, failed or all) for others; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags. Returns at most 100 tasks unless you pass limit (up to 500); truncated says more remain, and offset pages on.",
+    "description": "List tasks under a path prefix, oldest first, one `slug  location` line each; a task waiting on dependencies ends its line with `blocked by <slugs>`. Lists pending tasks by default; pass status (pending, ready, in_progress, done, failed or all) for others: ready is pending with every dependency done; cancelled is reserved and nothing sets it yet. To resume after a crash, look for in_progress tasks first: a claim you were holding does not show as pending. Optionally filter to tasks having ALL of the given tags. Returns at most 100 tasks unless you pass limit (up to 500); truncated says more remain, and offset pages on.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -642,6 +674,18 @@
               },
               "created_at": {
                 "type": "string"
+              },
+              "depends_on": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocked_by": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
@@ -654,7 +698,9 @@
               "lease_until",
               "attempts",
               "tags",
-              "created_at"
+              "created_at",
+              "depends_on",
+              "blocked_by"
             ]
           }
         },

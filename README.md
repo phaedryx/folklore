@@ -8,7 +8,8 @@ Everything is a Markdown (or plain text, or code) asset at a path such as `you/n
 8-character slug and keeps a version on every content change. Assets can be tagged and soft-deleted. Search ranks
 full-text and fuzzy filename matches together. Staleness is tracked: an asset can carry a review date, and
 re-confirming it is recorded as a verification, not an edit. Tasks are claimed under a lease, so two agents never hold
-the same one. Each agent keeps its own checkpoint, so a new session picks up where the last one stopped.
+the same one, and a task can wait on other tasks: it is claimed only once they are done, and the claim hands over
+their outcome notes. Each agent keeps its own checkpoint, so a new session picks up where the last one stopped.
 
 It is a Rails 8.1 app on Postgres, MIT licensed.
 
@@ -63,7 +64,7 @@ again.
 | Write | `create`, `update`, `upsert`, `append`, `move`, `delete`, `restore`, `add_tag`, `remove_tag` |
 | Review | `verify`, `set_stale_after`, `set_status` |
 | Search | `search` |
-| Tasks | `add_task`, `claim_task`, `complete_task`, `fail_task`, `get_pending_tasks` |
+| Tasks | `add_task` (with `depends_on`), `claim_task` (skips blocked tasks, returns dependency notes), `complete_task`, `fail_task`, `get_pending_tasks` (`depends_on`, `blocked_by`, `status: "ready"`) |
 | Checkpoints | `get_last_session`, `update_last_session` |
 
 Every tool declares MCP annotations and an output schema. Each one returns structured content beside its text. The

@@ -43,7 +43,7 @@ module Bundles
     private
 
     def scope
-      scope = Asset.preload(:owner, :tags, :task, versions: :actor_user)
+      scope = Asset.preload(:owner, :tags, versions: :actor_user, task: { dependencies: :asset })
       @handle ? scope.under_dir(@handle) : scope
     end
 
@@ -74,13 +74,15 @@ module Bundles
 
     # A claim belongs to an agent running against this instance, so an
     # in-progress task leaves as pending, ready to be claimed again.
+    # Dependencies travel by slug, which import keeps.
     def task_attributes(task)
       {
         status: task.status == "in_progress" ? "pending" : task.status,
         attempts: task.attempts,
         outcome_note: task.outcome_note,
         created_at: task.created_at,
-        updated_at: task.updated_at
+        updated_at: task.updated_at,
+        depends_on: task.dependencies_by_creation.map { |dep| dep.asset.slug }
       }
     end
 

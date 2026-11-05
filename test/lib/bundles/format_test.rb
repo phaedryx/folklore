@@ -54,7 +54,7 @@ class Bundles::FormatTest < ActiveSupport::TestCase
 
   test "a task block and deleted_at round-trip" do
     task = { status: "pending", attempts: 0, outcome_note: "a\n---\nb",
-             created_at: Time.utc(2026, 1, 1), updated_at: Time.utc(2026, 1, 2) }
+             created_at: Time.utc(2026, 1, 1), updated_at: Time.utc(2026, 1, 2), depends_on: %w[bbbbbbbb cccccccc] }
     h = attrs(status: nil, task:, deleted_at: Time.utc(2026, 3, 3, 3, 3, 3, 3))
     loaded = Bundles::Format.load_asset(Bundles::Format.dump_asset(h))
 
@@ -141,5 +141,11 @@ class Bundles::FormatTest < ActiveSupport::TestCase
     assert_equal 2, text.lines.size
     assert_equal rows, Bundles::Format.load_versions(text)
     assert_equal [], Bundles::Format.load_versions("")
+  end
+
+  test "a task block without depends_on reads as no dependencies" do
+    loaded = Bundles::Format.load_asset("---\nslug: abcd1234\nowner: member\ndir: member\nname: x.md\ntask:\n  status: pending\n---\n")
+
+    assert_equal [], loaded[:task][:depends_on]
   end
 end

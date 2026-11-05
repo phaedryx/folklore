@@ -115,7 +115,12 @@ task:
   outcome_note: null
   created_at: '2026-09-01T08:30:00.000000Z'
   updated_at: '2026-09-01T08:30:00.000000Z'
+  depends_on: []         # slugs of the tasks this one waits on; absent reads as none
 ```
+
+`depends_on` names tasks by slug: ones in the bundle, or ones already on the importing instance (slugs are kept, so
+the edge resolves). A slug that is neither, or that names a note, refuses the bundle, as does a task that depends on
+itself or a set of tasks that depend on each other in a cycle.
 
 `in_progress` is refused. A claim is held by a live agent under a lease, and an imported lease would describe an
 agent that is not there. Write such a task as `pending` and let it be claimed again; `folklore:export` does this
@@ -149,7 +154,9 @@ Before writing anything, import collects every problem in the bundle and refuses
   [checkpoints](checkpoints.md));
 - content, tags and task outcome notes are within their limits (1 MiB, 100 characters, 10,000 characters; see
   [errors](errors.md#length-limits));
-- no task is `in_progress`, and no task has a top-level `status`.
+- no task is `in_progress`, and no task has a top-level `status`;
+- every `depends_on` slug is a task in the bundle or on this instance, no task depends on itself, and the
+  dependencies among the bundle's tasks form no cycle.
 
 Then it inserts the assets with their slugs, timestamps and review dates as given, adds their tags, versions and task
 rows, resolves `[[slug]]` links once every asset is in (so a link to an asset later in the bundle resolves), and

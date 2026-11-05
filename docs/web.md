@@ -48,7 +48,8 @@ is refused with a 409: the form shows the current content, your unsaved text app
 is written. Saving without changing anything records nothing.
 
 **Tasks.** `/tasks` lists the oldest 100 tasks in your workspace, every status by default, and says when there are
-more. A claimed task shows its claimer as `handle/agent` with "lease until ..." or "lease expired". Who finished a task
+more. A claimed task shows its claimer as `handle/agent` with "lease until ..." or "lease expired". A task that
+depends on other tasks links to them and is marked "blocked" until they are all done. Who finished a task
 is in the activity log.
 
 **Tokens.** `/settings/tokens` lists your tokens with their agent name, scopes, issue date, last use and status.
