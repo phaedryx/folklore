@@ -5,6 +5,8 @@ module Tasks
   NotATaskError = Class.new(Error)
   AlreadyClaimedError = Class.new(Error)
   NoPendingTaskError = Class.new(Error)
+  # A claim by slug of a task whose dependencies are not all done.
+  BlockedError = Class.new(Error)
   WrongClaimerError = Class.new(Error)
   ReasonRequiredError = Class.new(Error)
   InvalidStatusError = Class.new(Error)
@@ -15,8 +17,9 @@ module Tasks
   NoteTooLongError = Class.new(InvalidNoteError)
   ReasonTooLongError = Class.new(InvalidNoteError)
 
-  # Statuses a listing accepts: the task lifecycle plus "all".
-  LIST_STATUSES = (Task::STATUSES + %w[all]).freeze
+  # Statuses a listing accepts: the task lifecycle, "all", and "ready" for
+  # pending tasks with no unfinished dependency.
+  LIST_STATUSES = (Task::STATUSES + %w[all ready]).freeze
 
   # The live task behind a slug, row-locked for the rest of the caller's
   # transaction. Lifecycle writes touch only the facet row and an event, so

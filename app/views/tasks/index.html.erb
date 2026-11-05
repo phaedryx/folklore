@@ -4,7 +4,8 @@
   <h1 class="text-2xl font-bold tracking-tight">Tasks</h1>
   <p class="mt-1 text-sm text-surface-700">
     Tasks under <code><%= current_user.handle %>/</code>, oldest first.
-    A claimed task shows who holds it and when the claim runs out.
+    A claimed task shows who holds it and when the claim runs out. A task that depends on others links to
+    them, and is marked blocked until they are all done.
   </p>
 </header>
 

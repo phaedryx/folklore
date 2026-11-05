@@ -280,4 +280,39 @@ class Bundles::ImportTest < ActiveSupport::TestCase
     results = Assets::Search.query(query: "quokka", actor: actor_for(:member_default))
     assert_equal [ "a.md" ], results.map(&:name)
   end
+
+  def task_block(**overrides)
+    { status: "pending", attempts: 0, outcome_note: nil, created_at: Time.utc(2026, 2, 1), updated_at: Time.utc(2026, 2, 2) }.merge(overrides)
+  end
+
+  test "task dependencies import by slug, on tasks in the bundle or already here" do
+    here = Tasks::Add.mutate(actor: actor_for(:member_default), path: "member/tasks", name: "here.md")
+    later = @bundle.asset(dir: "member/tasks", name: "later.md", task: task_block(status: "done"))
+    dependent = @bundle.asset(dir: "member/tasks", name: "dependent.md", task: task_block(depends_on: [ later[:slug], here.slug ]))
+    @bundle.write
+
+    import
+
+    row = Asset.find_by!(slug: dependent[:slug]).task
+    assert_equal [ later[:slug], here.slug ].sort, row.dependencies.map { |t| t.asset.slug }.sort
+    assert_equal "pending", row.status
+  end
+
+  test "a dependency on an unknown slug, a note, itself or a cycle is rejected with nothing written" do
+    note = @bundle.asset(name: "note.md")
+    a = @bundle.asset(dir: "member/tasks", name: "a.md", task: task_block(depends_on: [ "zzzzzzzz", note[:slug] ]))
+    b = @bundle.asset(dir: "member/tasks", name: "b.md", task: task_block(depends_on: [ "cccccccc" ]))
+    @bundle.asset(slug: "cccccccc", dir: "member/tasks", name: "c.md", task: task_block(depends_on: [ b[:slug], "cccccccc" ]))
+    @bundle.write
+    before = table_counts
+
+    errors = rejection.errors.join("\n")
+
+    assert_match(/#{a[:slug]}.*zzzzzzzz is not a task in the bundle or here/, errors)
+    assert_match(/#{a[:slug]}.*#{note[:slug]} is not a task/, errors)
+    assert_match(/cccccccc.*cannot depend on itself/, errors)
+    assert_match(/cycle/, errors)
+    assert_equal before, table_counts
+    assert_equal 0, TaskDependency.count
+  end
 end

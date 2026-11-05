@@ -102,4 +102,20 @@ class Tasks::ClaimConcurrencyTest < ActiveSupport::TestCase
     assert_equal 1, errors.size, responses.inspect
     assert_match(/\AAlready claimed \[[a-z_]+\]: /, errors.first[:content].first[:text])
   end
+
+  test "two agents racing on a prefix with one ready and one blocked task: one wins it, the other finds nothing ready" do
+    dep = add("dep.md", path: "member/elsewhere")
+    Tasks::Add.mutate(actor: actor("seeder"), path: "member/race", name: "blocked.md", content: "", depends_on: [ dep.slug ])
+    add("ready.md")
+    results = Concurrent::Array.new
+
+    race(%w[ping pong]) do |actor|
+      results << [ :ok, Tasks::Claim.mutate(actor:, path_prefix: "member/race").name ]
+    rescue Tasks::NoPendingTaskError => e
+      results << [ :none, e.message ]
+    end
+
+    assert_equal [ [ :none, "nothing ready under member/race; 1 blocked" ], [ :ok, "ready.md" ] ], results.sort, results.inspect
+    assert_equal "pending", Asset.find_by!(name: "blocked.md").task.status
+  end
 end

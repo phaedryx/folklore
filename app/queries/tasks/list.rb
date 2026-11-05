@@ -1,9 +1,11 @@
 module Tasks
   # Live tasks in a directory and everything below it, oldest first, filtered
-  # to one lifecycle status or "all". Pending is the default because the
-  # common question is "what is there to pick up"; in_progress is how a
-  # resumed agent finds the claim it was holding when it died. A limit, when
-  # given, is at most MAX_LIMIT; callers that face an agent pass one.
+  # to one lifecycle status, "ready" (pending with every dependency done) or
+  # "all". Pending is the default because the common question is "what is
+  # there to pick up"; in_progress is how a resumed agent finds the claim it
+  # was holding when it died. Each task's dependencies come preloaded with
+  # their assets, so a row can say what it waits on. A limit, when given, is
+  # at most MAX_LIMIT; callers that face an agent pass one.
   class List
     MAX_LIMIT = 500
 
@@ -15,8 +17,14 @@ module Tasks
       end
       raise InvalidArgumentError, "offset cannot be negative, got #{offset.inspect}" if offset.to_i.negative?
 
-      scope = Asset.live.joins(:task).under_dir(path_prefix).preload(:tags, :owner, task: :claimed_by_user).order(:created_at, :id)
-      scope = scope.where(tasks: { status: }) unless status == "all"
+      scope = Asset.live.joins(:task).under_dir(path_prefix)
+                   .preload(:tags, :owner, task: [ :claimed_by_user, { dependencies: :asset } ])
+                   .order(:created_at, :id)
+      scope = case status
+      when "all" then scope
+      when "ready" then scope.where(tasks: { status: "pending" }).merge(Task.ready)
+      else scope.where(tasks: { status: })
+      end
       scope = scope.tagged_with(tags)
       scope = scope.offset(offset.to_i) if offset.to_i.positive?
       limit ? scope.limit(limit) : scope

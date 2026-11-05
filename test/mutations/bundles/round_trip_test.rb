@@ -16,7 +16,7 @@ class Bundles::RoundTripTest < ActiveSupport::TestCase
   end
 
   def snapshot
-    Asset.preload(:tags, :task, versions: :actor_user).order(:slug).map do |asset|
+    Asset.preload(:tags, versions: :actor_user, task: { dependencies: :asset }).order(:slug).map do |asset|
       {
         slug: asset.slug, owner: asset.owner_id, dir: asset.dir, name: asset.name,
         content: asset.content&.b, content_type: asset.content_type,
@@ -27,6 +27,7 @@ class Bundles::RoundTripTest < ActiveSupport::TestCase
           [ v.content, v.content_type, v.created_at, v.actor_user&.handle, v.actor_agent ]
         end,
         task: asset.task&.slice(:status, :attempts, :outcome_note, :created_at, :updated_at),
+        depends_on: asset.task ? asset.task.dependencies.map { |t| t.asset.slug }.sort : nil,
         # An archived asset's link rows are not exported: backlinks count only
         # live sources, and a restore syncs the links from content again.
         links: asset.deleted_at? ? [] : asset.links.map { |l| [ l.dst_ref, l.dst_asset&.slug ] }.sort
@@ -35,7 +36,7 @@ class Bundles::RoundTripTest < ActiveSupport::TestCase
   end
 
   def wipe
-    [ Event, Link, AssetTag, Tag, Version, Task, Asset ].each(&:delete_all)
+    [ Event, Link, AssetTag, Tag, Version, TaskDependency, Task, Asset ].each(&:delete_all)
   end
 
   test "export then import into an empty database reproduces every asset byte for byte" do
@@ -52,7 +53,9 @@ class Bundles::RoundTripTest < ActiveSupport::TestCase
     Assets::Delete.mutate(actor: @actor, slug: gone.slug)
     create("same.md", "live")
     Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "pending.md", content: "do it")
-    Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "done.md").task.update!(status: "done", attempts: 1, outcome_note: "ok")
+    done = Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "done.md")
+    done.task.update!(status: "done", attempts: 1, outcome_note: "ok")
+    Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "after.md", depends_on: [ done.slug, Asset.find_by!(name: "pending.md").slug ])
     Assets::Create.mutate(actor: @actor, path: "member/state/ping", name: "last_session.md", content: "checkpoint", reserved: true)
     Assets::Create.mutate(actor: actor_for(:other_default), path: "other/notes", name: "theirs.md", content: "other")
 

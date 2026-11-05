@@ -162,4 +162,16 @@ class Bundles::ExportTest < ActiveSupport::TestCase
 
     assert_equal small, large
   end
+
+  test "a task's dependencies are written by slug" do
+    first = Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "first.md")
+    second = Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "second.md")
+    dependent = Tasks::Add.mutate(actor: @actor, path: "member/tasks", name: "third.md", depends_on: [ second.slug, first.slug ])
+
+    export
+
+    loaded = Bundles::Format.load_asset(read("assets/#{dependent.slug}/member/tasks/third.md"))
+    assert_equal [ first.slug, second.slug ], loaded[:task][:depends_on]
+    assert_equal [], Bundles::Format.load_asset(read("assets/#{first.slug}/member/tasks/first.md"))[:task][:depends_on]
+  end
 end

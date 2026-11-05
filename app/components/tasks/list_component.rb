@@ -2,6 +2,8 @@ module Tasks
   # Tasks as rows: the asset, where it lives, its status and, while it is
   # claimed, who holds it and until when. The claim columns are cleared when
   # a task leaves in_progress, so a present claimer is always a live claim.
+  # A task with dependencies links to them, and is marked blocked while any
+  # is unfinished.
   class ListComponent < ViewComponent::Base
     def initialize(tasks:)
       @tasks = tasks
@@ -20,5 +22,9 @@ module Tasks
       lease_until = task.task.lease_until.utc
       time_tag lease_until, lease_until.strftime("%Y-%m-%d %H:%M UTC")
     end
+
+    def dependencies(task) = task.task.dependencies_by_creation.map(&:asset)
+
+    def blocked?(task) = task.task.blockers.any?
   end
 end

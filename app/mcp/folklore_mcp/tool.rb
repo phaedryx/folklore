@@ -31,6 +31,7 @@ module FolkloreMcp
       "not_a_task" => "Not a task",
       "already_claimed" => "Already claimed",
       "no_pending_task" => "No pending task",
+      "blocked" => "Blocked",
       "wrong_claimer" => "Wrong claimer"
     }.freeze
     ERROR_TEXT = /\A(?<prefix>[^\[:]+) \[(?<code>[a-z_]+)\]: (?<message>.*)\z/m

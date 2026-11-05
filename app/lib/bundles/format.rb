@@ -164,7 +164,8 @@ module Bundles
         "attempts" => task[:attempts],
         "outcome_note" => task[:outcome_note],
         "created_at" => time_string(task[:created_at]),
-        "updated_at" => time_string(task[:updated_at])
+        "updated_at" => time_string(task[:updated_at]),
+        "depends_on" => Array(task[:depends_on])
       }
     end
 
@@ -173,6 +174,7 @@ module Bundles
 
       task = { status: front["status"], attempts: front["attempts"].to_i, outcome_note: front["outcome_note"] }
       TASK_TIMES.each { |key| task[key] = parse_time(front[key.to_s], key, file) }
+      task[:depends_on] = Array(front["depends_on"]).map(&:to_s)
       task
     end
 

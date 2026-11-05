@@ -17,8 +17,8 @@ web UI each map an entry in one place. A new error class is not handled by any t
 | 409 | `Conflict` |
 | 422 | `Invalid` |
 
-Four task-queue codes keep a prefix of their own: `not_a_task` (`Not a task`), `already_claimed` (`Already claimed`),
-`no_pending_task` (`No pending task`) and `wrong_claimer` (`Wrong claimer`). Match the code, not the prefix or the
+Five task-queue codes keep a prefix of their own: `not_a_task` (`Not a task`), `already_claimed` (`Already claimed`),
+`no_pending_task` (`No pending task`), `blocked` (`Blocked`) and `wrong_claimer` (`Wrong claimer`). Match the code, not the prefix or the
 message: `\A(?<prefix>[^\[:]+) \[(?<code>[a-z_]+)\]: (?<message>.*)\z` (`FolkloreMcp::Tool::ERROR_TEXT`). A `read`
 of several refs reports each failed ref in place as `{"ref": ..., "error": "<the same text>", "code": "<code>"}`.
 Anything unregistered is `Internal error`, with the details in the server log, and carries no code. Neither do the
@@ -40,13 +40,14 @@ new token form re-render instead, keeping what was typed.
 |---|---|---|---|
 | `not_found` | 404 | | No such live asset (archived assets are not found), or another record is missing |
 | `version_not_found` | 404 | | Reading or restoring a version that is not on the asset |
-| `no_pending_task` | 404 | | `claim_task` with a `path_prefix` found nothing to claim |
+| `no_pending_task` | 404 | | `claim_task` with a `path_prefix` found nothing to claim: `nothing to claim under <prefix>` when the queue is empty, `nothing ready under <prefix>; N blocked` when every candidate waits on a dependency |
 | `forbidden` | 403 | | Writing to another user's workspace, or revoking another user's token |
 | `version_conflict` | 409 | | `expected_version` is out of date (`<slug> is at version N`) |
 | `name_taken` | 409 | `name` | A live asset already has that path and name |
 | `already_archived` | 409 | | Archiving an archived asset |
 | `not_archived` | 409 | | Restoring an asset that is not archived |
 | `already_claimed` | 409 | | `claim_task` of a task someone else holds |
+| `blocked` | 409 | | `claim_task` by slug of a task whose dependencies are not all done (`<slug> waits on <slug>, <slug>`) |
 | `wrong_claimer` | 409 | | Completing or failing a task you do not hold |
 | `already_revoked` | 409 | | Revoking a revoked token |
 | `invalid` | 422 | each invalid field | A record failed validation |
